@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import logoIcon from "@/assets/logo-icon.png";
 
 const mainMenuItems = [
   { title: "Pipeline", url: "/", icon: LayoutDashboard },
@@ -49,11 +50,18 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
-              MerchantFlow
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <img 
+              src={logoIcon} 
+              alt="MerchantFlow" 
+              className="h-8 w-8 rounded-md"
+            />
+            {!isCollapsed && (
+              <span className="text-lg font-bold gradient-text tracking-tight">
+                MerchantFlow
+              </span>
+            )}
+          </div>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -75,10 +83,10 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                   <TooltipTrigger asChild>
                     <SidebarMenuButton
                       onClick={onNewApplication}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 mb-2"
+                      className="gradient-primary text-primary-foreground hover:opacity-90 mb-2 transition-opacity"
                     >
                       <Plus className="h-4 w-4" />
-                      {!isCollapsed && <span>New Application</span>}
+                      {!isCollapsed && <span className="font-semibold">New Application</span>}
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   {isCollapsed && (
