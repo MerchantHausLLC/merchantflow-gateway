@@ -13,7 +13,17 @@ import { toast } from "sonner";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
+  assigned_to?: string | null;
 }
+
+const TEAM_BG_COLORS: Record<string, string> = {
+  'Wesley': 'bg-team-wesley/20',
+  'Leo': 'bg-team-leo/20',
+  'Jamie': 'bg-team-jamie/20',
+  'Darryn': 'bg-team-darryn/20',
+  'Taryn': 'bg-team-taryn/20',
+  'Yaseen': 'bg-team-yaseen/20',
+};
 
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
@@ -34,10 +44,14 @@ const Contacts = () => {
   const fetchContacts = async () => {
     const { data, error } = await supabase
       .from('contacts')
-      .select(`*, account:accounts(name)`)
+      .select(`*, account:accounts(name), opportunities(assigned_to)`)
       .order('created_at', { ascending: false });
     if (!error && data) {
-      setContacts(data as unknown as ContactWithAccount[]);
+      const contactsWithAssignment = data.map((contact: any) => ({
+        ...contact,
+        assigned_to: contact.opportunities?.[0]?.assigned_to || null
+      }));
+      setContacts(contactsWithAssignment as ContactWithAccount[]);
     }
     setLoading(false);
   };
@@ -107,7 +121,7 @@ const Contacts = () => {
               </TableHeader>
               <TableBody>
                 {contacts.map((contact) => (
-                  <TableRow key={contact.id} className="hover:bg-muted/50">
+                  <TableRow key={contact.id} className={`hover:bg-muted/50 ${contact.assigned_to ? TEAM_BG_COLORS[contact.assigned_to] || '' : ''}`}>
                     <TableCell>{contact.first_name || '-'}</TableCell>
                     <TableCell>{contact.last_name || '-'}</TableCell>
                     <TableCell>{contact.email || '-'}</TableCell>
