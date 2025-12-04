@@ -97,7 +97,7 @@ export const TEAM_MEMBER_COLORS: Record<string, string> = {
 };
 
 export const STAGE_CONFIG: Record<OpportunityStage, { label: string; colorClass: string }> = {
-  application_started: { label: 'Application Started', colorClass: 'bg-blue-500' },
+  application_started: { label: 'New', colorClass: 'bg-blue-500' },
   document_collection: { label: 'Document Collection', colorClass: 'bg-indigo-500' },
   underwriting_review: { label: 'Underwriting Review', colorClass: 'bg-purple-500' },
   processor_approval: { label: 'Processor Approval', colorClass: 'bg-pink-500' },
