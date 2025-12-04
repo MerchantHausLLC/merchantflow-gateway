@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Opportunity, STAGE_CONFIG, Account, Contact } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Document {
+  id: string;
+  opportunity_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  content_type: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
 interface OpportunityDetailModalProps {
   opportunity: Opportunity | null;
   onClose: () => void;
@@ -323,10 +333,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate }: OpportunityD
             </TabsContent>
 
             <TabsContent value="documents" className="mt-4">
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No documents yet</p>
-              </div>
+              <DocumentsTab opportunityId={opportunity.id} />
             </TabsContent>
 
             <TabsContent value="activities" className="mt-4">
@@ -370,5 +377,158 @@ const EditField = ({
     />
   </div>
 );
+
+const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [opportunityId]);
+
+  const fetchDocuments = async () => {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('opportunity_id', opportunityId)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setDocuments(data);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    
+    for (const file of Array.from(files)) {
+      const filePath = `${opportunityId}/${Date.now()}_${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('opportunity-documents')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        toast.error(`Failed to upload ${file.name}`);
+        continue;
+      }
+
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          opportunity_id: opportunityId,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          content_type: file.type,
+        });
+
+      if (dbError) {
+        toast.error(`Failed to save ${file.name}`);
+      }
+    }
+
+    toast.success('Documents uploaded');
+    fetchDocuments();
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDelete = async (doc: Document) => {
+    const { error: storageError } = await supabase.storage
+      .from('opportunity-documents')
+      .remove([doc.file_path]);
+
+    if (storageError) {
+      toast.error('Failed to delete file');
+      return;
+    }
+
+    const { error: dbError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', doc.id);
+
+    if (!dbError) {
+      toast.success('Document deleted');
+      fetchDocuments();
+    }
+  };
+
+  const handleDownload = (doc: Document) => {
+    const { data } = supabase.storage
+      .from('opportunity-documents')
+      .getPublicUrl(doc.file_path);
+    
+    window.open(data.publicUrl, '_blank');
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <Button 
+          size="sm" 
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+        >
+          <Upload className="h-4 w-4 mr-1" />
+          {isUploading ? 'Uploading...' : 'Upload'}
+        </Button>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>No documents yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {documents.map((doc) => (
+            <div 
+              key={doc.id} 
+              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(doc.file_size)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default OpportunityDetailModal;
