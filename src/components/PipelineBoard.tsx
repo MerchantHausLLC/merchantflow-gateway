@@ -7,9 +7,10 @@ interface PipelineBoardProps {
   opportunities: Opportunity[];
   onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onAddNew?: () => void;
 }
 
-const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange }: PipelineBoardProps) => {
+const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange, onAddNew }: PipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
 
@@ -51,6 +52,7 @@ const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange 
               onDrop={handleDrop}
               onCardClick={setSelectedOpportunity}
               onAssignmentChange={onAssignmentChange}
+              onAddNew={stage === 'application_started' ? onAddNew : undefined}
             />
           ))}
         </div>

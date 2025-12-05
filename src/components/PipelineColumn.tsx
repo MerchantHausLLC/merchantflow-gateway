@@ -3,7 +3,7 @@ import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity
 import OpportunityCard from "./OpportunityCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 
 interface PipelineColumnProps {
   stage: OpportunityStage;
@@ -13,6 +13,7 @@ interface PipelineColumnProps {
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onAddNew?: () => void;
 }
 
 const PipelineColumn = ({
@@ -23,6 +24,7 @@ const PipelineColumn = ({
   onDrop,
   onCardClick,
   onAssignmentChange,
+  onAddNew,
 }: PipelineColumnProps) => {
   const config = STAGE_CONFIG[stage];
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
@@ -62,6 +64,17 @@ const PipelineColumn = ({
           <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
             {opportunities.length}
           </span>
+          {stage === 'application_started' && onAddNew && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
+              onClick={onAddNew}
+              title="Add new application"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
           {opportunities.length > 0 && (
             <Button 
               variant="ghost" 

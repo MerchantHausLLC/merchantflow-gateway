@@ -174,6 +174,7 @@ const Index = () => {
               opportunities={opportunities} 
               onUpdateOpportunity={handleUpdateOpportunity}
               onAssignmentChange={handleAssignmentChange}
+              onAddNew={() => setIsModalOpen(true)}
             />
           </main>
         </SidebarInset>

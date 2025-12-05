@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Contact, Account } from "@/types/opportunity";
+import { Contact, Account, TEAM_MEMBERS } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
   assigned_to?: string | null;
+  stage?: string | null;
+  opportunity_id?: string | null;
 }
 
 const TEAM_BG_COLORS: Record<string, string> = {
@@ -25,6 +28,19 @@ const TEAM_BG_COLORS: Record<string, string> = {
   'Yaseen': 'bg-team-yaseen/20',
 };
 
+const STAGE_LABELS: Record<string, string> = {
+  'application_started': 'New',
+  'discovery': 'Discovery',
+  'qualified': 'Qualified',
+  'underwriting_review': 'Underwriting Review',
+  'processor_approval': 'Processor Approval',
+  'integration_setup': 'Integration Setup',
+  'gateway_submitted': 'Gateway Submitted',
+  'live_activated': 'Live / Activated',
+  'closed_won': 'Closed Won',
+  'closed_lost': 'Closed Lost',
+};
+
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +50,8 @@ const Contacts = () => {
     last_name: '',
     email: '',
     phone: '',
-    fax: ''
+    fax: '',
+    assigned_to: '',
   });
 
   useEffect(() => {
@@ -44,12 +61,14 @@ const Contacts = () => {
   const fetchContacts = async () => {
     const { data, error } = await supabase
       .from('contacts')
-      .select(`*, account:accounts(name), opportunities(assigned_to)`)
+      .select(`*, account:accounts(name), opportunities(id, assigned_to, stage)`)
       .order('created_at', { ascending: false });
     if (!error && data) {
       const contactsWithAssignment = data.map((contact: any) => ({
         ...contact,
-        assigned_to: contact.opportunities?.[0]?.assigned_to || null
+        assigned_to: contact.opportunities?.[0]?.assigned_to || null,
+        stage: contact.opportunities?.[0]?.stage || null,
+        opportunity_id: contact.opportunities?.[0]?.id || null
       }));
       setContacts(contactsWithAssignment as ContactWithAccount[]);
     }
@@ -63,14 +82,16 @@ const Contacts = () => {
       last_name: contact.last_name || '',
       email: contact.email || '',
       phone: contact.phone || '',
-      fax: contact.fax || ''
+      fax: contact.fax || '',
+      assigned_to: contact.assigned_to || '',
     });
   };
 
   const handleSave = async () => {
     if (!editingContact) return;
     
-    const { error } = await supabase
+    // Update contact info
+    const { error: contactError } = await supabase
       .from('contacts')
       .update({
         first_name: formData.first_name || null,
@@ -81,9 +102,22 @@ const Contacts = () => {
       })
       .eq('id', editingContact.id);
 
-    if (error) {
+    if (contactError) {
       toast.error('Failed to update contact');
       return;
+    }
+
+    // Update assignment on opportunity if there's one
+    if (editingContact.opportunity_id) {
+      const { error: oppError } = await supabase
+        .from('opportunities')
+        .update({ assigned_to: formData.assigned_to || null })
+        .eq('id', editingContact.opportunity_id);
+
+      if (oppError) {
+        toast.error('Failed to update assignment');
+        return;
+      }
     }
 
     toast.success('Contact updated');
@@ -117,6 +151,8 @@ const Contacts = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Account</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Stage</TableHead>
                   <TableHead className="w-16">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -128,6 +164,8 @@ const Contacts = () => {
                     <TableCell>{contact.email || '-'}</TableCell>
                     <TableCell>{contact.phone || '-'}</TableCell>
                     <TableCell>{contact.account?.name || '-'}</TableCell>
+                    <TableCell>{contact.assigned_to || '-'}</TableCell>
+                    <TableCell>{contact.stage ? STAGE_LABELS[contact.stage] || contact.stage : '-'}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -190,6 +228,25 @@ const Contacts = () => {
                   onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Assigned To</Label>
+              <Select
+                value={formData.assigned_to}
+                onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}
+              >
+                <SelectTrigger className="bg-secondary">
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map((member) => (
+                    <SelectItem key={member} value={member}>
+                      {member}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setEditingContact(null)}>
