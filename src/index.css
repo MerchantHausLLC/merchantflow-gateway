@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
+    --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
     --card: 217 33% 17%;
@@ -61,7 +61,7 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -73,7 +73,7 @@ All colors MUST be HSL.
 
   /* Dark class kept for compatibility but same as root */
   .dark {
-    --background: 222 47% 11%;
+    --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
     --card: 217 33% 17%;
@@ -124,7 +124,7 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
