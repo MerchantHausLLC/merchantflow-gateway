@@ -5,7 +5,7 @@ import { FileText } from "lucide-react";
 const DocumentsPage = () => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col overflow-hidden">
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
