@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, AlertTriangle, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Opportunity, TEAM_MEMBERS } from "@/types/opportunity";
@@ -44,12 +44,14 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
-  // SLA warning: check if card has been in the same stage for > 24 hours
-  const slaWarning = useMemo(() => {
-    if (!opportunity.stage_entered_at) return false;
+  // SLA status: tiered alerts at 12h (warning) and 24h (critical)
+  const slaStatus = useMemo(() => {
+    if (!opportunity.stage_entered_at) return 'none';
     const hoursInStage = differenceInHours(new Date(), new Date(opportunity.stage_entered_at));
-    return hoursInStage >= 24;
-  }, [opportunity.stage_entered_at]);
+    if (hoursInStage >= 24) return 'critical';
+    if (hoursInStage >= 12) return 'warning';
+    return 'none';
+  }, [opportunity.stage_entered_at]) as 'none' | 'warning' | 'critical';
 
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === 'unassigned' ? null : value;
@@ -83,8 +85,9 @@ const OpportunityCard = ({
       className={cn(
         "cursor-grab active:cursor-grabbing transition-all duration-200 group bg-card border-l-3",
         borderClass,
-        // SLA warning styles - red border glow, background tint
-        slaWarning && "ring-2 ring-destructive/50 bg-destructive/5 animate-pulse"
+        // SLA tiered styles
+        slaStatus === 'warning' && "ring-2 ring-amber-500/50 bg-amber-500/5",
+        slaStatus === 'critical' && "ring-2 ring-destructive/50 bg-destructive/5 animate-pulse"
       )}
     >
       <CardContent className={cn("p-2", isCollapsed ? "py-1.5" : "p-2")}>
@@ -102,8 +105,13 @@ const OpportunityCard = ({
           <h3 className="font-semibold text-xs text-foreground truncate flex-1">
             {account?.name || 'Unknown'}
           </h3>
-          {/* SLA warning badge */}
-          {slaWarning && (
+          {/* SLA tiered badges */}
+          {slaStatus === 'warning' && (
+            <span className="flex items-center gap-0.5 text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 12 hours">
+              <Clock className="h-3 w-3" />
+            </span>
+          )}
+          {slaStatus === 'critical' && (
             <span className="flex items-center gap-0.5 text-[9px] text-destructive bg-destructive/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 24 hours">
               <AlertTriangle className="h-3 w-3" />
             </span>
