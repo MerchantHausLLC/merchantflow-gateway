@@ -89,9 +89,9 @@ const OpportunityCard = ({
         "cursor-grab active:cursor-grabbing transition-all duration-200 group bg-card border-l-3",
         // Override border color when SLA critical, otherwise use team color
         slaStatus === 'critical' ? 'border-l-destructive' : borderClass,
-        // SLA tiered styles
-        slaStatus === 'warning' && "ring-2 ring-amber-500/50 bg-amber-500/5",
-        slaStatus === 'critical' && "ring-2 ring-destructive/50 bg-destructive/5 animate-pulse"
+        // SLA tiered styles - subtle background tints only, no animation
+        slaStatus === 'warning' && "bg-amber-500/10",
+        slaStatus === 'critical' && "bg-destructive/15"
       )}
     >
       <CardContent className={cn("p-2", isCollapsed ? "py-1.5" : "p-2")}>
