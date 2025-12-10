@@ -73,43 +73,58 @@ const Index = () => {
 
   const handleNewApplication = async (formData: ApplicationFormData) => {
     try {
-      const { data: account, error: accountError } = await supabase
-        .from('accounts')
-        .insert({
-          name: formData.companyName,
-          address1: formData.address || null,
-          address2: formData.address2 || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          zip: formData.zip || null,
-          country: formData.country || null,
-          website: formData.website || null,
-        })
-        .select()
-        .single();
+      let accountId: string;
+      let contactId: string;
 
-      if (accountError) throw accountError;
+      // Use existing account or create new one
+      if (formData.existingAccountId) {
+        accountId = formData.existingAccountId;
+      } else {
+        const { data: account, error: accountError } = await supabase
+          .from('accounts')
+          .insert({
+            name: formData.companyName,
+            address1: formData.address || null,
+            address2: formData.address2 || null,
+            city: formData.city || null,
+            state: formData.state || null,
+            zip: formData.zip || null,
+            country: formData.country || null,
+            website: formData.website || null,
+          })
+          .select()
+          .single();
 
-      const { data: contact, error: contactError } = await supabase
-        .from('contacts')
-        .insert({
-          account_id: account.id,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          fax: formData.fax || null,
-        })
-        .select()
-        .single();
+        if (accountError) throw accountError;
+        accountId = account.id;
+      }
 
-      if (contactError) throw contactError;
+      // Use existing contact or create new one
+      if (formData.existingContactId) {
+        contactId = formData.existingContactId;
+      } else {
+        const { data: contact, error: contactError } = await supabase
+          .from('contacts')
+          .insert({
+            account_id: accountId,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            fax: formData.fax || null,
+          })
+          .select()
+          .single();
 
-      const { data: opportunity, error: opportunityError } = await supabase
+        if (contactError) throw contactError;
+        contactId = contact.id;
+      }
+
+      const { error: opportunityError } = await supabase
         .from('opportunities')
         .insert({
-          account_id: account.id,
-          contact_id: contact.id,
+          account_id: accountId,
+          contact_id: contactId,
           stage: 'application_started',
           referral_source: formData.referralSource || null,
           username: formData.username || null,
@@ -124,21 +139,10 @@ const Index = () => {
 
       if (opportunityError) throw opportunityError;
 
-      const newOpportunity: Opportunity = {
-        ...opportunity,
-        stage: opportunity.stage as OpportunityStage,
-        status: opportunity.status as 'active' | 'dead' | undefined,
-        account: {
-          ...account,
-          status: account.status as 'active' | 'dead' | undefined,
-        },
-        contact,
-      };
-
-      setOpportunities([newOpportunity, ...opportunities]);
+      await fetchOpportunities();
       toast({
         title: "Application Added",
-        description: `${account.name} has been added to the pipeline.`,
+        description: `Application has been added to the pipeline.`,
       });
     } catch (error) {
       console.error('Error creating application:', error);

@@ -149,7 +149,8 @@ const Contacts = () => {
         last_name: formData.last_name || null,
         email: formData.email || null,
         phone: formData.phone || null,
-        fax: formData.fax || null
+        fax: formData.fax || null,
+        account_id: formData.account_id || editingContact.account_id,
       })
       .eq('id', editingContact.id);
 
@@ -307,6 +308,24 @@ const Contacts = () => {
             <DialogTitle>Edit Contact</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Account</Label>
+              <Select
+                value={formData.account_id}
+                onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+              >
+                <SelectTrigger className="bg-secondary">
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>First Name</Label>
