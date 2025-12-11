@@ -65,7 +65,7 @@ const DocumentsPage = () => {
   const handleDownload = (doc: Document) => {
     const { data } = supabase.storage
       .from("opportunity-documents")
-      .getPublicUrl(doc.file_path as string);
+      .getPublicUrl(doc.file_path);
     if (data?.publicUrl) {
       window.open(data.publicUrl, "_blank");
     }
@@ -80,7 +80,7 @@ const DocumentsPage = () => {
     // Remove the file from storage
     const { error: storageError } = await supabase.storage
       .from("opportunity-documents")
-      .remove([doc.file_path as string]);
+      .remove([doc.file_path]);
     if (storageError) {
       toast.error("Failed to delete file");
       return;
