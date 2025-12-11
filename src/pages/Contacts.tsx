@@ -141,91 +141,101 @@ const Contacts = () => {
 
   const handleSave = async () => {
     if (!editingContact) return;
-    
-    const { error: contactError } = await supabase
-      .from('contacts')
-      .update({
-        first_name: formData.first_name || null,
-        last_name: formData.last_name || null,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        fax: formData.fax || null,
-        account_id: formData.account_id || editingContact.account_id,
-      })
-      .eq('id', editingContact.id);
+    try {
+      const { error: contactError } = await supabase
+        .from('contacts')
+        .update({
+          first_name: formData.first_name || null,
+          last_name: formData.last_name || null,
+          email: formData.email || null,
+          phone: formData.phone || null,
+          fax: formData.fax || null,
+          // fallback to original account_id if none selected
+          account_id: formData.account_id || editingContact.account_id,
+        })
+        .eq('id', editingContact.id);
 
-    if (contactError) {
-      toast.error('Failed to update contact');
-      return;
-    }
-
-    if (editingContact.opportunity_id) {
-      const { error: oppError } = await supabase
-        .from('opportunities')
-        .update({ assigned_to: formData.assigned_to || null })
-        .eq('id', editingContact.opportunity_id);
-
-      if (oppError) {
-        toast.error('Failed to update assignment');
+      if (contactError) {
+        toast.error('Failed to update contact');
         return;
       }
-    }
 
-    toast.success('Contact updated');
-    setEditingContact(null);
-    fetchContacts();
+      if (editingContact.opportunity_id) {
+        const { error: oppError } = await supabase
+          .from('opportunities')
+          .update({ assigned_to: formData.assigned_to || null })
+          .eq('id', editingContact.opportunity_id);
+
+        if (oppError) {
+          toast.error('Failed to update assignment');
+          return;
+        }
+      }
+
+      toast.success('Contact updated');
+      setEditingContact(null);
+      fetchContacts();
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
+    }
   };
 
   const handleCreateContact = async () => {
-    let accountId = formData.account_id;
+    try {
+      let accountId = formData.account_id;
 
-    // Create new account if needed
-    if (isNewAccount) {
-      if (!newAccountName.trim()) {
-        toast.error('Please enter a company name');
+      // Create new account if needed
+      if (isNewAccount) {
+        if (!newAccountName.trim()) {
+          toast.error('Please enter a company name');
+          return;
+        }
+        const { data: newAccount, error: accountError } = await supabase
+          .from('accounts')
+          .insert({ name: newAccountName.trim() })
+          .select()
+          .single();
+
+        if (accountError || !newAccount) {
+          toast.error('Failed to create account');
+          return;
+        }
+        accountId = newAccount.id;
+        fetchAccounts(); // Refresh accounts list
+      } else if (!accountId) {
+        toast.error('Please select an account');
         return;
       }
-      const { data: newAccount, error: accountError } = await supabase
-        .from('accounts')
-        .insert({ name: newAccountName.trim() })
-        .select()
-        .single();
 
-      if (accountError || !newAccount) {
-        toast.error('Failed to create account');
+      if (!formData.first_name && !formData.last_name) {
+        toast.error('Please enter a name');
         return;
       }
-      accountId = newAccount.id;
-      fetchAccounts(); // Refresh accounts list
-    } else if (!accountId) {
-      toast.error('Please select an account');
-      return;
+
+      const { error } = await supabase
+        .from('contacts')
+        .insert({
+          account_id: accountId,
+          first_name: formData.first_name || null,
+          last_name: formData.last_name || null,
+          email: formData.email || null,
+          phone: formData.phone || null,
+          fax: formData.fax || null,
+        });
+
+      if (error) {
+        toast.error('Failed to create contact');
+        return;
+      }
+
+      toast.success('Contact created');
+      setIsNewDialogOpen(false);
+      fetchContacts();
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
     }
-
-    if (!formData.first_name && !formData.last_name) {
-      toast.error('Please enter a name');
-      return;
-    }
-
-    const { error } = await supabase
-      .from('contacts')
-      .insert({
-        account_id: accountId,
-        first_name: formData.first_name || null,
-        last_name: formData.last_name || null,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        fax: formData.fax || null,
-      });
-
-    if (error) {
-      toast.error('Failed to create contact');
-      return;
-    }
-
-    toast.success('Contact created');
-    setIsNewDialogOpen(false);
-    fetchContacts();
   };
 
   if (loading) {

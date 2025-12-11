@@ -80,15 +80,8 @@ export function AppSidebar({
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
+            {/* Logo already includes text; remove separate title/text */}
             <img src={brandLogo} alt="Ops Terminal" className="h-8 w-8 rounded-md" />
-            {!isCollapsed && <div className="flex flex-col">
-                <span className="text-lg font-bold font-bauhaus gradient-text tracking-tight leading-tight text-white">
-                  Ops Terminal
-                </span>
-                <span className="text-[10px] font-red-hat text-muted-foreground leading-tight">
-                  by Merchanthaus.io
-                </span>
-              </div>}
           </div>
           <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

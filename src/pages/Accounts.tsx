@@ -59,29 +59,33 @@ const Accounts = () => {
 
   const handleSave = async () => {
     if (!editingAccount) return;
-    
-    const { error } = await supabase
-      .from('accounts')
-      .update({
-        name: formData.name,
-        address1: formData.address1 || null,
-        address2: formData.address2 || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        zip: formData.zip || null,
-        country: formData.country || null,
-        website: formData.website || null
-      })
-      .eq('id', editingAccount.id);
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .update({
+          name: formData.name,
+          address1: formData.address1 || null,
+          address2: formData.address2 || null,
+          city: formData.city || null,
+          state: formData.state || null,
+          zip: formData.zip || null,
+          country: formData.country || null,
+          website: formData.website || null
+        })
+        .eq('id', editingAccount.id);
 
-    if (error) {
-      toast.error('Failed to update account');
-      return;
+      if (error) {
+        toast.error('Failed to update account');
+        return;
+      }
+
+      toast.success('Account updated');
+      setEditingAccount(null);
+      fetchAccounts();
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
     }
-
-    toast.success('Account updated');
-    setEditingAccount(null);
-    fetchAccounts();
   };
 
   if (loading) {
