@@ -3,7 +3,7 @@ import PipelineBoard from "@/components/PipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Opportunity, OpportunityStage } from "@/types/opportunity";
+import { OnboardingWizardState, Opportunity, OpportunityStage } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,14 +26,15 @@ const Index = () => {
     fetchOpportunities();
   }, []);
   const fetchOpportunities = async () => {
+    setLoading(true);
+
     const {
       data,
       error
     } = await supabase.from('opportunities').select(`
         *,
         account:accounts(*),
-        contact:contacts(*),
-        wizard_state:onboarding_wizard_states(*)
+        contact:contacts(*)
       `).eq('status', 'active').order('created_at', {
       ascending: false
     });
@@ -46,16 +47,37 @@ const Index = () => {
       setLoading(false);
       return;
     }
-    const typedData = (data || []).map(item => ({
+
+    let typedData = (data || []).map(item => ({
       ...item,
       stage: item.stage as OpportunityStage,
       status: item.status as 'active' | 'dead' | undefined,
       account: item.account ? {
         ...item.account,
         status: item.account.status as 'active' | 'dead' | undefined
-      } : undefined,
-      wizard_state: Array.isArray(item.wizard_state) ? item.wizard_state[0] : item.wizard_state
+      } : undefined
     }));
+
+    const opportunityIds = typedData.map(item => item.id);
+    if (opportunityIds.length) {
+      const {
+        data: wizardStates,
+        error: wizardStateError
+      } = await supabase.from('onboarding_wizard_states').select('*').in('opportunity_id', opportunityIds);
+
+      if (wizardStateError) {
+        console.error('Error loading wizard states:', wizardStateError);
+      } else {
+        const wizardStateMap = new Map<string, OnboardingWizardState>();
+        (wizardStates || []).forEach((state) => wizardStateMap.set(state.opportunity_id, state));
+
+        typedData = typedData.map(opportunity => ({
+          ...opportunity,
+          wizard_state: wizardStateMap.get(opportunity.id)
+        }));
+      }
+    }
+
     setOpportunities(typedData);
     setLoading(false);
   };
