@@ -110,11 +110,11 @@ export default {
   			},
   			team: {
   				wesley: 'hsl(var(--team-wesley))',
-  				leo: 'hsl(var(--team-leo))',
   				jamie: 'hsl(var(--team-jamie))',
   				darryn: 'hsl(var(--team-darryn))',
   				taryn: 'hsl(var(--team-taryn))',
-  				yaseen: 'hsl(var(--team-yaseen))'
+  				yaseen: 'hsl(var(--team-yaseen))',
+  				sales: 'hsl(var(--team-sales))'
   			},
   			merchant: {
   				black: '#0f0f0f',

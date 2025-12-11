@@ -53,11 +53,11 @@ All colors MUST be HSL.
 
     /* Team member colors - Chakra spectrum */
     --team-wesley: 0 84% 60%;      /* Red - Root */
-    --team-leo: 25 95% 53%;        /* Orange - Sacral */
     --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
     --team-yaseen: 262 83% 58%;    /* Violet - Crown */
+    --team-sales: 25 95% 53%;      /* Orange - Sales team */
 
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
@@ -126,11 +126,11 @@ All colors MUST be HSL.
 
     /* Team member colors - Chakra spectrum */
     --team-wesley: 0 84% 60%;      /* Red - Root */
-    --team-leo: 25 95% 53%;        /* Orange - Sacral */
     --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
     --team-yaseen: 262 83% 58%;    /* Violet - Crown */
+    --team-sales: 25 95% 53%;      /* Orange - Sales team */
 
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);

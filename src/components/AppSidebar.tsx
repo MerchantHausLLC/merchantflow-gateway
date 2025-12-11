@@ -1,9 +1,13 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { EMAIL_TO_USER } from "@/types/opportunity";
 import brandLogo from "@/assets/brand-logo.png";
 
 // Define the Navigation Tree Structure
@@ -75,7 +79,19 @@ export function AppSidebar({
     state,
     toggleSidebar
   } = useSidebar();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  // Get display name from email mapping or use email prefix
+  const userEmail = user?.email?.toLowerCase() || '';
+  const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split('@')[0] || 'User';
+
   return <Sidebar collapsible="icon" variant="floating" className="border-0">
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
@@ -160,6 +176,28 @@ export function AppSidebar({
 
       <SidebarFooter>
         <SidebarMenu>
+          {/* Profile Menu */}
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <SidebarMenuButton className="hover:bg-sidebar-accent">
+                      <User className="h-4 w-4" />
+                      {!isCollapsed && <span>{displayName}</span>}
+                    </SidebarMenuButton>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                {isCollapsed && <TooltipContent side="right">{displayName}</TooltipContent>}
+              </Tooltip>
+              <DropdownMenuContent side="right" align="end" className="w-48">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
           {bottomMenuItems.map(item => <SidebarMenuItem key={item.title}>
               <Tooltip>
                 <TooltipTrigger asChild>

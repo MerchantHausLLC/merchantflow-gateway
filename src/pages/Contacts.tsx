@@ -26,11 +26,11 @@ interface AccountOption {
 
 const TEAM_BG_COLORS: Record<string, string> = {
   'Wesley': 'bg-team-wesley/20',
-  'Leo': 'bg-team-leo/20',
   'Jamie': 'bg-team-jamie/20',
   'Darryn': 'bg-team-darryn/20',
   'Taryn': 'bg-team-taryn/20',
   'Yaseen': 'bg-team-yaseen/20',
+  'Sales': 'bg-team-sales/20',
 };
 
 const STAGE_LABELS: Record<string, string> = {

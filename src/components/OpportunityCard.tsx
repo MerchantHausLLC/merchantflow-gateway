@@ -19,11 +19,11 @@ interface OpportunityCardProps {
 
 const TEAM_BORDER_COLORS: Record<string, string> = {
   'Wesley': 'border-l-team-wesley',
-  'Leo': 'border-l-team-leo',
   'Jamie': 'border-l-team-jamie',
   'Darryn': 'border-l-team-darryn',
   'Taryn': 'border-l-team-taryn',
   'Yaseen': 'border-l-team-yaseen',
+  'Sales': 'border-l-team-sales',
 };
 
 const OpportunityCard = ({ 

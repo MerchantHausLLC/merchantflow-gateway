@@ -89,18 +89,27 @@ export const TEAM_MEMBERS = [
   'Jamie',
   'Yaseen',
   'Wesley',
-  'Leo',
+  'Sales',
 ] as const;
 
 export type TeamMember = typeof TEAM_MEMBERS[number];
 
 export const TEAM_MEMBER_COLORS: Record<string, string> = {
   'Wesley': 'border-team-wesley',
-  'Leo': 'border-team-leo',
   'Jamie': 'border-team-jamie',
   'Darryn': 'border-team-darryn',
   'Taryn': 'border-team-taryn',
   'Yaseen': 'border-team-yaseen',
+  'Sales': 'border-team-sales',
+};
+
+// Map user emails to display names
+export const EMAIL_TO_USER: Record<string, string> = {
+  'dyan@merchanthaus.io': 'Wesley',
+  'admin@merchanthaus.io': 'Jamie',
+  'support@merchanthaus.io': 'Yaseen',
+  'taryn@merchanthaus.io': 'Taryn',
+  'sales@merchanthaus.io': 'Sales',
 };
 
 export const STAGE_CONFIG: Record<OpportunityStage, { label: string; colorClass: string }> = {

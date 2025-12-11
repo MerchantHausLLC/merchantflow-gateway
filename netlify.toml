@@ -1,0 +1,11 @@
+# Netlify configuration for MerchantFlow CRM
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# SPA redirect - all routes should be handled by the React app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
