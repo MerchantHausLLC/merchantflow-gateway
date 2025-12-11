@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import brandLogo from "@/assets/brand-logo.png";
+import brandLogo from "@/assets/brand-logo-full.png";
 
 // Define the Navigation Tree Structure
 interface NavItem {
