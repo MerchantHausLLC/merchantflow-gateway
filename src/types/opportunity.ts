@@ -67,9 +67,12 @@ export interface Opportunity {
 export interface Document {
   id: string;
   opportunity_id: string;
-  name: string;
-  url: string;
-  uploaded_at: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  content_type: string | null;
+  uploaded_by: string | null;
+  created_at: string;
 }
 
 export interface Activity {
