@@ -312,8 +312,8 @@ export default function PreboardingWizard() {
         opportunity_id: selectedOpportunityId,
         progress,
         step_index: stepIndex,
-        form_state: serializableForm
-      }, { onConflict: 'opportunity_id' });
+        form_state: serializableForm as unknown
+      } as never, { onConflict: 'opportunity_id' });
 
     if (error) {
       toast({ title: "Could not save wizard", description: error.message, variant: "destructive" });

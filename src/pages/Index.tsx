@@ -69,7 +69,7 @@ const Index = () => {
         console.error('Error loading wizard states:', wizardStateError);
       } else {
         const wizardStateMap = new Map<string, OnboardingWizardState>();
-        (wizardStates || []).forEach((state) => wizardStateMap.set(state.opportunity_id, state));
+        (wizardStates || []).forEach((state) => wizardStateMap.set(state.opportunity_id, state as unknown as OnboardingWizardState));
 
         typedData = typedData.map(opportunity => ({
           ...opportunity,

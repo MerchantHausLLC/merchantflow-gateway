@@ -364,6 +364,44 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_wizard_states: {
+        Row: {
+          created_at: string
+          form_state: Json
+          id: string
+          opportunity_id: string
+          progress: number
+          step_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_state?: Json
+          id?: string
+          opportunity_id: string
+          progress?: number
+          step_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_state?: Json
+          id?: string
+          opportunity_id?: string
+          progress?: number
+          step_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_wizard_states_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: true
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opportunities: {
         Row: {
           account_id: string
