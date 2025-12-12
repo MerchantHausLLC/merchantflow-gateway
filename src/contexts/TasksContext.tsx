@@ -36,15 +36,15 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
           id: task.id,
           title: task.title,
           description: task.description || undefined,
-          assignee: task.assignee,
+          assignee: task.assignee || "",
           createdBy: task.created_by || undefined,
           createdAt: task.created_at,
-          status: task.status,
+          status: task.status as Task["status"],
           dueAt: task.due_at || undefined,
           relatedOpportunityId: task.related_opportunity_id || undefined,
           relatedContactId: task.related_contact_id || undefined,
           comments: task.comments || undefined,
-          source: task.source || undefined,
+          source: (task.source as Task["source"]) || undefined,
         })),
       );
     }
@@ -59,7 +59,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
         "postgres_changes",
         { event: "*", schema: "public", table: "tasks" },
         (payload) => {
-          const task = payload.new || payload.old;
+          const task = (payload.new || payload.old) as Record<string, unknown> | null;
           if (!task) return;
 
           if (payload.eventType === "DELETE") {
@@ -69,18 +69,18 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
 
           setTasks((prev) => {
             const mapped: Task = {
-              id: task.id,
-              title: task.title,
-              description: task.description || undefined,
-              assignee: task.assignee,
-              createdBy: task.created_by || undefined,
-              createdAt: task.created_at,
-              status: task.status,
-              dueAt: task.due_at || undefined,
-              relatedOpportunityId: task.related_opportunity_id || undefined,
-              relatedContactId: task.related_contact_id || undefined,
-              comments: task.comments || undefined,
-              source: task.source || undefined,
+              id: task.id as string,
+              title: task.title as string,
+              description: (task.description as string) || undefined,
+              assignee: (task.assignee as string) || undefined,
+              createdBy: (task.created_by as string) || undefined,
+              createdAt: task.created_at as string,
+              status: task.status as Task["status"],
+              dueAt: (task.due_at as string) || undefined,
+              relatedOpportunityId: (task.related_opportunity_id as string) || undefined,
+              relatedContactId: (task.related_contact_id as string) || undefined,
+              comments: (task.comments as string) || undefined,
+              source: (task.source as Task["source"]) || undefined,
             };
 
             const exists = prev.some((t) => t.id === mapped.id);
