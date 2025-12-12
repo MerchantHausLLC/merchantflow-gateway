@@ -498,6 +498,66 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assignee: string | null
+          comments: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          related_contact_id: string | null
+          related_opportunity_id: string | null
+          source: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          assignee?: string | null
+          comments?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          related_contact_id?: string | null
+          related_opportunity_id?: string | null
+          source?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          assignee?: string | null
+          comments?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          related_contact_id?: string | null
+          related_opportunity_id?: string | null
+          source?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_related_contact_id_fkey"
+            columns: ["related_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_related_opportunity_id_fkey"
+            columns: ["related_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
