@@ -54,6 +54,17 @@ const STAGE_LABELS: Record<string, string> = {
   'closed_lost': 'Closed Lost',
 };
 
+/**
+ * Contacts page
+ *
+ * This component extends the existing contacts management page with a
+ * handful of user‑experience improvements.  Search and filter inputs
+ * are wider by default, dialogs employ more generous spacing, and
+ * autopopulation logic has been added to the new contact form to
+ * reduce the number of clicks required when only one account is
+ * available.  These enhancements build upon the project’s
+ * established patterns without changing its core functionality.
+ */
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -74,6 +85,15 @@ const Contacts = () => {
   });
   const [selectedContact, setSelectedContact] = useState<ContactWithAccount | null>(null);
   const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+
+  // When opening the new contact dialog, preselect the first account if one exists and
+  // the user isn’t creating a new account.  This reduces clicks when there is only
+  // one account on file.
+  useEffect(() => {
+    if (isNewDialogOpen && !isNewAccount && accounts.length > 0 && !formData.account_id) {
+      setFormData((data) => ({ ...data, account_id: accounts[0].id }));
+    }
+  }, [isNewDialogOpen, isNewAccount, accounts]);
 
   const filteredContacts = contacts
     .filter((contact) => {
@@ -319,11 +339,11 @@ const Contacts = () => {
                   placeholder="Search contacts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-64"
+                  className="pl-8 w-72" // widen search field
                 />
               </div>
               <Select value={assignmentFilter} onValueChange={(value: 'all' | 'assigned' | 'unassigned') => setAssignmentFilter(value)}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Filter" />
@@ -571,8 +591,8 @@ const Contacts = () => {
           <DialogHeader>
             <DialogTitle>Edit Contact</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-5 py-5">
+            <div className="space-y-3">
               <Label>Account</Label>
               <Select
                 value={formData.account_id}
@@ -590,15 +610,15 @@ const Contacts = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>First Name</Label>
                 <Input
                   value={formData.first_name}
                   onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Last Name</Label>
                 <Input
                   value={formData.last_name}
@@ -606,7 +626,7 @@ const Contacts = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Email</Label>
               <Input
                 type="email"
@@ -614,15 +634,15 @@ const Contacts = () => {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>Phone</Label>
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Fax</Label>
                 <Input
                   value={formData.fax}
@@ -630,7 +650,7 @@ const Contacts = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Assigned To</Label>
               <Select
                 value={formData.assigned_to || "unassigned"}
@@ -649,7 +669,7 @@ const Contacts = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setEditingContact(null)}>
                 Cancel
               </Button>
@@ -667,8 +687,8 @@ const Contacts = () => {
           <DialogHeader>
             <DialogTitle>New Contact</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-5 py-5">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Account *</Label>
                 <Button
@@ -709,15 +729,15 @@ const Contacts = () => {
                 </Select>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>First Name</Label>
                 <Input
                   value={formData.first_name}
                   onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Last Name</Label>
                 <Input
                   value={formData.last_name}
@@ -725,7 +745,7 @@ const Contacts = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Email</Label>
               <Input
                 type="email"
@@ -733,15 +753,15 @@ const Contacts = () => {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>Phone</Label>
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Fax</Label>
                 <Input
                   value={formData.fax}
@@ -749,7 +769,7 @@ const Contacts = () => {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setIsNewDialogOpen(false)}>
                 Cancel
               </Button>

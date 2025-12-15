@@ -18,6 +18,17 @@ interface AccountWithContacts extends Account {
   contacts?: Contact[];
 }
 
+/**
+ * Accounts page
+ *
+ * In addition to the existing functionality for viewing and editing
+ * merchant accounts, this version introduces modest spacing tweaks
+ * throughout the page.  Search inputs are wider, form fields have
+ * larger vertical spacing between them, and grid gaps within the
+ * edit dialog have been increased.  These adjustments help reduce
+ * visual clutter and improve overall readability without altering the
+ * underlying data model or behaviour.
+ */
 const Accounts = () => {
   const [accounts, setAccounts] = useState<AccountWithContacts[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +151,7 @@ const Accounts = () => {
                   placeholder="Search accounts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-64"
+                  className="pl-8 w-72" // widen search input from 64 to 72
                 />
               </div>
             </div>
@@ -265,37 +276,38 @@ const Accounts = () => {
           <DialogHeader>
             <DialogTitle>Edit Account</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          {/* Increase vertical spacing and padding in the edit dialog */}
+          <div className="space-y-5 py-5">
+            <div className="space-y-3">
               <Label>Company Name</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Address</Label>
               <Input
                 value={formData.address1}
                 onChange={(e) => setFormData({ ...formData, address1: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Address 2</Label>
               <Input
                 value={formData.address2}
                 onChange={(e) => setFormData({ ...formData, address2: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>City</Label>
                 <Input
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>State</Label>
                 <Input
                   value={formData.state}
@@ -303,15 +315,15 @@ const Accounts = () => {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <Label>Zip</Label>
                 <Input
                   value={formData.zip}
                   onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Country</Label>
                 <Input
                   value={formData.country}
@@ -319,14 +331,14 @@ const Accounts = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Website</Label>
               <Input
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setEditingAccount(null)}>
                 Cancel
               </Button>
