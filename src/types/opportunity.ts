@@ -2,7 +2,7 @@ export type OpportunityStage =
   | 'application_started'
   | 'discovery'
   | 'qualified'
-  | 'application_prep'  // Renamed from 'opportunities' - maps to old 'opportunities' stage
+  | 'application_prep'
   | 'underwriting_review'
   | 'processor_approval'
   | 'integration_setup'
@@ -11,39 +11,8 @@ export type OpportunityStage =
   | 'closed_won'
   | 'closed_lost';
 
-// Pipeline type for filtering
-export type PipelineType = 'processing' | 'gateway_only';
-
-// Processing Pipeline: Full processing flow
-// New -> Discovery -> Qualified -> Application Prep -> Underwriting -> Approved -> Integration -> Live -> Closed Won
-export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
-  'discovery',
-  'qualified',
-  'application_prep',
-  'underwriting_review',
-  'processor_approval',
-  'integration_setup',
-  'live_activated',
-  'closed_won',
-];
-
-// Gateway Only Pipeline: Simplified gateway flow
-// New -> Discovery -> Qualified -> Gateway Submission -> Closed Won -> Live
-export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
-  'discovery',
-  'qualified',
-  'gateway_submitted',
-  'closed_won',
-  'live_activated',
-];
-
-// Stage to database value mapping (for migration - 'opportunities' in DB maps to 'application_prep')
-export const STAGE_DB_MAPPING: Record<string, OpportunityStage> = {
-  'opportunities': 'application_prep',
-  'application_prep': 'application_prep',
-};
+// Service type determines which pipeline an opportunity belongs to
+export type ServiceType = 'processing' | 'gateway_only';
 
 export interface Account {
   id: string;
@@ -78,6 +47,7 @@ export interface Opportunity {
   contact_id: string;
   stage: OpportunityStage;
   status?: 'active' | 'dead';
+  service_type?: ServiceType;
   referral_source?: string;
   username?: string;
   processing_services?: string[];
@@ -232,6 +202,30 @@ export const STAGE_CONFIG: Record<
   },
 };
 
+// Processing Pipeline stages (full flow)
+export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'application_prep',
+  'underwriting_review',
+  'processor_approval',
+  'integration_setup',
+  'live_activated',
+  'closed_won',
+];
+
+// Gateway Only Pipeline stages (simplified flow)
+export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'gateway_submitted',
+  'closed_won',
+  'live_activated',
+];
+
+// Legacy: All stages for backwards compatibility
 export const PIPELINE_STAGES: OpportunityStage[] = [
   'application_started',
   'discovery',
@@ -246,23 +240,40 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   'closed_lost',
 ];
 
-// Helper function to determine which pipeline an opportunity belongs to
-export function getOpportunityPipelineType(opportunity: { processing_services?: string[] }): PipelineType {
-  // If processing_services is empty or contains only gateway-related services, it's gateway_only
-  // If it has any processing services, it's a processing pipeline
-  const services = opportunity.processing_services || [];
-
-  // Consider it gateway_only if there are no services or only gateway-related services
-  const gatewayOnlyServices = ['Gateway Only', 'Payment Gateway', 'Virtual Terminal'];
-  const hasProcessingServices = services.some(s => !gatewayOnlyServices.includes(s));
-
-  return hasProcessingServices ? 'processing' : 'gateway_only';
-}
-
-// Helper to map old DB stage values to new type-safe values
-export function mapStageFromDb(dbStage: string): OpportunityStage {
-  if (dbStage === 'opportunities') {
+/**
+ * Migration helper: Maps old 'opportunities' stage to new 'application_prep' stage
+ * This ensures no data is lost during the stage rename
+ */
+export const migrateStage = (stage: string): OpportunityStage => {
+  if (stage === 'opportunities') {
     return 'application_prep';
   }
-  return dbStage as OpportunityStage;
-}
+  return stage as OpportunityStage;
+};
+
+/**
+ * Determines the service type (pipeline) for an opportunity based on its attributes
+ * - If service_type is explicitly set, use that
+ * - If processing_services has items, it's a Processing opportunity
+ * - If value_services includes gateway-only items, it's Gateway Only
+ * - Default to Processing pipeline
+ */
+export const getServiceType = (opportunity: Opportunity): ServiceType => {
+  // Explicit service_type takes precedence
+  if (opportunity.service_type) {
+    return opportunity.service_type;
+  }
+
+  // If processing_services is populated with any items, it's Processing
+  if (opportunity.processing_services && opportunity.processing_services.length > 0) {
+    return 'processing';
+  }
+
+  // If only value_services (gateway-only services) are present, it's Gateway Only
+  if (opportunity.value_services && opportunity.value_services.length > 0) {
+    return 'gateway_only';
+  }
+
+  // Default to processing
+  return 'processing';
+};

@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
-import PipelineBoard from "@/components/PipelineBoard";
+import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { OnboardingWizardState, Opportunity, OpportunityStage, mapStageFromDb, PipelineType } from "@/types/opportunity";
+import { OnboardingWizardState, Opportunity, OpportunityStage, migrateStage } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
+import ThemeToggle from "@/components/ThemeToggle";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -236,7 +237,8 @@ const Index = () => {
 
     let typedData = (data || []).map(item => ({
       ...item,
-      stage: mapStageFromDb(item.stage) as OpportunityStage,
+      // Apply stage migration: 'opportunities' -> 'application_prep'
+      stage: migrateStage(item.stage) as OpportunityStage,
       status: item.status as 'active' | 'dead' | undefined,
       account: item.account ? {
         ...item.account,
@@ -467,24 +469,16 @@ const Index = () => {
       <div className="h-screen flex w-full p-4 gap-4 pb-20">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
         <div className="flex-1 flex flex-col overflow-hidden gap-3 max-h-[calc(100vh-7rem)]">
-          <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 border-primary bg-card/70 dark:bg-[hsl(217_33%_17%_/_0.7)]">
+          <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 border-primary bg-card/70 dark:bg-card/70">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
             <div className="ml-auto flex items-center gap-2">
               <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="h-8 w-8"
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
+              <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-[hsl(217_33%_17%_/_0.7)]">
-            <PipelineBoard opportunities={filteredOpportunities} onUpdateOpportunity={handleUpdateOpportunity} onAssignmentChange={handleAssignmentChange} onPipelineChange={handlePipelineChange} onAddNew={() => setIsModalOpen(true)} onMarkAsDead={handleMarkAsDead} onDelete={handleDelete} />
+          <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
+            <DualPipelineBoard opportunities={filteredOpportunities} onUpdateOpportunity={handleUpdateOpportunity} onAssignmentChange={handleAssignmentChange} onAddNew={() => setIsModalOpen(true)} onMarkAsDead={handleMarkAsDead} onDelete={handleDelete} />
           </main>
         </div>
       </div>
