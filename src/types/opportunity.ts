@@ -2,7 +2,7 @@ export type OpportunityStage =
   | 'application_started'
   | 'discovery'
   | 'qualified'
-  | 'opportunities'
+  | 'application_prep'  // Renamed from 'opportunities' - maps to old 'opportunities' stage
   | 'underwriting_review'
   | 'processor_approval'
   | 'integration_setup'
@@ -10,6 +10,40 @@ export type OpportunityStage =
   | 'live_activated'
   | 'closed_won'
   | 'closed_lost';
+
+// Pipeline type for filtering
+export type PipelineType = 'processing' | 'gateway_only';
+
+// Processing Pipeline: Full processing flow
+// New -> Discovery -> Qualified -> Application Prep -> Underwriting -> Approved -> Integration -> Live -> Closed Won
+export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'application_prep',
+  'underwriting_review',
+  'processor_approval',
+  'integration_setup',
+  'live_activated',
+  'closed_won',
+];
+
+// Gateway Only Pipeline: Simplified gateway flow
+// New -> Discovery -> Qualified -> Gateway Submission -> Closed Won -> Live
+export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'gateway_submitted',
+  'closed_won',
+  'live_activated',
+];
+
+// Stage to database value mapping (for migration - 'opportunities' in DB maps to 'application_prep')
+export const STAGE_DB_MAPPING: Record<string, OpportunityStage> = {
+  'opportunities': 'application_prep',
+  'application_prep': 'application_prep',
+};
 
 export interface Account {
   id: string;
@@ -148,38 +182,38 @@ export const STAGE_CONFIG: Record<
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
-  opportunities: {
-    label: 'Opportunities',
+  application_prep: {
+    label: 'Application Prep',
     colorClass: 'bg-teal-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   underwriting_review: {
-    label: 'Underwriting Review',
+    label: 'Underwriting',
     colorClass: 'bg-purple-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   processor_approval: {
-    label: 'Processor Approval',
+    label: 'Approved',
     colorClass: 'bg-pink-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   integration_setup: {
-    label: 'Integration Setup',
+    label: 'Integration',
     colorClass: 'bg-orange-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   gateway_submitted: {
-    label: 'Gateway Submitted',
+    label: 'Gateway Submission',
     colorClass: 'bg-yellow-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   live_activated: {
-    label: 'Live / Activated',
+    label: 'Live',
     colorClass: 'bg-green-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
@@ -202,7 +236,7 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   'application_started',
   'discovery',
   'qualified',
-  'opportunities',
+  'application_prep',
   'underwriting_review',
   'processor_approval',
   'integration_setup',
@@ -211,3 +245,24 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   'closed_won',
   'closed_lost',
 ];
+
+// Helper function to determine which pipeline an opportunity belongs to
+export function getOpportunityPipelineType(opportunity: { processing_services?: string[] }): PipelineType {
+  // If processing_services is empty or contains only gateway-related services, it's gateway_only
+  // If it has any processing services, it's a processing pipeline
+  const services = opportunity.processing_services || [];
+
+  // Consider it gateway_only if there are no services or only gateway-related services
+  const gatewayOnlyServices = ['Gateway Only', 'Payment Gateway', 'Virtual Terminal'];
+  const hasProcessingServices = services.some(s => !gatewayOnlyServices.includes(s));
+
+  return hasProcessingServices ? 'processing' : 'gateway_only';
+}
+
+// Helper to map old DB stage values to new type-safe values
+export function mapStageFromDb(dbStage: string): OpportunityStage {
+  if (dbStage === 'opportunities') {
+    return 'application_prep';
+  }
+  return dbStage as OpportunityStage;
+}

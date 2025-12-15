@@ -82,7 +82,7 @@ All colors MUST be HSL.
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
 
-  /* Dark class kept for compatibility but same as root */
+  /* Dark theme */
   .dark {
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
@@ -155,6 +155,80 @@ All colors MUST be HSL.
     --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
+
+  /* Light theme - Professional Enterprise (Salesforce/Microsoft 365 inspired) */
+  .light {
+    --background: 220 14% 96%;     /* #F3F4F6 - Soft Blue-Grey/Off-white */
+    --foreground: 220 13% 18%;     /* #1F2937 - Dark Slate for readability */
+
+    --card: 0 0% 100%;             /* #FFFFFF - Pure White */
+    --card-foreground: 220 13% 18%;
+
+    /* Semi-transparent card for floating panels */
+    --card-glass: 0 0% 100% / 0.92;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
+
+    --primary: 348 83% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 13% 91%;       /* #E5E7EB - Column backgrounds */
+    --secondary-foreground: 220 13% 18%;
+
+    --teal: 174 72% 40%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 348 83% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 13% 85%;
+    --input: 220 13% 85%;
+    --ring: 348 83% 47%;
+
+    /* Team member colors - Chakra spectrum (same as dark for consistency) */
+    --team-wesley: 0 84% 60%;      /* Red - Root */
+    --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
+    --team-darryn: 142 71% 45%;    /* Green - Heart */
+    --team-taryn: 199 89% 48%;     /* Blue - Throat */
+    --team-yaseen: 262 83% 58%;    /* Violet - Crown */
+    --team-sales: 25 95% 53%;      /* Orange - Sales team */
+
+    /* Pipeline stage colors (mapped to team owners) */
+    --stage-lead: var(--team-wesley);
+    --stage-contacted: var(--team-wesley);
+    --stage-application: var(--team-sales);
+    --stage-underwriting: var(--team-sales);
+    --stage-approval: var(--team-jamie);
+    --stage-live: var(--team-darryn);
+    --stage-declined: 0 0% 45%;
+
+    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-foreground: 220 13% 18%;
+    --sidebar-primary: 348 83% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 348 83% 47%;
+    --sidebar-border: 220 13% 85%;
+    --sidebar-ring: 348 83% 47%;
+    --radius: 0.875rem;
+    --shadow-sm: 0px 1px 2px 0px hsla(0, 0%, 0%, 0.05);
+    --shadow: 0px 1px 3px 0px hsla(0, 0%, 0%, 0.1);
+    --shadow-md: 0px 4px 6px -1px hsla(0, 0%, 0%, 0.1);
+    --shadow-lg: 0px 10px 15px -3px hsla(0, 0%, 0%, 0.1);
+  }
 }
 
 @layer base {
@@ -164,11 +238,37 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Dark theme uses background image */
+  .dark body,
+  body:has(html.dark) {
     background-image: url('/src/assets/Background.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+  }
+
+  /* Light theme has clean solid background */
+  .light body,
+  body:has(html.light) {
+    background-image: none;
+    background-color: hsl(220 14% 96%);
+  }
+
+  /* Fallback for dark mode background when class is on html */
+  html.dark {
+    background-image: url('/src/assets/Background.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  html.light {
+    background-image: none;
+    background-color: hsl(220 14% 96%);
   }
 }
 

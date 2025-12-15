@@ -3,14 +3,17 @@ import PipelineBoard from "@/components/PipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { OnboardingWizardState, Opportunity, OpportunityStage } from "@/types/opportunity";
+import { OnboardingWizardState, Opportunity, OpportunityStage, mapStageFromDb, PipelineType } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Sun, Moon } from "lucide-react";
 
 type WizardPrefillForm = {
   dbaName: string;
@@ -176,6 +179,7 @@ const Index = () => {
   const {
     user
   } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -232,7 +236,7 @@ const Index = () => {
 
     let typedData = (data || []).map(item => ({
       ...item,
-      stage: item.stage as OpportunityStage,
+      stage: mapStageFromDb(item.stage) as OpportunityStage,
       status: item.status as 'active' | 'dead' | undefined,
       account: item.account ? {
         ...item.account,
@@ -432,6 +436,22 @@ const Index = () => {
       assigned_to: assignedTo || undefined
     } : o));
   };
+
+  const handlePipelineChange = (opportunityId: string, pipelineType: PipelineType) => {
+    // Update local state with new processing services based on pipeline type
+    const newProcessingServices = pipelineType === 'gateway_only'
+      ? ['Gateway Only']
+      : ['Full Processing'];
+
+    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+      ...o,
+      processing_services: newProcessingServices,
+      // Reset stage to 'application_started' when moving between pipelines
+      // since the stages are different between pipelines
+      stage: 'application_started' as OpportunityStage
+    } : o));
+  };
+
   const handleMarkAsDead = (id: string) => {
     setOpportunities(opportunities.filter(o => o.id !== id));
   };
@@ -447,23 +467,28 @@ const Index = () => {
       <div className="h-screen flex w-full p-4 gap-4 pb-20">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
         <div className="flex-1 flex flex-col overflow-hidden gap-3 max-h-[calc(100vh-7rem)]">
-          <header style={{
-          backgroundColor: 'hsl(217 33% 17% / 0.7)'
-        }} className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 border-primary">
+          <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 border-primary bg-card/70 dark:bg-[hsl(217_33%_17%_/_0.7)]">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
               <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-8 w-8"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
             </div>
           </header>
-          <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0" style={{
-          backgroundColor: 'hsl(217 33% 17% / 0.7)'
-        }}>
-            <PipelineBoard opportunities={filteredOpportunities} onUpdateOpportunity={handleUpdateOpportunity} onAssignmentChange={handleAssignmentChange} onAddNew={() => setIsModalOpen(true)} onMarkAsDead={handleMarkAsDead} onDelete={handleDelete} />
+          <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-[hsl(217_33%_17%_/_0.7)]">
+            <PipelineBoard opportunities={filteredOpportunities} onUpdateOpportunity={handleUpdateOpportunity} onAssignmentChange={handleAssignmentChange} onPipelineChange={handlePipelineChange} onAddNew={() => setIsModalOpen(true)} onMarkAsDead={handleMarkAsDead} onDelete={handleDelete} />
           </main>
         </div>
       </div>
-      
+
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
     </SidebarProvider>;
 };

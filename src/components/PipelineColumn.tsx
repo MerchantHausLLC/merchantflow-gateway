@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity";
+import { Opportunity, OpportunityStage, STAGE_CONFIG, PipelineType } from "@/types/opportunity";
 import OpportunityCard from "./OpportunityCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ interface PipelineColumnProps {
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onPipelineChange?: (opportunityId: string, pipelineType: PipelineType) => void;
   onAddNew?: () => void;
 }
 
@@ -25,6 +26,7 @@ const PipelineColumn = ({
   onDrop,
   onCardClick,
   onAssignmentChange,
+  onPipelineChange,
   onAddNew,
 }: PipelineColumnProps) => {
   const config = STAGE_CONFIG[stage];
@@ -54,7 +56,11 @@ const PipelineColumn = ({
 
   return (
     <div
-      className="flex-1 min-w-[160px] max-w-[220px] flex flex-col bg-card/50 rounded-xl border border-border/40 shadow-sm overflow-hidden"
+      className={cn(
+        "flex-1 min-w-[160px] max-w-[220px] flex flex-col rounded-xl border border-border/40 shadow-sm overflow-hidden",
+        // Light mode: distinct column background (#E5E7EB). Dark mode: card color with transparency
+        "bg-secondary/80 dark:bg-card/50"
+      )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
@@ -111,6 +117,7 @@ const PipelineColumn = ({
               onDragStart={onDragStart}
               onClick={() => onCardClick(opportunity)}
               onAssignmentChange={onAssignmentChange}
+              onPipelineChange={onPipelineChange}
               isCollapsed={collapsedCards.has(opportunity.id)}
               onToggleCollapse={() => toggleCardCollapse(opportunity.id)}
             />
