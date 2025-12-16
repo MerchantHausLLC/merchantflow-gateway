@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { CreditCard, Zap } from "lucide-react";
 import {
   Opportunity,
@@ -13,128 +13,87 @@ import PipelineColumn from "./PipelineColumn";
 import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
 
-interface DualPipelineBoardProps {
-  opportunities: Opportunity[];
-  onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
-  onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
-  onAddNew?: () => void;
-  onMarkAsDead?: (id: string) => void;
-  onDelete?: (id: string) => void;
-}
+/* -------------------------------------------------------------------------- */
+/* Pipeline                                                                    */
+/* -------------------------------------------------------------------------- */
 
-interface PipelineSectionProps {
+interface PipelineProps {
   title: string;
   icon: React.ReactNode;
   stages: OpportunityStage[];
   opportunities: Opportunity[];
+  pipelineType: "processing" | "gateway";
+  accentClass: string;
   onDragStart: (e: React.DragEvent, opportunity: Opportunity) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
   onCardClick: (opportunity: Opportunity) => void;
-  onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onAssignmentChange?: (id: string, assignedTo: string | null) => void;
   onAddNew?: () => void;
-  colorAccent: string;
-  pipelineType: 'processing' | 'gateway';
 }
 
-const PipelineSection = ({
+function Pipeline({
   title,
   icon,
   stages,
   opportunities,
+  pipelineType,
+  accentClass,
   onDragStart,
   onDragOver,
   onDrop,
   onCardClick,
   onAssignmentChange,
   onAddNew,
-  colorAccent,
-  pipelineType,
-}: PipelineSectionProps) => {
-  const totalCount = opportunities.length;
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const headerScrollRef = useRef<HTMLDivElement>(null);
-
-  // Sync horizontal scroll between header and content
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    const headerScroll = headerScrollRef.current;
-
-    if (!scrollContainer || !headerScroll) return;
-
-    const syncHeaderToContent = () => {
-      if (headerScroll) {
-        headerScroll.scrollLeft = scrollContainer.scrollLeft;
-      }
-    };
-
-    const syncContentToHeader = () => {
-      if (scrollContainer) {
-        scrollContainer.scrollLeft = headerScroll.scrollLeft;
-      }
-    };
-
-    scrollContainer.addEventListener('scroll', syncHeaderToContent);
-    headerScroll.addEventListener('scroll', syncContentToHeader);
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', syncHeaderToContent);
-      headerScroll.removeEventListener('scroll', syncContentToHeader);
-    };
-  }, []);
-
-  const getOpportunitiesByStage = (stage: OpportunityStage) => {
-    return opportunities
+}: PipelineProps) {
+  const getByStage = (stage: OpportunityStage) =>
+    opportunities
       .filter((o) => o.stage === stage)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  };
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
 
   return (
-    <div className="flex flex-1 min-h-0 border border-border/40 rounded-lg overflow-hidden bg-card/30">
-      {/* Vertical Title Sidebar - Persistent */}
-      <div className={cn(
-        "flex flex-col items-center justify-center w-10 flex-shrink-0 border-r border-border/40 sticky left-0 z-10",
-        colorAccent
-      )}>
-        <div className="flex flex-col items-center gap-2 py-3">
-          {icon}
-          <span
-            className="text-white font-semibold text-xs whitespace-nowrap"
-            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-          >
-            {title}
-          </span>
-          <span className="text-white/80 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
-            {totalCount}
-          </span>
-        </div>
+    <section
+      data-pipeline={pipelineType}
+      className="relative flex flex-col min-h-[420px] border border-border/40 rounded-lg bg-card/30 overflow-hidden"
+    >
+      {/* Pipeline Header */}
+      <div
+        className={cn(
+          "sticky top-0 z-20 flex items-center gap-2 px-3 py-2 border-b border-border/40",
+          accentClass
+        )}
+      >
+        {icon}
+        <span className="text-sm font-semibold text-white">{title}</span>
+        <span className="ml-auto text-xs text-white/80">
+          {opportunities.length}
+        </span>
       </div>
 
-      {/* Pipeline Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden" data-pipeline={pipelineType}>
-        {/* Sticky Column Headers Row - scrolls horizontally but stays at top */}
-        <div
-          ref={headerScrollRef}
-          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-border/30"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          <div className="flex gap-2 p-2 pb-0 min-w-max">
+      {/* Horizontal Scroll Area */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="min-w-max flex flex-col">
+          {/* Column Headers */}
+          <div className="sticky top-[40px] z-10 flex gap-2 px-2 pt-2 bg-card/30">
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
-              const count = getOpportunitiesByStage(stage).length;
+              const count = getByStage(stage).length;
+
               return (
                 <div
                   key={stage}
                   className={cn(
-                    "flex-shrink-0 w-[150px] px-2 py-1.5 rounded-t-md",
+                    "w-[260px] flex-shrink-0 rounded-t-md px-2 py-1",
                     config.headerClass
                   )}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-semibold text-white truncate">
-                      {config.label}
-                    </span>
-                    <span className="text-[9px] text-white/90 bg-white/20 px-1 py-0.5 rounded">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-white">
+                    <span className="truncate">{config.label}</span>
+                    <span className="text-[10px] bg-white/20 px-1 rounded">
                       {count}
                     </span>
                   </div>
@@ -142,160 +101,147 @@ const PipelineSection = ({
               );
             })}
           </div>
-        </div>
 
-        {/* Scrollable Columns Content Area - vertical and horizontal scroll */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-auto"
-        >
-          <div className="flex gap-2 p-2 pt-0 min-w-max h-full">
+          {/* Columns */}
+          <div className="flex gap-2 px-2 pb-2">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
                 stage={stage}
-                opportunities={getOpportunitiesByStage(stage)}
+                opportunities={getByStage(stage)}
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onCardClick={onCardClick}
                 onAssignmentChange={onAssignmentChange}
-                onAddNew={stage === 'application_started' ? onAddNew : undefined}
-                hideHeader={true}
+                onAddNew={
+                  stage === "application_started" ? onAddNew : undefined
+                }
+                hideHeader
               />
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
-};
+}
 
-const DualPipelineBoard = ({
+/* -------------------------------------------------------------------------- */
+/* Page Layout                                                                 */
+/* -------------------------------------------------------------------------- */
+
+interface Props {
+  opportunities: Opportunity[];
+  onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
+  onAssignmentChange?: (id: string, assignedTo: string | null) => void;
+  onAddNew?: () => void;
+  onMarkAsDead?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}
+
+export default function DualPipelineBoard({
   opportunities,
   onUpdateOpportunity,
   onAssignmentChange,
   onAddNew,
   onMarkAsDead,
   onDelete,
-}: DualPipelineBoardProps) => {
-  const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
-  const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+}: Props) {
+  const [dragged, setDragged] = useState<Opportunity | null>(null);
+  const [selected, setSelected] = useState<Opportunity | null>(null);
 
-  // Migrate stages and split opportunities by service type
-  const { processingOpportunities, gatewayOpportunities } = useMemo(() => {
+  const { processing, gateway } = useMemo(() => {
     const processing: Opportunity[] = [];
     const gateway: Opportunity[] = [];
 
-    opportunities.forEach((opp) => {
-      // Apply stage migration (opportunities -> application_prep)
-      const migratedStage = migrateStage(opp.stage);
-      const migratedOpp = migratedStage !== opp.stage
-        ? { ...opp, stage: migratedStage }
-        : opp;
+    for (const opp of opportunities) {
+      const stage = migrateStage(opp.stage);
+      const migrated = stage !== opp.stage ? { ...opp, stage } : opp;
 
-      // Determine service type
-      const serviceType = getServiceType(migratedOpp);
+      getServiceType(migrated) === "gateway_only"
+        ? gateway.push(migrated)
+        : processing.push(migrated);
+    }
 
-      if (serviceType === 'gateway_only') {
-        gateway.push(migratedOpp);
-      } else {
-        processing.push(migratedOpp);
-      }
-    });
-
-    return { processingOpportunities: processing, gatewayOpportunities: gateway };
+    return { processing, gateway };
   }, [opportunities]);
 
-  const handleDragStart = (e: React.DragEvent, opportunity: Opportunity) => {
-    setDraggedOpportunity(opportunity);
-    e.dataTransfer.effectAllowed = 'move';
-    // Store which pipeline the card came from
-    const serviceType = getServiceType(opportunity);
-    e.dataTransfer.setData('text/plain', serviceType);
+  const onDragStart = (e: React.DragEvent, opp: Opportunity) => {
+    setDragged(opp);
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
+  const onDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
-    if (draggedOpportunity && draggedOpportunity.stage !== stage) {
-      // Determine target pipeline from the stage
-      const targetIsGateway = GATEWAY_ONLY_PIPELINE_STAGES.includes(stage);
-      const sourceIsGateway = getServiceType(draggedOpportunity) === 'gateway_only';
-      
-      const updates: Partial<Opportunity> = { stage };
-      
-      // If moving between pipelines, update processing_services to reflect the change
-      if (targetIsGateway !== sourceIsGateway) {
-        if (targetIsGateway) {
-          // Moving to gateway pipeline - remove processing services
-          updates.processing_services = [];
-        } else {
-          // Moving to processing pipeline - add default processing service if empty
-          if (!draggedOpportunity.processing_services?.length) {
-            updates.processing_services = ['Credit Card'];
-          }
-        }
-      }
-      
-      onUpdateOpportunity(draggedOpportunity.id, updates);
+    if (!dragged || dragged.stage === stage) return;
+
+    const targetGateway = GATEWAY_ONLY_PIPELINE_STAGES.includes(stage);
+    const sourceGateway = getServiceType(dragged) === "gateway_only";
+
+    const updates: Partial<Opportunity> = { stage };
+
+    if (targetGateway !== sourceGateway) {
+      updates.processing_services = targetGateway
+        ? []
+        : dragged.processing_services?.length
+        ? dragged.processing_services
+        : ["Credit Card"];
     }
-    setDraggedOpportunity(null);
+
+    onUpdateOpportunity(dragged.id, updates);
+    setDragged(null);
   };
 
   return (
     <>
-      <div className="flex-1 flex flex-col p-3 gap-2 overflow-hidden">
-        {/* NMI Payments Pipeline Section */}
-        <PipelineSection
+      {/* Page-level vertical scroll ONLY */}
+      <div className="flex flex-col gap-3 p-3 overflow-y-auto">
+        <Pipeline
           title="NMI Payments Pipeline"
           icon={<CreditCard className="h-4 w-4 text-white" />}
           stages={PROCESSING_PIPELINE_STAGES}
-          opportunities={processingOpportunities}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onCardClick={setSelectedOpportunity}
+          opportunities={processing}
+          pipelineType="processing"
+          accentClass="bg-primary"
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onCardClick={setSelected}
           onAssignmentChange={onAssignmentChange}
           onAddNew={onAddNew}
-          colorAccent="bg-primary"
-          pipelineType="processing"
         />
 
-        {/* NMI Gateway Pipeline Section */}
-        <PipelineSection
+        <Pipeline
           title="NMI Gateway Pipeline"
           icon={<Zap className="h-4 w-4 text-white" />}
           stages={GATEWAY_ONLY_PIPELINE_STAGES}
-          opportunities={gatewayOpportunities}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onCardClick={setSelectedOpportunity}
+          opportunities={gateway}
+          pipelineType="gateway"
+          accentClass="bg-teal"
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onCardClick={setSelected}
           onAssignmentChange={onAssignmentChange}
           onAddNew={onAddNew}
-          colorAccent="bg-teal"
-          pipelineType="gateway"
         />
       </div>
 
       <OpportunityDetailModal
-        opportunity={selectedOpportunity}
-        onClose={() => setSelectedOpportunity(null)}
-        onUpdate={(updates) => {
-          if (selectedOpportunity) {
-            onUpdateOpportunity(selectedOpportunity.id, updates);
-          }
-        }}
+        opportunity={selected}
+        onClose={() => setSelected(null)}
+        onUpdate={(updates) =>
+          selected && onUpdateOpportunity(selected.id, updates)
+        }
         onMarkAsDead={onMarkAsDead}
         onDelete={onDelete}
       />
     </>
   );
-};
-
-export default DualPipelineBoard;
+}
