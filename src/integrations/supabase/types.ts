@@ -416,6 +416,7 @@ export type Database = {
           language: string | null
           processing_services: string[] | null
           referral_source: string | null
+          sla_status: string | null
           stage: string
           stage_entered_at: string | null
           status: string | null
@@ -434,6 +435,7 @@ export type Database = {
           language?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          sla_status?: string | null
           stage?: string
           stage_entered_at?: string | null
           status?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           language?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          sla_status?: string | null
           stage?: string
           stage_entered_at?: string | null
           status?: string | null

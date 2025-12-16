@@ -57,6 +57,7 @@ export interface Opportunity {
   language?: string;
   assigned_to?: string;
   stage_entered_at?: string;
+  sla_status?: 'green' | 'amber' | 'red' | null;
   created_at: string;
   updated_at: string;
   // Joined data
