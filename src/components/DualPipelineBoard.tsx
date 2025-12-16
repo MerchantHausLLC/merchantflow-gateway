@@ -33,6 +33,7 @@ interface PipelineSectionProps {
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onAddNew?: () => void;
   colorAccent: string;
+  pipelineType: 'processing' | 'gateway';
 }
 
 const PipelineSection = ({
@@ -47,6 +48,7 @@ const PipelineSection = ({
   onAssignmentChange,
   onAddNew,
   colorAccent,
+  pipelineType,
 }: PipelineSectionProps) => {
   const totalCount = opportunities.length;
 
@@ -57,29 +59,32 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      {/* Section Header */}
-      <div
-        className={cn(
-          "flex items-center gap-3 px-4 py-2 rounded-t-lg flex-shrink-0",
-          "bg-card/50 border border-b-0 border-border/40",
-          "dark:bg-card/50"
-        )}
-      >
-        <span className={cn("p-1.5 rounded-md", colorAccent)}>
+    <div className="flex flex-1 min-h-0 border border-border/40 rounded-lg overflow-hidden bg-card/30">
+      {/* Vertical Title Sidebar */}
+      <div className={cn(
+        "flex flex-col items-center justify-center w-10 flex-shrink-0 border-r border-border/40",
+        colorAccent
+      )}>
+        <div className="flex flex-col items-center gap-2 py-3">
           {icon}
-        </span>
-        <span className="font-semibold text-sm text-foreground">
-          {title}
-        </span>
-        <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">
-          {totalCount} {totalCount === 1 ? 'deal' : 'deals'}
-        </span>
+          <span 
+            className="text-white font-semibold text-xs whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            {title}
+          </span>
+          <span className="text-white/80 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
+            {totalCount}
+          </span>
+        </div>
       </div>
 
-      {/* Pipeline Columns */}
-      <div className="flex-1 min-h-0 overflow-x-auto border border-t-0 border-border/40 rounded-b-lg bg-card/30">
-        <div className="flex gap-3 h-full p-2">
+      {/* Scrollable Pipeline Area */}
+      <div 
+        className="flex-1 overflow-auto"
+        data-pipeline={pipelineType}
+      >
+        <div className="flex gap-2 p-2 min-w-max h-full">
           {stages.map((stage) => (
             <PipelineColumn
               key={stage}
@@ -138,6 +143,9 @@ const DualPipelineBoard = ({
   const handleDragStart = (e: React.DragEvent, opportunity: Opportunity) => {
     setDraggedOpportunity(opportunity);
     e.dataTransfer.effectAllowed = 'move';
+    // Store which pipeline the card came from
+    const serviceType = getServiceType(opportunity);
+    e.dataTransfer.setData('text/plain', serviceType);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -148,14 +156,33 @@ const DualPipelineBoard = ({
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
     if (draggedOpportunity && draggedOpportunity.stage !== stage) {
-      onUpdateOpportunity(draggedOpportunity.id, { stage });
+      // Determine target pipeline from the stage
+      const targetIsGateway = GATEWAY_ONLY_PIPELINE_STAGES.includes(stage);
+      const sourceIsGateway = getServiceType(draggedOpportunity) === 'gateway_only';
+      
+      const updates: Partial<Opportunity> = { stage };
+      
+      // If moving between pipelines, update processing_services to reflect the change
+      if (targetIsGateway !== sourceIsGateway) {
+        if (targetIsGateway) {
+          // Moving to gateway pipeline - remove processing services
+          updates.processing_services = [];
+        } else {
+          // Moving to processing pipeline - add default processing service if empty
+          if (!draggedOpportunity.processing_services?.length) {
+            updates.processing_services = ['Credit Card'];
+          }
+        }
+      }
+      
+      onUpdateOpportunity(draggedOpportunity.id, updates);
     }
     setDraggedOpportunity(null);
   };
 
   return (
     <>
-      <div className="flex-1 flex flex-col p-4 gap-2 overflow-hidden">
+      <div className="flex-1 flex flex-col p-3 gap-2 overflow-hidden">
         {/* NMI Payments Pipeline Section */}
         <PipelineSection
           title="NMI Payments Pipeline"
@@ -169,6 +196,7 @@ const DualPipelineBoard = ({
           onAssignmentChange={onAssignmentChange}
           onAddNew={onAddNew}
           colorAccent="bg-primary"
+          pipelineType="processing"
         />
 
         {/* NMI Gateway Pipeline Section */}
@@ -184,6 +212,7 @@ const DualPipelineBoard = ({
           onAssignmentChange={onAssignmentChange}
           onAddNew={onAddNew}
           colorAccent="bg-teal"
+          pipelineType="gateway"
         />
       </div>
 
