@@ -71,8 +71,6 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
   const [useExistingContact, setUseExistingContact] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedContactId, setSelectedContactId] = useState('');
-  const isGatewayApplication = formData.serviceType === 'gateway_only';
-
   const [formData, setFormData] = useState<ApplicationFormData>({
     serviceType: 'processing',
     companyName: '',
@@ -95,6 +93,8 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
     timezone: '',
     language: '',
   });
+
+  const isGatewayApplication = formData.serviceType === 'gateway_only';
 
   useEffect(() => {
     if (open) {
