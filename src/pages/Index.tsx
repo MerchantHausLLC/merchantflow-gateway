@@ -480,12 +480,11 @@ const Index = () => {
         account_id: accountId,
         contact_id: contactId,
         stage: 'application_started',
-        service_type: formData.serviceType,
         referral_source: formData.referralSource || null,
         username: formData.username || null,
         processing_services: formData.serviceType === 'processing' && formData.processingServices.length > 0
           ? formData.processingServices
-          : null,
+          : formData.serviceType === 'gateway_only' ? [] : null,
         value_services: formData.valueServices
           ? [formData.valueServices]
           : formData.serviceType === 'gateway_only'
