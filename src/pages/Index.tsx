@@ -3,7 +3,7 @@ import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { getServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage } from "@/types/opportunity";
+import { getServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +11,8 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import ThemeToggle from "@/components/ThemeToggle";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
@@ -183,10 +185,14 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const {
     toast
   } = useToast();
   const { ensureSlaTask } = useTasks();
+  
+  // Get current user's display name for filtering
+  const currentUserDisplayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ''] || user?.email?.split('@')[0] || '';
 
   const hasGatewayForAccount = (accountId: string) =>
     opportunities.some((opportunity) =>
@@ -398,19 +404,32 @@ const Index = () => {
     });
   }, [ensureSlaTask, opportunities, user?.email]);
 
-  // Filter opportunities by date range
+  // Filter opportunities by date range and assignee
   const filteredOpportunities = useMemo(() => {
-    if (!dateRange?.from) return opportunities;
-    return opportunities.filter(opp => {
-      const dateValue = new Date(opp[filterBy]);
-      const from = startOfDay(dateRange.from!);
-      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
-      return isWithinInterval(dateValue, {
-        start: from,
-        end: to
+    let filtered = opportunities;
+    
+    // Filter by assignee
+    if (assigneeFilter === 'mine') {
+      filtered = filtered.filter(opp => opp.assigned_to === currentUserDisplayName);
+    } else if (assigneeFilter !== 'all') {
+      filtered = filtered.filter(opp => opp.assigned_to === assigneeFilter);
+    }
+    
+    // Filter by date range
+    if (dateRange?.from) {
+      filtered = filtered.filter(opp => {
+        const dateValue = new Date(opp[filterBy]);
+        const from = startOfDay(dateRange.from!);
+        const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+        return isWithinInterval(dateValue, {
+          start: from,
+          end: to
+        });
       });
-    });
-  }, [opportunities, dateRange, filterBy]);
+    }
+    
+    return filtered;
+  }, [opportunities, dateRange, filterBy, assigneeFilter, currentUserDisplayName]);
   const handleNewApplication = async (formData: ApplicationFormData) => {
     try {
       let accountId: string;
@@ -571,6 +590,21 @@ const Index = () => {
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
             <div className="ml-auto flex items-center gap-2">
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
+                  <User className="h-3 w-3 mr-1" />
+                  <SelectValue placeholder="Filter by..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Cards</SelectItem>
+                  <SelectItem value="mine">My Cards</SelectItem>
+                  {TEAM_MEMBERS.map((member) => (
+                    <SelectItem key={member} value={member}>
+                      {member}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
               <ThemeToggle />
             </div>
