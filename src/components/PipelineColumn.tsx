@@ -1,10 +1,9 @@
 import { useState } from "react";
+import { Plus, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity";
 import OpportunityCard from "./OpportunityCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface PipelineColumnProps {
   stage: OpportunityStage;
@@ -27,12 +26,13 @@ const PipelineColumn = ({
   onAssignmentChange,
   onAddNew,
 }: PipelineColumnProps) => {
-  const config = STAGE_CONFIG[stage];
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   const [allCollapsed, setAllCollapsed] = useState(false);
+  const config = STAGE_CONFIG[stage];
+  const count = opportunities.length;
 
   const toggleCardCollapse = (id: string) => {
-    setCollapsedCards(prev => {
+    setCollapsedCards((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -47,68 +47,69 @@ const PipelineColumn = ({
     if (allCollapsed) {
       setCollapsedCards(new Set());
     } else {
-      setCollapsedCards(new Set(opportunities.map(o => o.id)));
+      setCollapsedCards(new Set(opportunities.map((o) => o.id)));
     }
     setAllCollapsed(!allCollapsed);
   };
 
   return (
     <div
-      className={cn(
-        "flex-shrink-0 min-w-[160px] max-w-[220px] w-[180px] h-full flex flex-col rounded-xl border border-border/40 shadow-sm overflow-hidden",
-        // Light mode: #E5E7EB column background per spec
-        "bg-secondary/50 dark:bg-card/50"
-      )}
+      className="flex-shrink-0 w-[150px] flex flex-col h-full rounded-md border border-border/30 bg-background/50 overflow-hidden"
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
-      {/* Column Header with solid saturated background */}
+      {/* Column Header - Sticky within scrollable parent */}
       <div className={cn(
-        "px-3 py-2.5 border-b border-white/10 shadow-inner",
+        "px-2 py-1.5 border-b border-white/10 flex-shrink-0",
         config.headerClass
       )}>
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-xs text-white truncate flex-1">{config.label}</h2>
-          <span
-            className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-medium border",
-              config.badgeClass
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <span className="text-[10px] font-semibold text-white truncate">
+              {config.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <span className="text-[9px] text-white/90 bg-white/20 px-1 py-0.5 rounded">
+              {count}
+            </span>
+            {stage === 'application_started' && onAddNew && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-white hover:text-white hover:bg-white/20"
+                onClick={onAddNew}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
             )}
-          >
-            {opportunities.length}
-          </span>
-          {stage === 'application_started' && onAddNew && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-white hover:text-white hover:bg-white/20"
-              onClick={onAddNew}
-              title="Add new application"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          )}
-          {opportunities.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-white/80 hover:text-white hover:bg-white/20"
-              onClick={toggleAllCards}
-              title={allCollapsed ? "Expand all" : "Collapse all"}
-            >
-              {allCollapsed ? (
-                <ChevronsUpDown className="h-3 w-3" />
-              ) : (
-                <ChevronsDownUp className="h-3 w-3" />
-              )}
-            </Button>
-          )}
+            {count > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-white/80 hover:text-white hover:bg-white/20"
+                onClick={toggleAllCards}
+                title={allCollapsed ? "Expand all" : "Collapse all"}
+              >
+                {allCollapsed ? (
+                  <ChevronsUpDown className="h-3 w-3" />
+                ) : (
+                  <ChevronsDownUp className="h-3 w-3" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0 p-2">
-        <div className="space-y-2">
-          {opportunities.map((opportunity) => (
+      {/* Scrollable Cards Area */}
+      <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 bg-secondary/30">
+        {opportunities.length === 0 ? (
+          <div className="flex items-center justify-center h-14 text-[10px] text-muted-foreground/60 border border-dashed border-border/30 rounded">
+            Drop here
+          </div>
+        ) : (
+          opportunities.map((opportunity) => (
             <OpportunityCard
               key={opportunity.id}
               opportunity={opportunity}
@@ -118,15 +119,9 @@ const PipelineColumn = ({
               isCollapsed={collapsedCards.has(opportunity.id)}
               onToggleCollapse={() => toggleCardCollapse(opportunity.id)}
             />
-          ))}
-
-          {opportunities.length === 0 && (
-            <div className="flex items-center justify-center h-20 border-2 border-dashed border-border/30 rounded-lg bg-muted/20">
-              <p className="text-[10px] text-muted-foreground">Drop here</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+          ))
+        )}
+      </div>
     </div>
   );
 };

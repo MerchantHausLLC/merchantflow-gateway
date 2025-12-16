@@ -123,15 +123,14 @@ const OpportunityCard = ({
       onDragStart={(e) => onDragStart(e, opportunity)}
       onClick={onClick}
       className={cn(
-        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-3 overflow-hidden rounded-lg",
-        // Light mode: white background with shadow per spec
-        "bg-card shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_6px_rgba(0,0,0,0.1)]",
+        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-2 overflow-hidden rounded",
+        "bg-card shadow-sm hover:shadow-md",
         borderClass
       )}
     >
       {/* Card Header - SLA colors take precedence over theme */}
       <div className={cn(
-        "px-2 py-1.5 flex items-center gap-1.5",
+        "px-1.5 py-1 flex items-center gap-1",
         headerBgClass
       )}>
         <button
@@ -144,7 +143,7 @@ const OpportunityCard = ({
             <ChevronDown className="h-3 w-3" />
           )}
         </button>
-        <h3 className={cn("font-semibold text-xs truncate flex-1", headerTextClass)}>
+        <h3 className={cn("font-semibold text-[10px] truncate flex-1", headerTextClass)}>
           {account?.name || 'Unknown'}
         </h3>
         {/* SLA indicator icons */}
@@ -174,25 +173,25 @@ const OpportunityCard = ({
         )} />
       </div>
 
-      {/* Card Content - theme-aware with proper text colors */}
+      {/* Card Content - compact for pipeline view */}
       {!isCollapsed && (
-        <CardContent className="p-2 pt-2 bg-card">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-card-foreground">
-              <User className="h-3 w-3 flex-shrink-0" />
+        <CardContent className="p-1.5 bg-card">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[10px] text-card-foreground">
+              <User className="h-2.5 w-2.5 flex-shrink-0" />
               <span className="truncate">{contactName}</span>
             </div>
 
             {contact?.email && (
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <Mail className="h-3 w-3 flex-shrink-0" />
+              <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <Mail className="h-2.5 w-2.5 flex-shrink-0" />
                 <span className="truncate">{contact.email}</span>
               </div>
             )}
 
             {contact?.phone && (
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <Phone className="h-3 w-3 flex-shrink-0" />
+              <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <Phone className="h-2.5 w-2.5 flex-shrink-0" />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -206,13 +205,13 @@ const OpportunityCard = ({
               </div>
             )}
 
-            <div className="pt-1.5 border-t border-border/30">
+            <div className="pt-1 border-t border-border/30">
               <Select
                 value={opportunity.assigned_to || 'unassigned'}
                 onValueChange={handleAssignmentChange}
               >
                 <SelectTrigger
-                  className="h-6 text-[10px] bg-background/50 border-border/50"
+                  className="h-5 text-[9px] bg-background/50 border-border/50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <SelectValue placeholder="Assign..." />
@@ -227,19 +226,6 @@ const OpportunityCard = ({
                 </SelectContent>
               </Select>
             </div>
-
-            {opportunity.processing_services && opportunity.processing_services.length > 0 && (
-              <div className="flex flex-wrap gap-0.5 pt-1">
-                {opportunity.processing_services.map((service) => (
-                  <span
-                    key={service}
-                    className="text-[9px] text-muted-foreground bg-muted/50 px-1 py-0.5 rounded"
-                  >
-                    {service}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </CardContent>
       )}
