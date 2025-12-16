@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, AlertTriangle, Clock } from "lucide-react";
+import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, Bell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Opportunity, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ interface OpportunityCardProps {
   onDragStart: (e: React.DragEvent, opportunity: Opportunity) => void;
   onClick: () => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -26,22 +28,10 @@ const TEAM_BORDER_COLORS: Record<string, string> = {
   'Sales': 'border-l-team-sales',
 };
 
-// Header background colors for SLA states
-// SLA colors (warning/critical) take precedence over theme
-const HEADER_STYLES = {
-  // Normal: theme-aware - dark in dark mode, light gray in light mode
-  normal: 'bg-secondary dark:bg-secondary',
-  // SLA Warning (12h): Amber - always takes precedence
-  warning: 'bg-amber-500',
-  // SLA Critical (24h): Red - always takes precedence
-  critical: 'bg-red-600',
-};
-
-// Text colors for headers based on background
-const HEADER_TEXT_STYLES = {
-  normal: 'text-secondary-foreground',
-  warning: 'text-white', // White text on amber for readability
-  critical: 'text-white', // White text on red for readability
+const SLA_BELL_COLORS = {
+  green: 'text-emerald-500',
+  amber: 'text-amber-500',
+  red: 'text-red-500',
 };
 
 const OpportunityCard = ({
@@ -49,6 +39,7 @@ const OpportunityCard = ({
   onDragStart,
   onClick,
   onAssignmentChange,
+  onSlaStatusChange,
   isCollapsed = false,
   onToggleCollapse
 }: OpportunityCardProps) => {
@@ -62,17 +53,19 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
-  // SLA status: tiered alerts at 12h (warning) and 24h (critical)
-  const slaStatus = useMemo((): 'none' | 'warning' | 'critical' => {
-    if (!opportunity.stage_entered_at) return 'none';
+  // Calculate auto SLA status based on time in stage
+  const autoSlaStatus = useMemo((): 'green' | 'amber' | 'red' => {
+    if (!opportunity.stage_entered_at) return 'green';
     const stageEnteredDate = new Date(opportunity.stage_entered_at);
     const now = new Date();
     const hoursInStage = differenceInHours(now, stageEnteredDate);
-    console.log(`SLA Check: ${account?.name} - ${hoursInStage}h in stage (entered: ${opportunity.stage_entered_at})`);
-    if (hoursInStage >= 24) return 'critical';
-    if (hoursInStage >= 12) return 'warning';
-    return 'none';
-  }, [opportunity.stage_entered_at, account?.name]);
+    if (hoursInStage >= 24) return 'red';
+    if (hoursInStage >= 12) return 'amber';
+    return 'green';
+  }, [opportunity.stage_entered_at]);
+
+  // Use manual override if set, otherwise use auto-calculated
+  const effectiveSlaStatus = (opportunity.sla_status as 'green' | 'amber' | 'red' | null) || autoSlaStatus;
 
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === 'unassigned' ? null : value;
@@ -93,29 +86,31 @@ const OpportunityCard = ({
     }
   };
 
+  const handleSlaStatusChange = async (value: string) => {
+    const newValue = value === 'auto' ? null : value;
+
+    try {
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ sla_status: newValue })
+        .eq('id', opportunity.id);
+
+      if (error) throw error;
+
+      onSlaStatusChange?.(opportunity.id, newValue);
+      toast.success(newValue ? `SLA set to ${newValue}` : 'SLA set to auto');
+    } catch (error) {
+      console.error('Error updating SLA status:', error);
+      toast.error('Failed to update SLA status');
+    }
+  };
+
   const handleCollapseClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleCollapse?.();
   };
 
-  // Determine header style based on SLA status (SLA colors always take precedence)
-  const headerBgClass = slaStatus === 'critical'
-    ? HEADER_STYLES.critical
-    : slaStatus === 'warning'
-      ? HEADER_STYLES.warning
-      : HEADER_STYLES.normal;
-
-  // Determine text style based on SLA status
-  const headerTextClass = slaStatus === 'critical'
-    ? HEADER_TEXT_STYLES.critical
-    : slaStatus === 'warning'
-      ? HEADER_TEXT_STYLES.warning
-      : HEADER_TEXT_STYLES.normal;
-
-  // Button/icon colors for header (needs to be visible on both theme backgrounds and SLA backgrounds)
-  const headerIconClass = slaStatus !== 'none'
-    ? 'text-white/70 hover:text-white'
-    : 'text-secondary-foreground/70 hover:text-secondary-foreground';
+  const bellColorClass = SLA_BELL_COLORS[effectiveSlaStatus];
 
   return (
     <Card
@@ -128,14 +123,11 @@ const OpportunityCard = ({
         borderClass
       )}
     >
-      {/* Card Header - SLA colors take precedence over theme */}
-      <div className={cn(
-        "px-1.5 py-1 flex items-center gap-1",
-        headerBgClass
-      )}>
+      {/* Card Header */}
+      <div className="px-1.5 py-1 flex items-center gap-1 bg-secondary">
         <button
           onClick={handleCollapseClick}
-          className={cn("transition-colors flex-shrink-0", headerIconClass)}
+          className="transition-colors flex-shrink-0 text-secondary-foreground/70 hover:text-secondary-foreground"
         >
           {isCollapsed ? (
             <ChevronRight className="h-3 w-3" />
@@ -143,24 +135,64 @@ const OpportunityCard = ({
             <ChevronDown className="h-3 w-3" />
           )}
         </button>
-        <h3 className={cn("font-semibold text-[10px] truncate flex-1", headerTextClass)}>
+        <h3 className="font-semibold text-[10px] truncate flex-1 text-secondary-foreground">
           {account?.name || 'Unknown'}
         </h3>
-        {/* SLA indicator icons */}
-        {slaStatus === 'warning' && (
-          <span className="flex items-center text-white/90 flex-shrink-0" title="In stage > 12 hours">
-            <Clock className="h-3 w-3" />
-          </span>
-        )}
-        {slaStatus === 'critical' && (
-          <span className="flex items-center text-white/90 flex-shrink-0" title="In stage > 24 hours - SLA breached">
-            <Clock className="h-3 w-3" />
-          </span>
-        )}
-        <GripVertical className={cn(
-          "h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0",
-          slaStatus !== 'none' ? "text-white/50" : "text-secondary-foreground/50"
-        )} />
+        {/* SLA Bell Icon with Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className={cn("flex-shrink-0 transition-colors hover:opacity-80", bellColorClass)}
+              title={`SLA Status: ${effectiveSlaStatus}${opportunity.sla_status ? ' (manual)' : ' (auto)'}`}
+            >
+              <Bell className="h-3 w-3" fill="currentColor" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="w-36 p-2" 
+            onClick={(e) => e.stopPropagation()}
+            align="end"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-medium mb-2">SLA Status</p>
+              <Select
+                value={opportunity.sla_status || 'auto'}
+                onValueChange={handleSlaStatusChange}
+              >
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      Auto ({autoSlaStatus})
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="green" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Bell className="h-3 w-3 text-emerald-500" fill="currentColor" />
+                      Green
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="amber" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Bell className="h-3 w-3 text-amber-500" fill="currentColor" />
+                      Amber
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="red" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Bell className="h-3 w-3 text-red-500" fill="currentColor" />
+                      Red
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </PopoverContent>
+        </Popover>
+        <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-secondary-foreground/50" />
       </div>
 
       {/* Card Content - compact for pipeline view */}

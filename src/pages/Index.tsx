@@ -307,6 +307,7 @@ const Index = () => {
         language,
         assigned_to,
         stage_entered_at,
+        sla_status,
         created_at,
         updated_at,
         account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
@@ -329,6 +330,7 @@ const Index = () => {
       // Apply stage migration: 'opportunities' -> 'application_prep'
       stage: migrateStage(item.stage) as OpportunityStage,
       status: item.status as 'active' | 'dead' | undefined,
+      sla_status: item.sla_status as 'green' | 'amber' | 'red' | null | undefined,
       account: item.account ? {
         ...item.account,
         status: item.account.status as 'active' | 'dead' | undefined
