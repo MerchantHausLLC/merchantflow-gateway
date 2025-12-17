@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Search, Users, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 
 interface AccountWithContacts extends Account {
   contacts?: Contact[];
@@ -98,36 +100,44 @@ const Accounts = () => {
     }
   };
 
-  const handleSave = async () => {
+  // Auto-save callback for accounts
+  const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!editingAccount) return;
-    try {
-      const { error } = await supabase
-        .from('accounts')
-        .update({
-          name: formData.name,
-          address1: formData.address1 || null,
-          address2: formData.address2 || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          zip: formData.zip || null,
-          country: formData.country || null,
-          website: formData.website || null
-        })
-        .eq('id', editingAccount.id);
+    const { error } = await supabase
+      .from('accounts')
+      .update({
+        name: data.name,
+        address1: data.address1 || null,
+        address2: data.address2 || null,
+        city: data.city || null,
+        state: data.state || null,
+        zip: data.zip || null,
+        country: data.country || null,
+        website: data.website || null
+      })
+      .eq('id', editingAccount.id);
 
-      if (error) {
-        toast.error('Failed to update account');
-        return;
-      }
-
-      toast.success('Account updated');
-      setEditingAccount(null);
-      fetchAccounts();
-    } catch (err) {
-      console.error(err);
-      toast.error('An unexpected error occurred');
+    if (error) {
+      throw error;
     }
-  };
+    // Silently refresh accounts list
+    fetchAccounts();
+  }, [editingAccount]);
+
+  const { status: saveStatus, resetInitialData } = useAutoSave({
+    data: formData,
+    onSave: handleAutoSave,
+    delay: 800,
+    enabled: !!editingAccount,
+  });
+
+  // Reset auto-save state when opening edit dialog
+  useEffect(() => {
+    if (editingAccount) {
+      resetInitialData();
+    }
+  }, [editingAccount, resetInitialData]);
+
 
   if (loading) {
     return (
@@ -304,7 +314,10 @@ const Accounts = () => {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Edit Account</DialogTitle>
+              <AutoSaveIndicator status={saveStatus} />
+            </div>
           </DialogHeader>
           {/* Increase vertical spacing and padding in the edit dialog */}
           <div className="space-y-5 py-5">
@@ -368,12 +381,9 @@ const Accounts = () => {
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end pt-4">
               <Button variant="outline" onClick={() => setEditingAccount(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>
-                Save Changes
+                Close
               </Button>
             </div>
           </div>

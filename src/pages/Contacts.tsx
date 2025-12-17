@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Contact, Account, TEAM_MEMBERS, STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -15,6 +15,8 @@ import { Pencil, Plus, Search, ArrowRightCircle, Eye, Filter, Trash } from "luci
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
 import { cn } from "@/lib/utils";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
@@ -202,47 +204,54 @@ const Contacts = () => {
         }
       };
 
-  const handleSave = async () => {
+  // Auto-save callback for contacts
+  const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!editingContact) return;
-    try {
-      const { error: contactError } = await supabase
-        .from('contacts')
-        .update({
-          first_name: formData.first_name || null,
-          last_name: formData.last_name || null,
-          email: formData.email || null,
-          phone: formData.phone || null,
-          fax: formData.fax || null,
-          // fallback to original account_id if none selected
-          account_id: formData.account_id || editingContact.account_id,
-        })
-        .eq('id', editingContact.id);
+    
+    const { error: contactError } = await supabase
+      .from('contacts')
+      .update({
+        first_name: data.first_name || null,
+        last_name: data.last_name || null,
+        email: data.email || null,
+        phone: data.phone || null,
+        fax: data.fax || null,
+        account_id: data.account_id || editingContact.account_id,
+      })
+      .eq('id', editingContact.id);
 
-      if (contactError) {
-        toast.error('Failed to update contact');
-        return;
-      }
-
-      if (editingContact.opportunity_id) {
-        const { error: oppError } = await supabase
-          .from('opportunities')
-          .update({ assigned_to: formData.assigned_to || null })
-          .eq('id', editingContact.opportunity_id);
-
-        if (oppError) {
-          toast.error('Failed to update assignment');
-          return;
-        }
-      }
-
-      toast.success('Contact updated');
-      setEditingContact(null);
-      fetchContacts();
-    } catch (err) {
-      console.error(err);
-      toast.error('An unexpected error occurred');
+    if (contactError) {
+      throw contactError;
     }
-  };
+
+    if (editingContact.opportunity_id) {
+      const { error: oppError } = await supabase
+        .from('opportunities')
+        .update({ assigned_to: data.assigned_to || null })
+        .eq('id', editingContact.opportunity_id);
+
+      if (oppError) {
+        throw oppError;
+      }
+    }
+
+    // Silently refresh contacts list
+    fetchContacts();
+  }, [editingContact]);
+
+  const { status: saveStatus, resetInitialData } = useAutoSave({
+    data: formData,
+    onSave: handleAutoSave,
+    delay: 800,
+    enabled: !!editingContact,
+  });
+
+  // Reset auto-save state when opening edit dialog
+  useEffect(() => {
+    if (editingContact) {
+      resetInitialData();
+    }
+  }, [editingContact, resetInitialData]);
 
   const handleCreateContact = async () => {
     try {
@@ -616,7 +625,10 @@ const Contacts = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Contact</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Edit Contact</DialogTitle>
+              <AutoSaveIndicator status={saveStatus} />
+            </div>
           </DialogHeader>
           <div className="space-y-5 py-5">
             <div className="space-y-3">
@@ -696,12 +708,9 @@ const Contacts = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end pt-4">
               <Button variant="outline" onClick={() => setEditingContact(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>
-                Save Changes
+                Close
               </Button>
             </div>
           </div>
