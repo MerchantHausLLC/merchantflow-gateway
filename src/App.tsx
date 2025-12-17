@@ -22,6 +22,7 @@ import Tasks from "./pages/Tasks";
 import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import DeletionRequests from "./pages/DeletionRequests";
+import DataExport from "./pages/DataExport";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
+              <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
