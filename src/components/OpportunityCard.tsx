@@ -53,6 +53,9 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
+  // Track dragging state to prevent accidental clicks opening the modal
+  const [isDragging, setIsDragging] = useState(false);
+
   // Calculate auto SLA status based on time in stage
   const autoSlaStatus = useMemo((): 'green' | 'amber' | 'red' => {
     if (!opportunity.stage_entered_at) return 'green';
@@ -115,11 +118,18 @@ const OpportunityCard = ({
   return (
     <Card
       draggable
-      onDragStart={(e) => onDragStart(e, opportunity)}
-      onClick={onClick}
+      onDragStart={(e) => {
+        setIsDragging(true);
+        onDragStart(e, opportunity);
+      }}
+      onDragEnd={() => setIsDragging(false)}
+      onClick={() => {
+        // Only trigger click if not in a drag interaction
+        if (!isDragging) onClick();
+      }}
       className={cn(
-        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-2 overflow-hidden rounded",
-        "bg-card shadow-sm hover:shadow-md",
+        'cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-2 overflow-hidden rounded',
+        'bg-card shadow-sm hover:shadow-md',
         borderClass
       )}
     >
@@ -143,14 +153,14 @@ const OpportunityCard = ({
           <PopoverTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className={cn("flex-shrink-0 transition-colors hover:opacity-80", bellColorClass)}
+              className={cn('flex-shrink-0 transition-colors hover:opacity-80', bellColorClass)}
               title={`SLA Status: ${effectiveSlaStatus}${opportunity.sla_status ? ' (manual)' : ' (auto)'}`}
             >
               <Bell className="h-3 w-3" fill="currentColor" />
             </button>
           </PopoverTrigger>
-          <PopoverContent 
-            className="w-36 p-2" 
+          <PopoverContent
+            className="w-36 p-2"
             onClick={(e) => e.stopPropagation()}
             align="end"
           >
