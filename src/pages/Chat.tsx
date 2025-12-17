@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 /**
  * ChatBox component renders a scrollable list of messages along with an input
@@ -102,9 +103,7 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
               type="button"
               onClick={() => onSelect(ch)}
               className={`w-full text-left px-2 py-1 rounded-md ${
-                current === ch
-                  ? "bg-accent text-accent-foreground font-medium"
-                  : "hover:bg-muted"
+                current === ch ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
               }`}
             >
               # {ch}
@@ -138,12 +137,12 @@ const Chat: React.FC = () => {
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-  let storedUser = localStorage.getItem("merchantflow-chat-user");
-  if (!storedUser) {
-    storedUser = `User${Math.floor(Math.random() * 10000)}`;
-    localStorage.setItem("merchantflow-chat-user", storedUser);
-  }
-  setUserName(storedUser);
+    let storedUser = localStorage.getItem("merchantflow-chat-user");
+    if (!storedUser) {
+      storedUser = `User${Math.floor(Math.random() * 10000)}`;
+      localStorage.setItem("merchantflow-chat-user", storedUser);
+    }
+    setUserName(storedUser);
   }, []);
 
   const handleSelectChannel = (name: string) => {
@@ -163,7 +162,14 @@ const Chat: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-semibold">Chat</h1>
+      {/* Header with home navigation */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Chat</h1>
+        {/* Navigate back to the dashboard/home */}
+        <Button variant="outline" asChild>
+          <Link to="/">Home</Link>
+        </Button>
+      </div>
       <div className="flex flex-col lg:flex-row gap-4 h-[70vh]">
         <aside className="lg:w-1/4 border rounded-md p-4 bg-background">
           <h2 className="mb-2 font-semibold">Channels</h2>
