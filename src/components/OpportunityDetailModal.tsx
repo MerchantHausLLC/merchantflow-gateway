@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2 } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -1051,6 +1052,7 @@ const EditField = ({
 
 const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
@@ -1062,6 +1064,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   }, [opportunityId]);
 
   const fetchDocuments = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase
       .from('documents')
       .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
@@ -1071,6 +1074,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     if (!error && data) {
       setDocuments(data);
     }
+    setIsLoading(false);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1246,7 +1250,22 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {documents.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2">
+              <div className="flex items-center gap-3 flex-1">
+                <Skeleton className="h-8 w-8 rounded" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ))}
+        </div>
+      ) : documents.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p>No documents yet</p>
