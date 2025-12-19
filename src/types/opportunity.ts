@@ -234,9 +234,7 @@ export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
   'application_prep',
   'underwriting_review',
   'processor_approval',
-  'integration_setup',
   'live_activated',
-  'closed_won',
 ];
 
 // Gateway Only Pipeline stages (simplified flow)
@@ -248,6 +246,7 @@ export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
   'live_activated',
   'integration_setup',
   'closed_won',
+  'closed_lost',
 ];
 
 // Legacy: All stages for backwards compatibility
