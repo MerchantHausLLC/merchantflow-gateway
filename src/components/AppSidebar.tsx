@@ -10,7 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { EMAIL_TO_USER } from "@/types/opportunity";
-import brandLogo from "@/assets/brand-logo.png";
+import { useTheme } from "@/contexts/ThemeContext";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 import { NotificationBell } from "@/components/NotificationBell";
 
 // Define the Navigation Tree Structure
@@ -121,6 +123,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
 
@@ -138,8 +141,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
-            {/* Logo already includes text; remove separate title/text */}
-            <img src={brandLogo} alt="Merchant Haus" className="h-8 w-auto" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-8 w-auto" />
           </div>
           <div className="flex items-center gap-1">
             {!isCollapsed && <NotificationBell />}

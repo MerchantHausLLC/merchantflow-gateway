@@ -8,12 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
-import brandLogo from '@/assets/brand-logo.png';
+import { useTheme } from '@/contexts/ThemeContext';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 
 const ForgotPassword = () => {
   const { resetPassword } = useAuth();
+  const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
@@ -85,7 +88,7 @@ const ForgotPassword = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <div className="flex justify-center mb-2">
             <Mail className="h-10 w-10 text-primary" />
