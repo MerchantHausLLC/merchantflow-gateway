@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import brandLogo from '@/assets/brand-logo.png';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { isEmailAllowed } from '@/types/opportunity';
+import { useTheme } from '@/contexts/ThemeContext';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +20,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -169,8 +172,8 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            {/* Logo includes its own text, so we only display the image */}
-            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
+            {/* Logo switches based on theme */}
+            <img src={theme === 'dark' ? logoLight : logoDark} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <CardDescription>Sign in to access your pipeline</CardDescription>
         </CardHeader>
