@@ -8,12 +8,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNavigate } from "react-router-dom";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import { NotificationBell } from "@/components/NotificationBell";
+import { cn } from "@/lib/utils";
 
 // Define the Navigation Tree Structure
 interface NavItem {
@@ -123,6 +125,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { unreadCount: unreadMessages } = useUnreadMessages();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
@@ -229,15 +232,42 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                           <NavLink
                             to={item.url}
                             end={item.url === "/"}
-                            className="hover:bg-sidebar-accent"
+                            className="hover:bg-sidebar-accent relative"
                             activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                           >
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
+                            <div className="relative">
+                              <item.icon className="h-4 w-4" />
+                              {/* Unread message badge for Chat */}
+                              {item.title === 'Chat' && unreadMessages > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                                </span>
+                              )}
+                            </div>
+                            {!isCollapsed && (
+                              <span className="flex items-center gap-2">
+                                {item.title}
+                                {/* Expanded badge */}
+                                {item.title === 'Chat' && unreadMessages > 0 && (
+                                  <span className="ml-auto h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
+                                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                                  </span>
+                                )}
+                              </span>
+                            )}
                           </NavLink>
                         </SidebarMenuButton>
                       </TooltipTrigger>
-                      {isCollapsed && <TooltipContent side="right">{item.title}</TooltipContent>}
+                      {isCollapsed && (
+                        <TooltipContent side="right">
+                          {item.title}
+                          {item.title === 'Chat' && unreadMessages > 0 && (
+                            <span className="ml-2 text-destructive font-medium">
+                              ({unreadMessages} unread)
+                            </span>
+                          )}
+                        </TooltipContent>
+                      )}
                     </Tooltip>
                   </SidebarMenuItem>
                 );
