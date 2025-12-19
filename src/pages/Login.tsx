@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import brandLogo from '@/assets/brand-logo.png';
+import { useTheme } from '@/contexts/ThemeContext';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { isEmailAllowed } from '@/types/opportunity';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -15,6 +17,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Login = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { user, signInWithGoogle, signInWithEmail, mustChangePassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,7 +79,7 @@ const Login = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <CardTitle className="text-2xl">Welcome Back</CardTitle>
           <CardDescription>Sign in to access your dashboard</CardDescription>

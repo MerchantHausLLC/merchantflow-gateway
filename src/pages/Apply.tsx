@@ -9,12 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
-import brandLogo from '@/assets/brand-logo.png';
+import { useTheme } from '@/contexts/ThemeContext';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import type { ApplicationFormData } from '@/types/application';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 const Apply = () => {
+  const { theme } = useTheme();
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [formData, setFormData] = useState<ApplicationFormData>({
@@ -124,7 +127,7 @@ const Apply = () => {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <CardTitle className="text-2xl">Apply for Merchant Services</CardTitle>
           <CardDescription>

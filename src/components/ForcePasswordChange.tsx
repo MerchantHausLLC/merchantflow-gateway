@@ -6,10 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import brandLogo from '@/assets/brand-logo.png';
+import { useTheme } from '@/contexts/ThemeContext';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 const ForcePasswordChange = () => {
   const { updatePassword, user, teamMemberName } = useAuth();
+  const { theme } = useTheme();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +47,7 @@ const ForcePasswordChange = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <img src={brandLogo} alt="MerchantFlow" className="h-12" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12" />
           </div>
           <CardTitle className="text-2xl font-bold">
             Welcome{teamMemberName ? `, ${teamMemberName}` : ''}!

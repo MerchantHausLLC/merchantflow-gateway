@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
-import brandLogo from '@/assets/brand-logo.png';
+import { useTheme } from '@/contexts/ThemeContext';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
   const { updatePassword, user, session } = useAuth();
+  const { theme } = useTheme();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -130,7 +133,7 @@ const UpdatePassword = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <div className="flex justify-center mb-2">
             <Lock className="h-10 w-10 text-primary" />
