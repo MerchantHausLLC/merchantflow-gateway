@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,6 @@ import { z } from 'zod';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { isEmailAllowed } from '@/types/opportunity';
-import { useTheme } from '@/contexts/ThemeContext';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 import { supabase } from '@/integrations/supabase/client';
 
