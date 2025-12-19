@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskInput } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 interface TasksContextValue {
   tasks: Task[];
   addTask: (input: TaskInput) => Promise<Task>;
@@ -165,25 +166,37 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     return newTask;
   }, [refreshTasks]);
 
-  const updateTask = useCallback((taskId: string, update: Partial<Task>) => {
+  const updateTask = useCallback(async (taskId: string, update: Partial<Task>) => {
+    // Optimistically update local state first
     setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...update } : task)));
 
-    supabase
-      .from("tasks")
-      .update({
-        title: update.title,
-        description: update.description,
-        assignee: update.assignee,
-        created_by: update.createdBy,
-        status: update.status,
-        due_at: update.dueAt,
-        related_opportunity_id: update.relatedOpportunityId,
-        related_contact_id: update.relatedContactId,
-        comments: update.comments,
-        source: update.source,
-      })
-      .eq("id", taskId);
-  }, []);
+    // Build database update object with only the fields that are being updated
+    const dbUpdate: Record<string, unknown> = {};
+    if (update.title !== undefined) dbUpdate.title = update.title;
+    if (update.description !== undefined) dbUpdate.description = update.description;
+    if (update.assignee !== undefined) dbUpdate.assignee = update.assignee;
+    if (update.createdBy !== undefined) dbUpdate.created_by = update.createdBy;
+    if (update.status !== undefined) dbUpdate.status = update.status;
+    if (update.dueAt !== undefined) dbUpdate.due_at = update.dueAt;
+    if (update.relatedOpportunityId !== undefined) dbUpdate.related_opportunity_id = update.relatedOpportunityId;
+    if (update.relatedContactId !== undefined) dbUpdate.related_contact_id = update.relatedContactId;
+    if (update.comments !== undefined) dbUpdate.comments = update.comments;
+    if (update.source !== undefined) dbUpdate.source = update.source;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update(dbUpdate)
+        .eq("id", taskId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Failed to update task');
+      // Refresh tasks to revert to the actual database state
+      refreshTasks();
+    }
+  }, [refreshTasks]);
 
   const updateTaskStatus = useCallback(
     (taskId: string, status: Task["status"]) => {
