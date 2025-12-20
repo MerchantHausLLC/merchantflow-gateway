@@ -1,5 +1,4 @@
-// Modified AppSidebar with Chat navigation item
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, MessageSquare, Download } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,7 @@ interface NavItem {
   }[];
 }
 
-// Main navigation items, including the new Chat entry
+// Main navigation items
 const navMain: NavItem[] = [
   {
     title: "Pipeline",
@@ -60,11 +59,6 @@ const navMain: NavItem[] = [
     title: "Reports",
     url: "/reports",
     icon: BarChart3,
-  },
-  {
-    title: "Chat",
-    url: "/chat",
-    icon: MessageSquare,
   },
   {
     title: "Tools",
