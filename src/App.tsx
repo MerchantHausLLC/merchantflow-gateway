@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import FloatingChat from "@/components/FloatingChat";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Accounts from "./pages/Accounts";
@@ -27,8 +28,6 @@ import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import DeletionRequests from "./pages/DeletionRequests";
 import DataExport from "./pages/DataExport";
-// Import the Chat page for chat functionality
-import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -62,11 +61,11 @@ const App = () => (
                 <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                {/* Route for chat functionality */}
-                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              {/* Floating chat widget - available on all pages for authenticated users */}
+              <FloatingChat />
             </TasksProvider>
           </AuthProvider>
         </BrowserRouter>
