@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
 import { useTasks } from "@/contexts/TasksContext";
+import { Task } from "@/types/task";
 import DateRangeFilter from "@/components/DateRangeFilter";
+import ReportDetailModal from "@/components/ReportDetailModal";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
@@ -47,6 +49,8 @@ interface OpportunityData {
   assigned_to: string | null;
   created_at: string;
   status: string | null;
+  account?: { name: string } | null;
+  contact?: { first_name: string | null; last_name: string | null } | null;
 }
 
 interface ActivityData {
@@ -54,6 +58,15 @@ interface ActivityData {
   type: string;
   created_at: string;
   opportunity_id: string;
+}
+
+interface ModalState {
+  open: boolean;
+  title: string;
+  description: string;
+  type: "opportunities" | "tasks";
+  opportunities: OpportunityData[];
+  tasks: Task[];
 }
 
 const CHART_COLORS = [
@@ -76,11 +89,16 @@ const Reports = () => {
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  // Use 'updated_at' to represent filtering by the task due date. Opportunities and activities
-  // do not have an updated field, so they always filter by created_at.
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+  const [modalState, setModalState] = useState<ModalState>({
+    open: false,
+    title: "",
+    description: "",
+    type: "opportunities",
+    opportunities: [],
+    tasks: [],
+  });
 
-  // Helper: determine if a date falls within the selected range
   const isInDateRange = (dateStr: string) => {
     if (!dateRange?.from) return true;
     const date = new Date(dateStr);
@@ -89,13 +107,14 @@ const Reports = () => {
     return isWithinInterval(date, { start: from, end: to });
   };
 
-  // Filtered data. Opportunities and activities only support filtering on created_at.
   const filteredOpportunities = useMemo(() => {
     return opportunities.filter((opp) => isInDateRange(opp.created_at));
   }, [opportunities, dateRange]);
+
   const filteredActivities = useMemo(() => {
     return activities.filter((act) => isInDateRange(act.created_at));
   }, [activities, dateRange]);
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
       const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.dueAt ?? task.createdAt;
@@ -103,11 +122,10 @@ const Reports = () => {
     });
   }, [tasks, dateRange, filterBy]);
 
-  // Fetch opportunities and activities
   useEffect(() => {
     const fetchData = async () => {
       const [oppRes, actRes] = await Promise.all([
-        supabase.from('opportunities').select('id, stage, assigned_to, created_at, status'),
+        supabase.from('opportunities').select('id, stage, assigned_to, created_at, status, account:accounts(name), contact:contacts(first_name, last_name)'),
         supabase.from('activities').select('id, type, created_at, opportunity_id').order('created_at', { ascending: false }).limit(500),
       ]);
       if (oppRes.data) setOpportunities(oppRes.data as OpportunityData[]);
@@ -127,6 +145,7 @@ const Reports = () => {
     });
     return Object.entries(counts).map(([stage, count]) => ({
       stage: STAGE_CONFIG[stage as OpportunityStage]?.label || stage,
+      stageKey: stage,
       count,
     }));
   }, [filteredOpportunities]);
@@ -149,9 +168,9 @@ const Reports = () => {
       counts[task.status] = (counts[task.status] || 0) + 1;
     });
     return [
-      { name: 'Open', value: counts.open, color: 'hsl(var(--destructive))' },
-      { name: 'In Progress', value: counts.in_progress, color: 'hsl(var(--chart-4))' },
-      { name: 'Done', value: counts.done, color: 'hsl(var(--primary))' },
+      { name: 'Open', value: counts.open, color: 'hsl(var(--destructive))', statusKey: 'open' },
+      { name: 'In Progress', value: counts.in_progress, color: 'hsl(var(--chart-4))', statusKey: 'in_progress' },
+      { name: 'Done', value: counts.done, color: 'hsl(var(--primary))', statusKey: 'done' },
     ];
   }, [filteredTasks]);
 
@@ -159,7 +178,6 @@ const Reports = () => {
   const activityTrend = useMemo(() => {
     const weeks: Record<string, number> = {};
     const now = new Date();
-    // Initialize buckets for the last 4 weeks
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - (i * 7 + now.getDay()));
@@ -209,6 +227,59 @@ const Reports = () => {
     }).length;
     return { activeOpps, closedWon, openTasks, overdueTasks };
   }, [filteredOpportunities, filteredTasks]);
+
+  // Click handlers for charts
+  const handlePipelineClick = (stageKey: string, stageLabel: string) => {
+    const opps = filteredOpportunities.filter((o) => o.stage === stageKey && o.status !== 'dead');
+    setModalState({
+      open: true,
+      title: `Pipeline: ${stageLabel}`,
+      description: `${opps.length} opportunities in this stage`,
+      type: "opportunities",
+      opportunities: opps,
+      tasks: [],
+    });
+  };
+
+  const handleTeamWorkloadClick = (teamMember: string) => {
+    const opps = filteredOpportunities.filter((o) => o.assigned_to === teamMember && o.status !== 'dead');
+    setModalState({
+      open: true,
+      title: `Team Workload: ${teamMember}`,
+      description: `${opps.length} opportunities assigned to ${teamMember}`,
+      type: "opportunities",
+      opportunities: opps,
+      tasks: [],
+    });
+  };
+
+  const handleTaskStatusClick = (statusKey: string, statusLabel: string) => {
+    const filteredByStatus = filteredTasks.filter((t) => t.status === statusKey);
+    setModalState({
+      open: true,
+      title: `Tasks: ${statusLabel}`,
+      description: `${filteredByStatus.length} tasks with status "${statusLabel}"`,
+      type: "tasks",
+      opportunities: [],
+      tasks: filteredByStatus,
+    });
+  };
+
+  const handleTeamTaskClick = (teamMember: string, taskType: 'open' | 'done') => {
+    const filteredByMember = filteredTasks.filter((t) => {
+      if (t.assignee !== teamMember) return false;
+      if (taskType === 'done') return t.status === 'done';
+      return t.status !== 'done';
+    });
+    setModalState({
+      open: true,
+      title: `${teamMember}: ${taskType === 'done' ? 'Completed' : 'Open'} Tasks`,
+      description: `${filteredByMember.length} ${taskType === 'done' ? 'completed' : 'open'} tasks`,
+      type: "tasks",
+      opportunities: [],
+      tasks: filteredByMember,
+    });
+  };
 
   if (loading) {
     return (
@@ -296,6 +367,7 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
+
             {/* Charts Row 1 */}
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
@@ -304,7 +376,7 @@ const Reports = () => {
                     <BarChart3 className="h-4 w-4" />
                     Pipeline by Stage
                   </CardTitle>
-                  <CardDescription>Distribution of opportunities across stages</CardDescription>
+                  <CardDescription>Click a bar to see opportunities in that stage</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                   {stageData.length === 0 ? (
@@ -318,7 +390,13 @@ const Reports = () => {
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis dataKey="stage" type="category" width={120} tick={{ fontSize: 12 }} />
                         <Tooltip />
-                        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                        <Bar
+                          dataKey="count"
+                          fill="hsl(var(--primary))"
+                          radius={[0, 4, 4, 0]}
+                          className="cursor-pointer"
+                          onClick={(data) => handlePipelineClick(data.stageKey, data.stage)}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -330,7 +408,7 @@ const Reports = () => {
                     <Users className="h-4 w-4" />
                     Team Workload
                   </CardTitle>
-                  <CardDescription>Opportunities assigned per team member</CardDescription>
+                  <CardDescription>Click a bar to see opportunities assigned to that team member</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                   {teamData.length === 0 ? (
@@ -344,13 +422,20 @@ const Reports = () => {
                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                         <YAxis allowDecimals={false} />
                         <Tooltip />
-                        <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                        <Bar
+                          dataKey="count"
+                          fill="hsl(var(--chart-2))"
+                          radius={[4, 4, 0, 0]}
+                          className="cursor-pointer"
+                          onClick={(data) => handleTeamWorkloadClick(data.name)}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
                 </CardContent>
               </Card>
             </div>
+
             {/* Charts Row 2 */}
             <div className="grid gap-6 lg:grid-cols-3">
               <Card>
@@ -359,7 +444,7 @@ const Reports = () => {
                     <PieChartIcon className="h-4 w-4" />
                     Task Status
                   </CardTitle>
-                  <CardDescription>Breakdown of tasks by status</CardDescription>
+                  <CardDescription>Click a slice to see tasks with that status</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[250px]">
                   {tasks.length === 0 ? (
@@ -379,6 +464,8 @@ const Reports = () => {
                           dataKey="value"
                           label={({ name, value }) => `${name}: ${value}`}
                           labelLine={false}
+                          className="cursor-pointer"
+                          onClick={(data) => handleTaskStatusClick(data.statusKey, data.name)}
                         >
                           {taskStatusData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -417,11 +504,12 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
+
             {/* Team Task Performance */}
             <Card>
               <CardHeader>
                 <CardTitle>Team Task Performance</CardTitle>
-                <CardDescription>Open vs completed tasks by team member</CardDescription>
+                <CardDescription>Click a bar to see tasks for that team member</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 {teamTaskData.length === 0 ? (
@@ -436,19 +524,34 @@ const Reports = () => {
                       <YAxis allowDecimals={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="open" name="Open" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="done" name="Done" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="open"
+                        name="Open"
+                        fill="hsl(var(--chart-4))"
+                        radius={[4, 4, 0, 0]}
+                        className="cursor-pointer"
+                        onClick={(data) => handleTeamTaskClick(data.name, 'open')}
+                      />
+                      <Bar
+                        dataKey="done"
+                        name="Done"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                        className="cursor-pointer"
+                        onClick={(data) => handleTeamTaskClick(data.name, 'done')}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
+
             {/* Summary Tables */}
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Pipeline Summary</CardTitle>
-                  <CardDescription>Opportunity count by stage</CardDescription>
+                  <CardDescription>Click a row to see opportunities</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -467,7 +570,11 @@ const Reports = () => {
                         </TableRow>
                       ) : (
                         stageData.map((row) => (
-                          <TableRow key={row.stage}>
+                          <TableRow
+                            key={row.stage}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handlePipelineClick(row.stageKey, row.stage)}
+                          >
                             <TableCell>{row.stage}</TableCell>
                             <TableCell className="text-right font-medium">{row.count}</TableCell>
                           </TableRow>
@@ -480,7 +587,7 @@ const Reports = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Team Summary</CardTitle>
-                  <CardDescription>Opportunities per team member</CardDescription>
+                  <CardDescription>Click a row to see opportunities</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -499,7 +606,11 @@ const Reports = () => {
                         </TableRow>
                       ) : (
                         teamData.map((row) => (
-                          <TableRow key={row.name}>
+                          <TableRow
+                            key={row.name}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleTeamWorkloadClick(row.name)}
+                          >
                             <TableCell>{row.name}</TableCell>
                             <TableCell className="text-right font-medium">{row.count}</TableCell>
                           </TableRow>
@@ -513,6 +624,17 @@ const Reports = () => {
           </main>
         </SidebarInset>
       </div>
+
+      {/* Detail Modal */}
+      <ReportDetailModal
+        open={modalState.open}
+        onOpenChange={(open) => setModalState((s) => ({ ...s, open }))}
+        title={modalState.title}
+        description={modalState.description}
+        type={modalState.type}
+        opportunities={modalState.opportunities}
+        tasks={modalState.tasks}
+      />
     </SidebarProvider>
   );
 };
