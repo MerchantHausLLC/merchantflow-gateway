@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, GitCommitVertical, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ interface Notification {
   read: boolean;
   link: string | null;
   created_at: string;
+  notification_category?: 'stage_change' | 'task_assignment' | 'general';
 }
 
 export const NotificationBell = () => {
@@ -30,6 +31,21 @@ export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const stageChangeCount = notifications.filter(n => !n.read && (n.notification_category === 'stage_change' || n.title?.toLowerCase().includes('stage'))).length;
+  const taskAssignmentCount = notifications.filter(n => !n.read && (n.notification_category === 'task_assignment' || n.title?.toLowerCase().includes('task') || n.title?.toLowerCase().includes('assigned'))).length;
+
+  const getNotificationIcon = (notification: Notification) => {
+    const category = notification.notification_category;
+    const titleLower = notification.title?.toLowerCase() || '';
+
+    if (category === 'stage_change' || titleLower.includes('stage')) {
+      return <GitCommitVertical className="h-4 w-4 text-blue-500" />;
+    }
+    if (category === 'task_assignment' || titleLower.includes('task') || titleLower.includes('assigned')) {
+      return <UserPlus className="h-4 w-4 text-purple-500" />;
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -94,17 +110,50 @@ export const NotificationBell = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Bell className={cn(
+            "h-5 w-5 transition-colors",
+            unreadCount > 0 && "text-primary"
+          )} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+            <span className={cn(
+              "absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs flex items-center justify-center animate-pulse",
+              stageChangeCount > 0 || taskAssignmentCount > 0
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                : "bg-destructive text-destructive-foreground"
+            )}>
               {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+          {/* Secondary indicator for stage changes and task assignments */}
+          {(stageChangeCount > 0 || taskAssignmentCount > 0) && (
+            <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b">
-          <h4 className="font-semibold">Notifications</h4>
+          <div>
+            <h4 className="font-semibold">Notifications</h4>
+            {(stageChangeCount > 0 || taskAssignmentCount > 0) && (
+              <div className="flex items-center gap-2 mt-1 text-xs">
+                {stageChangeCount > 0 && (
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <GitCommitVertical className="h-3 w-3" />
+                    {stageChangeCount} stage {stageChangeCount === 1 ? 'change' : 'changes'}
+                  </span>
+                )}
+                {taskAssignmentCount > 0 && (
+                  <span className="flex items-center gap-1 text-purple-600">
+                    <UserPlus className="h-3 w-3" />
+                    {taskAssignmentCount} {taskAssignmentCount === 1 ? 'task' : 'tasks'}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={markAllAsRead}>
               Mark all read
@@ -117,7 +166,9 @@ export const NotificationBell = () => {
               No notifications
             </div>
           ) : (
-            notifications.map((notification) => (
+            notifications.map((notification) => {
+              const notificationIcon = getNotificationIcon(notification);
+              return (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
@@ -127,15 +178,21 @@ export const NotificationBell = () => {
                 )}
               >
                 <div className="flex items-start gap-2">
-                  <div
-                    className={cn(
-                      'w-2 h-2 rounded-full mt-2 flex-shrink-0',
-                      notification.type === 'success' && 'bg-emerald-500',
-                      notification.type === 'error' && 'bg-destructive',
-                      notification.type === 'warning' && 'bg-amber-500',
-                      notification.type === 'info' && 'bg-primary'
-                    )}
-                  />
+                  {notificationIcon ? (
+                    <div className="flex-shrink-0 mt-0.5">
+                      {notificationIcon}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        'w-2 h-2 rounded-full mt-2 flex-shrink-0',
+                        notification.type === 'success' && 'bg-emerald-500',
+                        notification.type === 'error' && 'bg-destructive',
+                        notification.type === 'warning' && 'bg-amber-500',
+                        notification.type === 'info' && 'bg-primary'
+                      )}
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{notification.title}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">
@@ -147,7 +204,7 @@ export const NotificationBell = () => {
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </ScrollArea>
         <div className="p-2 border-t">

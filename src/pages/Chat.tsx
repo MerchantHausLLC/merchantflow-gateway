@@ -6,7 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo } from "lucide-react";
+import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useTasks } from "@/contexts/TasksContext";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 type Message = {
   id: string;
@@ -23,6 +29,8 @@ type Channel = {
   id: string;
   name: string;
   created_at: string;
+  channel_type?: 'group' | 'direct';
+  participant_name?: string;
 };
 
 type Profile = {
@@ -224,9 +232,12 @@ interface ChannelListProps {
   current: string;
   onSelect: (id: string) => void;
   onCreate: (name: string) => void;
+  onCreateDM: (memberName: string) => void;
+  currentUserName: string;
+  unreadByChannel: Record<string, number>;
 }
 
-const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, onCreate }) => {
+const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, onCreate, onCreateDM, currentUserName, unreadByChannel }) => {
   const [newChannel, setNewChannel] = useState("");
 
   const handleCreate = () => {
@@ -237,31 +248,116 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
     }
   };
 
+  // Separate group channels and direct messages
+  const groupChannels = channels.filter(ch => ch.channel_type !== 'direct');
+  const directChannels = channels.filter(ch => ch.channel_type === 'direct');
+
+  // Get team members who don't have a DM channel yet
+  const existingDMNames = directChannels.map(ch => ch.participant_name?.toLowerCase());
+  const availableForDM = TEAM_MEMBERS.filter(member =>
+    member.toLowerCase() !== currentUserName.toLowerCase() &&
+    !existingDMNames.includes(member.toLowerCase())
+  );
+
   return (
-    <div className="space-y-2">
-      <ul className="space-y-1">
-        {channels.map((ch) => (
-          <li key={ch.id}>
-            <button
-              type="button"
-              onClick={() => onSelect(ch.id)}
-              className={`w-full text-left px-2 py-1 rounded-md ${
-                current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
-              }`}
+    <div className="space-y-4">
+      {/* Group Channels */}
+      <div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-semibold mb-2">
+          <Hash className="h-3 w-3" />
+          Channels
+        </div>
+        <ul className="space-y-1">
+          {groupChannels.map((ch) => (
+            <li key={ch.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(ch.id)}
+                className={cn(
+                  "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
+                  current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                )}
+              >
+                <span className="flex items-center gap-1">
+                  <Hash className="h-3 w-3 text-muted-foreground" />
+                  {ch.name}
+                </span>
+                {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
+                  <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                    {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex gap-2 mt-2">
+          <Input
+            type="text"
+            placeholder="New channel"
+            value={newChannel}
+            onChange={(e) => setNewChannel(e.target.value)}
+            className="h-8 text-sm"
+          />
+          <Button onClick={handleCreate} size="sm" className="h-8">Create</Button>
+        </div>
+      </div>
+
+      {/* Direct Messages */}
+      <div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-semibold mb-2">
+          <Users className="h-3 w-3" />
+          Direct Messages
+        </div>
+        <ul className="space-y-1">
+          {directChannels.map((ch) => (
+            <li key={ch.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(ch.id)}
+                className={cn(
+                  "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
+                  current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                      {ch.participant_name?.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {ch.participant_name}
+                </span>
+                {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
+                  <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                    {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {/* Add new DM */}
+        {availableForDM.length > 0 && (
+          <div className="mt-2">
+            <select
+              className="w-full h-8 text-sm rounded-md border bg-background px-2"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  onCreateDM(e.target.value);
+                  e.target.value = "";
+                }
+              }}
             >
-              # {ch.name}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="New channel"
-          value={newChannel}
-          onChange={(e) => setNewChannel(e.target.value)}
-        />
-        <Button onClick={handleCreate} size="sm">Create</Button>
+              <option value="" disabled>Start new chat...</option>
+              {availableForDM.map(member => (
+                <option key={member} value={member}>{member}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -275,10 +371,16 @@ const Chat: React.FC = () => {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loadingData, setLoadingData] = useState(true);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const [tasksModalOpen, setTasksModalOpen] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
+  const { tasks } = useTasks();
+  const { unreadByChannel, markChannelAsRead } = useUnreadMessages();
+
+  // Get user's tasks
+  const myTasks = tasks.filter(t => t.assignee?.toLowerCase() === userName.toLowerCase() && t.status !== 'done');
 
   // Fetch channels
   const fetchChannels = useCallback(async () => {
@@ -292,11 +394,28 @@ const Chat: React.FC = () => {
       return;
     }
 
-    setChannels(data || []);
-    if (data && data.length > 0 && !currentChannelId) {
-      setCurrentChannelId(data[0].id);
+    // Process channels to determine type and participant
+    const processedChannels = (data || []).map(ch => {
+      // Check if it's a DM channel (contains "dm-" prefix or has participant info)
+      if (ch.name?.startsWith('dm-')) {
+        const participants = ch.name.replace('dm-', '').split('-');
+        const otherParticipant = participants.find((p: string) =>
+          p.toLowerCase() !== userName.toLowerCase()
+        );
+        return {
+          ...ch,
+          channel_type: 'direct' as const,
+          participant_name: otherParticipant || participants[0]
+        };
+      }
+      return { ...ch, channel_type: 'group' as const };
+    });
+
+    setChannels(processedChannels);
+    if (processedChannels && processedChannels.length > 0 && !currentChannelId) {
+      setCurrentChannelId(processedChannels[0].id);
     }
-  }, [currentChannelId]);
+  }, [currentChannelId, userName]);
 
   // Fetch messages for current channel
   const fetchMessages = useCallback(async () => {
@@ -482,21 +601,60 @@ const Chat: React.FC = () => {
     setCurrentChannelId(id);
     setMessages([]);
     setTypingUsers([]);
+    // Mark channel as read when selected
+    markChannelAsRead(id);
   };
 
   const handleCreateChannel = async (name: string) => {
-    const exists = channels.some(ch => ch.name.toLowerCase() === name.toLowerCase());
+    const exists = channels.some(ch => ch.name.toLowerCase() === name.toLowerCase() && ch.channel_type === 'group');
     if (exists) {
       toast.error("Channel already exists");
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("chat_channels")
-      .insert({ name, created_by: user?.id });
+      .insert({ name, created_by: user?.id })
+      .select()
+      .single();
 
     if (error) {
       toast.error("Failed to create channel");
+    } else if (data) {
+      setChannels(prev => [...prev, { ...data, channel_type: 'group' }]);
+      setCurrentChannelId(data.id);
+    }
+  };
+
+  // Create a DM channel with another team member
+  const handleCreateDM = async (memberName: string) => {
+    // Create a consistent DM channel name (sorted alphabetically)
+    const participants = [userName, memberName].sort();
+    const dmChannelName = `dm-${participants.join('-')}`;
+
+    // Check if channel already exists
+    const existingChannel = channels.find(ch => ch.name === dmChannelName);
+    if (existingChannel) {
+      setCurrentChannelId(existingChannel.id);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("chat_channels")
+      .insert({ name: dmChannelName, created_by: user?.id })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Failed to create direct message");
+    } else if (data) {
+      const newChannel: Channel = {
+        ...data,
+        channel_type: 'direct',
+        participant_name: memberName
+      };
+      setChannels(prev => [...prev, newChannel]);
+      setCurrentChannelId(data.id);
     }
   };
 
@@ -524,6 +682,15 @@ const Chat: React.FC = () => {
 
   const currentChannel = channels.find(ch => ch.id === currentChannelId);
 
+  // Get channel display name
+  const getChannelDisplayName = () => {
+    if (!currentChannel) return "Select a channel";
+    if (currentChannel.channel_type === 'direct') {
+      return currentChannel.participant_name || "Direct Message";
+    }
+    return currentChannel.name;
+  };
+
   if (!loading && !user) {
     return <Navigate to="/login" replace />;
   }
@@ -545,22 +712,109 @@ const Chat: React.FC = () => {
             Signed in as <span className="font-medium text-foreground">{userName}</span>
           </span>
         </div>
-        <Button variant="outline" asChild>
-          <Link to="/">Home</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Tasks Modal Button */}
+          <Dialog open={tasksModalOpen} onOpenChange={setTasksModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="relative">
+                <ListTodo className="h-4 w-4 mr-2" />
+                My Tasks
+                {myTasks.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    {myTasks.length > 9 ? '9+' : myTasks.length}
+                  </span>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ListTodo className="h-5 w-5" />
+                  My Tasks ({myTasks.length})
+                </DialogTitle>
+              </DialogHeader>
+              <div className="overflow-y-auto max-h-[60vh] space-y-2 mt-4">
+                {myTasks.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No pending tasks</p>
+                ) : (
+                  myTasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{task.title}</p>
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <Badge variant={task.status === 'open' ? 'default' : 'secondary'} className="text-xs">
+                              {task.status === 'open' ? 'Open' : 'In Progress'}
+                            </Badge>
+                            {task.accountName && (
+                              <span className="text-xs text-muted-foreground">
+                                {task.accountName}
+                              </span>
+                            )}
+                            {task.dueAt && (
+                              <span className="text-xs text-muted-foreground">
+                                Due: {new Date(task.dueAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/tasks" onClick={() => setTasksModalOpen(false)}>
+                    View All Tasks
+                  </Link>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" asChild>
+            <Link to="/">Home</Link>
+          </Button>
+        </div>
       </div>
       <div className="flex flex-col lg:flex-row gap-4 h-[70vh]">
-        <aside className="lg:w-1/4 border rounded-md p-4 bg-background">
-          <h2 className="mb-2 font-semibold">Channels</h2>
+        <aside className="lg:w-1/4 border rounded-md p-4 bg-background overflow-y-auto">
           <ChannelList
             channels={channels}
             current={currentChannelId}
             onSelect={handleSelectChannel}
             onCreate={handleCreateChannel}
+            onCreateDM={handleCreateDM}
+            currentUserName={userName}
+            unreadByChannel={unreadByChannel}
           />
         </aside>
         <div className="flex-grow border rounded-md p-4 bg-background flex flex-col">
-          <h2 className="mb-2 font-semibold capitalize">{currentChannel?.name || "Select a channel"}</h2>
+          <div className="flex items-center gap-2 mb-2">
+            {currentChannel?.channel_type === 'direct' ? (
+              <>
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="font-semibold">{currentChannel.participant_name}</h2>
+              </>
+            ) : (
+              <>
+                <Hash className="h-4 w-4 text-muted-foreground" />
+                <h2 className="font-semibold">{getChannelDisplayName()}</h2>
+              </>
+            )}
+          </div>
           <ChatBox
             messages={messages}
             currentUserId={user?.id || ""}
