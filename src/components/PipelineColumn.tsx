@@ -59,7 +59,7 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col h-full min-h-0 rounded-lg bg-muted/30 overflow-hidden",
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch rounded-lg bg-muted/30 overflow-hidden",
         "w-[140px] sm:w-[150px] md:w-[160px] lg:w-[180px] xl:w-[200px] 2xl:w-[220px]"
       )}
       onDragOver={onDragOver}
@@ -145,7 +145,7 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-2 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {opportunities.length === 0 ? (
           <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/60 border-2 border-dashed border-border/30 rounded-lg">
             Drop here
