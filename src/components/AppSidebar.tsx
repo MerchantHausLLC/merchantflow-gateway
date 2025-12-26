@@ -161,7 +161,10 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
             <SidebarMenu>
               {/* New Application Button + Notifications */}
               <SidebarMenuItem>
-                <div className="flex items-center gap-1 mb-2">
+                <div className={cn(
+                  "flex items-center gap-1 mb-2",
+                  isCollapsed && "flex-col"
+                )}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton
@@ -174,7 +177,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                     </TooltipTrigger>
                     {isCollapsed && <TooltipContent side="right">New Application</TooltipContent>}
                   </Tooltip>
-                  {!isCollapsed && <NotificationBell />}
+                  <NotificationBell />
                 </div>
               </SidebarMenuItem>
 
