@@ -97,18 +97,18 @@ const PipelineSection = ({
     <div className="flex flex-1 min-h-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
       {/* Vertical Title Sidebar */}
       <div className={cn(
-        "flex flex-col items-center justify-center w-12 flex-shrink-0 border-r border-border/40",
+        "flex flex-col items-center justify-center w-8 sm:w-10 lg:w-12 flex-shrink-0 border-r border-border/40",
         colorAccent
       )}>
-        <div className="flex flex-col items-center gap-3 py-4">
-          {icon}
+        <div className="flex flex-col items-center gap-2 sm:gap-3 py-2 sm:py-4">
+          <span className="hidden sm:block">{icon}</span>
           <span
-            className="text-white font-semibold text-xs whitespace-nowrap tracking-wide"
+            className="text-white font-semibold text-[10px] sm:text-xs whitespace-nowrap tracking-wide"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
-          <span className="text-white/90 text-xs font-medium bg-white/20 px-2 py-1 rounded-full">
+          <span className="text-white/90 text-[10px] sm:text-xs font-medium bg-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
             {totalCount}
           </span>
         </div>
@@ -122,14 +122,14 @@ const PipelineSection = ({
           className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/30"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex gap-3 p-3 pb-0 min-w-max">
+          <div className="flex gap-2 sm:gap-3 p-2 sm:p-3 pb-0 min-w-max">
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
               const count = getOpportunitiesByStage(stage).length;
               return (
                 <div
                   key={stage}
-                  className="flex-shrink-0 w-[120px] sm:w-[130px] md:w-[140px] lg:w-[160px] xl:w-[180px] 2xl:w-[200px] pb-2 border-b-2"
+                  className="flex-shrink-0 w-[100px] sm:w-[120px] md:w-[140px] lg:w-[160px] xl:w-[180px] 2xl:w-[200px] pb-2 border-b-2"
                   style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
                   <div className="flex items-center justify-between">
@@ -161,7 +161,7 @@ const PipelineSection = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
-          <div className="flex gap-3 p-3 pt-2 min-w-max h-full">
+          <div className="flex gap-2 sm:gap-3 p-2 sm:p-3 pt-2 min-w-max h-full">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
