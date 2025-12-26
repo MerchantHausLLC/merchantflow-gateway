@@ -94,7 +94,7 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
+    <div className="flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
       {/* Vertical Title Sidebar */}
       <div className={cn(
         "flex flex-col items-center justify-center w-8 sm:w-10 lg:w-12 flex-shrink-0 border-r border-border/40",
@@ -115,7 +115,7 @@ const PipelineSection = ({
       </div>
 
       {/* Pipeline Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background/50" data-pipeline={pipelineType}>
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-background/50" data-pipeline={pipelineType}>
         {/* Sticky Column Headers Row */}
         <div
           ref={headerScrollRef}
@@ -161,7 +161,7 @@ const PipelineSection = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
-          <div className="flex gap-2 sm:gap-3 p-2 sm:p-3 pt-2 min-w-max h-full">
+          <div className="flex items-stretch gap-2 sm:gap-3 p-2 sm:p-3 pt-2 min-w-max min-h-0">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
@@ -265,9 +265,9 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 flex flex-col lg:flex-row p-4 gap-4 overflow-hidden h-full min-h-0">
+      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
         {/* NMI Payments Pipeline Section */}
-        <div className="flex-1 min-w-0 min-h-0 h-full flex flex-col">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <PipelineSection
             title="NMI Payments Pipeline"
             icon={<CreditCard className="h-5 w-5 text-white" />}
@@ -286,7 +286,7 @@ const DualPipelineBoard = ({
         </div>
 
         {/* NMI Gateway Pipeline Section */}
-        <div className="flex-1 min-w-0 min-h-0 h-full flex flex-col">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <PipelineSection
             title="NMI Gateway Pipeline"
             icon={<Zap className="h-5 w-5 text-white" />}
