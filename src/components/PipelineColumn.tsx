@@ -60,7 +60,7 @@ const PipelineColumn = ({
     <div
       className={cn(
         "flex-shrink-0 flex flex-col h-full min-h-0 rounded-lg bg-muted/30 overflow-hidden",
-        "w-[120px] sm:w-[130px] md:w-[140px] lg:w-[160px] xl:w-[180px] 2xl:w-[200px]"
+        "w-[100px] sm:w-[120px] md:w-[140px] lg:w-[160px] xl:w-[180px] 2xl:w-[200px]"
       )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
