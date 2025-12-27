@@ -134,11 +134,18 @@ const FloatingChat: React.FC = () => {
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
   // Chat notifications hook
-  const { requestPermission, isSupported, permissionStatus } = useChatNotifications({
+  const { requestPermission, toggleNotifications, notificationsEnabled, isSupported, permissionStatus } = useChatNotifications({
     isChatOpen: isOpen,
     currentChannelId,
     currentDMUserId,
   });
+
+  // Listen for openFloatingChat event from notifications
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('openFloatingChat', handleOpenChat);
+    return () => window.removeEventListener('openFloatingChat', handleOpenChat);
+  }, []);
 
   // Format date for message groups
   const formatMessageDate = useCallback((dateString: string) => {
@@ -969,20 +976,21 @@ const FloatingChat: React.FC = () => {
                   <TooltipTrigger asChild>
                     <button
                       onClick={async () => {
-                        if (permissionStatus === 'granted') {
-                          toast.info("Notifications are enabled");
-                        } else {
+                        if (permissionStatus !== 'granted') {
                           const granted = await requestPermission();
                           if (granted) {
-                            toast.success("Notifications enabled");
+                            toast.success("Push notifications enabled");
                           } else {
                             toast.error("Notifications blocked by browser");
                           }
+                        } else {
+                          toggleNotifications();
+                          toast.info(notificationsEnabled ? "Notifications muted" : "Notifications unmuted");
                         }
                       }}
                       className="hover:bg-white/10 p-2 rounded-lg transition-colors"
                     >
-                      {permissionStatus === 'granted' ? (
+                      {permissionStatus === 'granted' && notificationsEnabled ? (
                         <Bell className="h-4 w-4" />
                       ) : (
                         <BellOff className="h-4 w-4 opacity-60" />
@@ -990,11 +998,13 @@ const FloatingChat: React.FC = () => {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {permissionStatus === 'granted' 
-                      ? "Notifications enabled" 
-                      : permissionStatus === 'denied'
-                      ? "Notifications blocked"
-                      : "Enable notifications"}
+                    {permissionStatus !== 'granted' 
+                      ? permissionStatus === 'denied'
+                        ? "Notifications blocked by browser"
+                        : "Enable push notifications"
+                      : notificationsEnabled
+                        ? "Mute notifications" 
+                        : "Unmute notifications"}
                   </TooltipContent>
                 </Tooltip>
               )}

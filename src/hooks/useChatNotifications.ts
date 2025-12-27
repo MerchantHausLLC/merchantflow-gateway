@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,48 +8,114 @@ interface NotificationOptions {
   currentDMUserId?: string;
 }
 
+// Notification sound - using a subtle ping
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.log('Could not play notification sound');
+  }
+};
+
 export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUserId }: NotificationOptions) => {
   const { user } = useAuth();
-  const permissionGranted = useRef(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatNotificationsEnabled') !== 'false';
+    }
+    return true;
+  });
+  const notificationQueue = useRef<Array<{ title: string; body: string; tag: string }>>([]);
+  const isProcessingQueue = useRef(false);
 
-  // Request notification permission on mount
+  // Check and request notification permission on mount
   useEffect(() => {
     if ('Notification' in window) {
       if (Notification.permission === 'granted') {
-        permissionGranted.current = true;
+        setPermissionGranted(true);
       } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          permissionGranted.current = permission === 'granted';
-        });
+        // Auto-request permission after a short delay
+        const timer = setTimeout(() => {
+          Notification.requestPermission().then(permission => {
+            setPermissionGranted(permission === 'granted');
+          });
+        }, 2000);
+        return () => clearTimeout(timer);
       }
     }
   }, []);
 
-  const showNotification = useCallback((title: string, body: string, onClick?: () => void) => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
-      return;
+  // Save notification preference
+  useEffect(() => {
+    localStorage.setItem('chatNotificationsEnabled', String(notificationsEnabled));
+  }, [notificationsEnabled]);
+
+  // Process notification queue to avoid notification spam
+  const processNotificationQueue = useCallback(() => {
+    if (isProcessingQueue.current || notificationQueue.current.length === 0) return;
+    
+    isProcessingQueue.current = true;
+    const notification = notificationQueue.current.shift();
+    
+    if (notification && 'Notification' in window && Notification.permission === 'granted') {
+      const notif = new Notification(notification.title, {
+        body: notification.body,
+        icon: '/favicon.ico',
+        tag: notification.tag,
+        requireInteraction: false,
+        silent: false,
+      });
+
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+        // Dispatch custom event to open chat
+        window.dispatchEvent(new CustomEvent('openFloatingChat'));
+      };
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notif.close(), 5000);
     }
+    
+    // Process next notification after a delay
+    setTimeout(() => {
+      isProcessingQueue.current = false;
+      processNotificationQueue();
+    }, 1000);
+  }, []);
+
+  const showNotification = useCallback((title: string, body: string, tag = 'chat-message') => {
+    if (!notificationsEnabled) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     // Don't show if document is focused and chat is open
-    if (document.hasFocus() && isChatOpen) {
-      return;
+    if (document.hasFocus() && isChatOpen) return;
+
+    // Add to queue
+    notificationQueue.current.push({ title, body, tag });
+    
+    // Play sound if document is not focused
+    if (!document.hasFocus()) {
+      playNotificationSound();
     }
-
-    const notification = new Notification(title, {
-      body,
-      icon: '/favicon.ico',
-      tag: 'chat-message',
-    });
-
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-      onClick?.();
-    };
-
-    // Auto-close after 5 seconds
-    setTimeout(() => notification.close(), 5000);
-  }, [isChatOpen]);
+    
+    processNotificationQueue();
+  }, [isChatOpen, notificationsEnabled, processNotificationQueue]);
 
   // Listen for new channel messages
   useEffect(() => {
@@ -89,10 +155,14 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
 
           const senderName = newMessage.user_name || newMessage.user_email.split('@')[0];
           const channelName = channel?.name || 'Unknown channel';
+          const truncatedContent = newMessage.content.length > 80 
+            ? newMessage.content.substring(0, 80) + '...' 
+            : newMessage.content;
 
           showNotification(
-            `New message in #${channelName}`,
-            `${senderName}: ${newMessage.content.substring(0, 100)}${newMessage.content.length > 100 ? '...' : ''}`
+            `#${channelName}`,
+            `${senderName}: ${truncatedContent}`,
+            `channel-${newMessage.channel_id}`
           );
         }
       )
@@ -138,10 +208,14 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
             .single();
 
           const senderName = profile?.full_name || profile?.email?.split('@')[0] || 'Someone';
+          const truncatedContent = newMessage.content.length > 80 
+            ? newMessage.content.substring(0, 80) + '...' 
+            : newMessage.content;
 
           showNotification(
-            `New message from ${senderName}`,
-            newMessage.content.substring(0, 100) + (newMessage.content.length > 100 ? '...' : '')
+            `Message from ${senderName}`,
+            truncatedContent,
+            `dm-${newMessage.sender_id}`
           );
         }
       )
@@ -159,13 +233,22 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
     }
     
     const permission = await Notification.requestPermission();
-    permissionGranted.current = permission === 'granted';
-    return permission === 'granted';
+    const granted = permission === 'granted';
+    setPermissionGranted(granted);
+    return granted;
+  }, []);
+
+  // Toggle notifications on/off
+  const toggleNotifications = useCallback(() => {
+    setNotificationsEnabled(prev => !prev);
   }, []);
 
   return {
     requestPermission,
+    toggleNotifications,
+    notificationsEnabled,
     isSupported: 'Notification' in window,
     permissionStatus: 'Notification' in window ? Notification.permission : 'denied',
+    permissionGranted,
   };
 };
