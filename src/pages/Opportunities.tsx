@@ -249,53 +249,33 @@ const Opportunities = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
-          {/* Stats Cards - Compact on mobile */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 md:gap-4">
-            <Card className="p-2 sm:p-0">
-              <CardHeader className="flex flex-row items-center justify-between p-2 pb-1 sm:p-4 sm:pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Total Active</CardTitle>
-                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="p-2 pt-0 sm:p-4 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold">{stats.total}</div>
-              </CardContent>
-            </Card>
-            <Card className="p-2 sm:p-0">
-              <CardHeader className="flex flex-row items-center justify-between p-2 pb-1 sm:p-4 sm:pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">New</CardTitle>
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent className="p-2 pt-0 sm:p-4 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold text-blue-500">{stats.new}</div>
-              </CardContent>
-            </Card>
-            <Card className="p-2 sm:p-0">
-              <CardHeader className="flex flex-row items-center justify-between p-2 pb-1 sm:p-4 sm:pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">In Progress</CardTitle>
-                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
-              </CardHeader>
-              <CardContent className="p-2 pt-0 sm:p-4 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold text-amber-500">{stats.inProgress}</div>
-              </CardContent>
-            </Card>
-            <Card className="p-2 sm:p-0">
-              <CardHeader className="flex flex-row items-center justify-between p-2 pb-1 sm:p-4 sm:pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Won/Live</CardTitle>
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
-              </CardHeader>
-              <CardContent className="p-2 pt-0 sm:p-4 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold text-emerald-500">{stats.won}</div>
-              </CardContent>
-            </Card>
-            <Card className="p-2 sm:p-0 col-span-2 sm:col-span-1">
-              <CardHeader className="flex flex-row items-center justify-between p-2 pb-1 sm:p-4 sm:pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Closed/Dead</CardTitle>
-                <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
-              </CardHeader>
-              <CardContent className="p-2 pt-0 sm:p-4 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold text-destructive">{stats.lost}</div>
-              </CardContent>
-            </Card>
+          {/* Stats Pills - Compact horizontal layout */}
+          <div className="flex flex-wrap gap-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border text-sm">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Active:</span>
+              <span className="font-semibold">{stats.total}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm">
+              <Plus className="h-3.5 w-3.5 text-blue-500" />
+              <span className="text-muted-foreground">New:</span>
+              <span className="font-semibold text-blue-500">{stats.new}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-sm">
+              <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-muted-foreground">In Progress:</span>
+              <span className="font-semibold text-amber-500">{stats.inProgress}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-sm">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-muted-foreground">Won:</span>
+              <span className="font-semibold text-emerald-500">{stats.won}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-sm">
+              <XCircle className="h-3.5 w-3.5 text-destructive" />
+              <span className="text-muted-foreground">Closed:</span>
+              <span className="font-semibold text-destructive">{stats.lost}</span>
+            </div>
           </div>
 
           {/* Filters */}
