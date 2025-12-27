@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, Smile, Search, Edit2, MoreVertical, Bell, BellOff } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { 
+  MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, 
+  Smile, Search, Edit2, Bell, BellOff, Paperclip, Image, FileText, Download,
+  MoreHorizontal, Pin, Trash2, ArrowDown
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,11 +11,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 
 type DirectMessage = {
@@ -79,6 +84,18 @@ type ChatView = "contacts" | "channels" | "chat" | "dm";
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
 
+// Professional traditional color scheme
+const CHAT_COLORS = {
+  header: "bg-slate-800 dark:bg-slate-900",
+  headerText: "text-white",
+  accent: "bg-blue-600 hover:bg-blue-700",
+  accentText: "text-white",
+  ownMessage: "bg-blue-600 text-white",
+  otherMessage: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100",
+  online: "bg-emerald-500",
+  offline: "bg-slate-400",
+};
+
 const FloatingChat: React.FC = () => {
   const { user, teamMemberName } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -101,13 +118,18 @@ const FloatingChat: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const dmChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
@@ -117,6 +139,43 @@ const FloatingChat: React.FC = () => {
     currentChannelId,
     currentDMUserId,
   });
+
+  // Format date for message groups
+  const formatMessageDate = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMMM d, yyyy");
+  }, []);
+
+  // Group messages by date
+  const groupMessagesByDate = useCallback((messages: (ChannelMessage | DirectMessage)[]) => {
+    const groups: { date: string; messages: typeof messages }[] = [];
+    let currentDate = "";
+
+    messages.forEach(msg => {
+      const msgDate = formatMessageDate(msg.created_at);
+      if (msgDate !== currentDate) {
+        currentDate = msgDate;
+        groups.push({ date: msgDate, messages: [] });
+      }
+      groups[groups.length - 1].messages.push(msg);
+    });
+
+    return groups;
+  }, [formatMessageDate]);
+
+  // Handle scroll to check if scroll button should be shown
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
+  }, []);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  }, []);
+
   useEffect(() => {
     if (!user) return;
 
@@ -215,55 +274,65 @@ const FloatingChat: React.FC = () => {
     setChannels(data || []);
   }, []);
 
-  // Fetch channel messages
+  // Fetch channel messages with loading state
   const fetchChannelMessages = useCallback(async () => {
     if (!currentChannelId) return;
+    setIsLoading(true);
 
-    const { data, error } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("channel_id", currentChannelId)
-      .order("created_at", { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("channel_id", currentChannelId)
+        .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Failed to load messages:", error);
-      return;
+      if (error) {
+        console.error("Failed to load messages:", error);
+        return;
+      }
+
+      setChannelMessages(data || []);
+      fetchReactions((data || []).map(m => m.id), 'channel');
+    } finally {
+      setIsLoading(false);
     }
-
-    setChannelMessages(data || []);
-    fetchReactions((data || []).map(m => m.id), 'channel');
   }, [currentChannelId]);
 
   // Fetch direct messages for a conversation
   const fetchDirectMessages = useCallback(async () => {
     if (!currentDMUserId || !user) return;
+    setIsLoading(true);
 
-    const { data, error } = await supabase
-      .from("direct_messages")
-      .select("*")
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${currentDMUserId}),and(sender_id.eq.${currentDMUserId},receiver_id.eq.${user.id})`)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Failed to load direct messages:", error);
-      return;
-    }
-
-    setDirectMessages(data || []);
-    fetchReactions((data || []).map(m => m.id), 'direct');
-
-    // Mark received messages as read
-    const unreadIds = (data || [])
-      .filter(msg => msg.receiver_id === user.id && !msg.read_at)
-      .map(msg => msg.id);
-
-    if (unreadIds.length > 0) {
-      await supabase
+    try {
+      const { data, error } = await supabase
         .from("direct_messages")
-        .update({ read_at: new Date().toISOString() })
-        .in("id", unreadIds);
+        .select("*")
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${currentDMUserId}),and(sender_id.eq.${currentDMUserId},receiver_id.eq.${user.id})`)
+        .order("created_at", { ascending: true });
 
-      fetchUnreadCounts();
+      if (error) {
+        console.error("Failed to load direct messages:", error);
+        return;
+      }
+
+      setDirectMessages(data || []);
+      fetchReactions((data || []).map(m => m.id), 'direct');
+
+      // Mark received messages as read
+      const unreadIds = (data || [])
+        .filter(msg => msg.receiver_id === user.id && !msg.read_at)
+        .map(msg => msg.id);
+
+      if (unreadIds.length > 0) {
+        await supabase
+          .from("direct_messages")
+          .update({ read_at: new Date().toISOString() })
+          .in("id", unreadIds);
+
+        fetchUnreadCounts();
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, [currentDMUserId, user, fetchUnreadCounts]);
 
@@ -319,8 +388,10 @@ const FloatingChat: React.FC = () => {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [channelMessages, directMessages]);
+    if (!showScrollButton) {
+      scrollToBottom(false);
+    }
+  }, [channelMessages, directMessages, showScrollButton, scrollToBottom]);
 
   // Global presence tracking for online/offline status
   useEffect(() => {
@@ -740,7 +811,7 @@ const FloatingChat: React.FC = () => {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <CheckCheck className="h-3 w-3 text-teal inline-block ml-1" />
+            <CheckCheck className="h-3 w-3 text-blue-400 inline-block ml-1" />
           </TooltipTrigger>
           <TooltipContent>
             Read {formatDistanceToNow(new Date(msg.read_at), { addSuffix: true })}
@@ -748,7 +819,7 @@ const FloatingChat: React.FC = () => {
         </Tooltip>
       );
     }
-    return <Check className="h-3 w-3 text-muted-foreground inline-block ml-1" />;
+    return <Check className="h-3 w-3 text-slate-400 inline-block ml-1" />;
   };
 
   const renderReactions = (messageId: string, messageType: 'channel' | 'direct') => {
@@ -764,17 +835,17 @@ const FloatingChat: React.FC = () => {
     });
 
     return (
-      <div className="flex flex-wrap gap-1 mt-1">
+      <div className="flex flex-wrap gap-1 mt-1.5">
         {Object.entries(grouped).map(([emoji, data]) => (
           <Tooltip key={emoji}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => handleReaction(messageId, emoji, messageType)}
                 className={cn(
-                  "text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                  "text-xs px-1.5 py-0.5 rounded-full border transition-all",
                   data.hasOwn 
-                    ? "bg-teal/20 border-teal/50 text-teal" 
-                    : "bg-muted/50 border-border hover:bg-muted"
+                    ? "bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" 
+                    : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
                 )}
               >
                 {emoji} {data.count}
@@ -792,73 +863,107 @@ const FloatingChat: React.FC = () => {
   const currentChannel = channels.find(ch => ch.id === currentChannelId);
   const currentDMUser = onlineUsers.find(u => u.id === currentDMUserId);
 
-  const filteredChannelMessages = searchQuery
-    ? channelMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    : channelMessages;
+  const filteredChannelMessages = useMemo(() => 
+    searchQuery
+      ? channelMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      : channelMessages,
+    [channelMessages, searchQuery]
+  );
 
-  const filteredDirectMessages = searchQuery
-    ? directMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    : directMessages;
+  const filteredDirectMessages = useMemo(() =>
+    searchQuery
+      ? directMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      : directMessages,
+    [directMessages, searchQuery]
+  );
+
+  const filteredContacts = useMemo(() =>
+    contactSearch
+      ? onlineUsers.filter(u => 
+          u.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(contactSearch.toLowerCase())
+        )
+      : onlineUsers,
+    [onlineUsers, contactSearch]
+  );
+
+  const groupedChannelMessages = useMemo(() => 
+    groupMessagesByDate(filteredChannelMessages),
+    [filteredChannelMessages, groupMessagesByDate]
+  );
+
+  const groupedDirectMessages = useMemo(() =>
+    groupMessagesByDate(filteredDirectMessages),
+    [filteredDirectMessages, groupMessagesByDate]
+  );
 
   if (!user) return null;
 
   return (
     <TooltipProvider>
-      {/* Floating Button */}
+      {/* Floating Button - Professional style */}
       <button
         onClick={handleOpenChat}
         className={cn(
           "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-          "bg-teal text-teal-foreground shadow-lg hover:scale-105 transition-transform",
-          "border-2 border-teal/30",
+          "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
+          "hover:scale-105 transition-all duration-200 ease-out",
+          "border border-slate-600",
           isOpen && "hidden"
         )}
-        style={{
-          boxShadow: "0 0 20px hsl(174 72% 46% / 0.4), 0 0 40px hsl(174 72% 46% / 0.2)"
-        }}
       >
         <MessageCircle className="h-6 w-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Chat Panel */}
+      {/* Chat Panel - Professional design */}
       {isOpen && (
         <div
-          className="fixed bottom-6 right-6 z-50 w-96 h-[32rem] rounded-lg flex flex-col overflow-hidden border border-teal/30"
-          style={{
-            backgroundColor: "hsl(var(--card))",
-            boxShadow: "0 0 30px hsl(174 72% 46% / 0.3), 0 0 60px hsl(174 72% 46% / 0.15)"
-          }}
+          className={cn(
+            "fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-xl flex flex-col overflow-hidden",
+            "shadow-2xl border border-slate-200 dark:border-slate-700",
+            "bg-white dark:bg-slate-900 transition-all duration-300 ease-out",
+            "animate-in slide-in-from-bottom-4 fade-in-0"
+          )}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-teal text-teal-foreground">
+          {/* Header - Traditional professional style */}
+          <div className={cn(
+            "flex items-center justify-between px-4 py-3",
+            "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
+            "text-white border-b border-slate-600"
+          )}>
             <div className="flex items-center gap-2">
               {(view === "chat" || view === "dm") && (
                 <button
                   onClick={() => setView("contacts")}
-                  className="hover:bg-teal-foreground/10 p-1 rounded"
+                  className="hover:bg-white/10 p-1.5 rounded-lg transition-colors"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
-              <h3 className="font-semibold">
-                {view === "contacts" && "Contacts"}
-                {view === "channels" && "Channels"}
-                {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
-                {view === "dm" && (currentDMUser?.name || "Direct Message")}
-              </h3>
-              {view === "dm" && currentDMUser && (
-                <span className={cn(
-                  "w-2 h-2 rounded-full",
-                  currentDMUser.isOnline ? "bg-success" : "bg-muted-foreground"
-                )} />
-              )}
+              <div>
+                <h3 className="font-semibold text-sm">
+                  {view === "contacts" && "Messages"}
+                  {view === "channels" && "Channels"}
+                  {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
+                  {view === "dm" && (currentDMUser?.name || "Direct Message")}
+                </h3>
+                {view === "dm" && currentDMUser && (
+                  <span className="text-xs text-slate-300 flex items-center gap-1">
+                    <span className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      currentDMUser.isOnline ? "bg-emerald-400" : "bg-slate-500"
+                    )} />
+                    {currentDMUser.isOnline ? "Online" : "Offline"}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {isSupported && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -875,8 +980,7 @@ const FloatingChat: React.FC = () => {
                           }
                         }
                       }}
-                      className="hover:bg-teal-foreground/10 p-1.5 rounded"
-                      title="Notifications"
+                      className="hover:bg-white/10 p-2 rounded-lg transition-colors"
                     >
                       {permissionStatus === 'granted' ? (
                         <Bell className="h-4 w-4" />
@@ -897,8 +1001,10 @@ const FloatingChat: React.FC = () => {
               {(view === "chat" || view === "dm") && (
                 <button
                   onClick={() => setShowSearch(!showSearch)}
-                  className="hover:bg-teal-foreground/10 p-1.5 rounded"
-                  title="Search"
+                  className={cn(
+                    "hover:bg-white/10 p-2 rounded-lg transition-colors",
+                    showSearch && "bg-white/10"
+                  )}
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -906,7 +1012,7 @@ const FloatingChat: React.FC = () => {
               {view === "contacts" && (
                 <button
                   onClick={() => setView("channels")}
-                  className="hover:bg-teal-foreground/10 p-1.5 rounded"
+                  className="hover:bg-white/10 p-2 rounded-lg transition-colors"
                   title="Channels"
                 >
                   <Hash className="h-4 w-4" />
@@ -915,7 +1021,7 @@ const FloatingChat: React.FC = () => {
               {view === "channels" && (
                 <button
                   onClick={() => setView("contacts")}
-                  className="hover:bg-teal-foreground/10 p-1.5 rounded"
+                  className="hover:bg-white/10 p-2 rounded-lg transition-colors"
                   title="Contacts"
                 >
                   <Users className="h-4 w-4" />
@@ -923,7 +1029,7 @@ const FloatingChat: React.FC = () => {
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-teal-foreground/10 p-1.5 rounded"
+                className="hover:bg-white/10 p-2 rounded-lg transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -932,98 +1038,128 @@ const FloatingChat: React.FC = () => {
 
           {/* Search Bar */}
           {showSearch && (view === "chat" || view === "dm") && (
-            <div className="p-2 border-b">
-              <Input
-                placeholder="Search messages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 text-sm"
-                autoFocus
-              />
+            <div className="p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search messages..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 pl-9 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                  autoFocus
+                />
+              </div>
             </div>
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900">
             {/* Contacts View */}
             {view === "contacts" && (
-              <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
-                  {onlineUsers.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-sm py-4">No other users</p>
-                  ) : (
-                    onlineUsers.map((u) => (
-                      <button
-                        key={u.id}
-                        onClick={() => handleSelectContact(u.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <div className="relative">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={u.avatarUrl || undefined} />
-                            <AvatarFallback className="bg-teal/20 text-teal text-sm">
-                              {getInitials(u.name, u.email)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span
-                            className={cn(
-                              "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card",
-                              u.isOnline ? "bg-success" : "bg-muted-foreground"
-                            )}
-                          />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-medium text-sm">{u.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {u.isOnline ? "Online" : u.lastSeen 
-                              ? `Last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
-                              : "Offline"
-                            }
-                          </p>
-                        </div>
-                        {(u.unreadCount || 0) > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {u.unreadCount}
-                          </Badge>
-                        )}
-                      </button>
-                    ))
-                  )}
+              <div className="flex-1 flex flex-col">
+                {/* Contact search */}
+                <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Search contacts..."
+                      value={contactSearch}
+                      onChange={(e) => setContactSearch(e.target.value)}
+                      className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    />
+                  </div>
                 </div>
-              </ScrollArea>
+                <ScrollArea className="flex-1">
+                  <div className="p-2">
+                    {filteredContacts.length === 0 ? (
+                      <p className="text-center text-slate-500 text-sm py-8">No contacts found</p>
+                    ) : (
+                      filteredContacts.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => handleSelectContact(u.id)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
+                            "hover:bg-white dark:hover:bg-slate-800 group",
+                            "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                          )}
+                        >
+                          <div className="relative">
+                            <Avatar className="h-11 w-11 border-2 border-slate-200 dark:border-slate-700">
+                              <AvatarImage src={u.avatarUrl || undefined} />
+                              <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                                {getInitials(u.name, u.email)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span
+                              className={cn(
+                                "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-50 dark:border-slate-900",
+                                u.isOnline ? "bg-emerald-500" : "bg-slate-400"
+                              )}
+                            />
+                          </div>
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {u.isOnline ? "Online" : u.lastSeen 
+                                ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
+                                : "Offline"
+                              }
+                            </p>
+                          </div>
+                          {(u.unreadCount || 0) > 0 && (
+                            <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
+                              {u.unreadCount}
+                            </Badge>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
 
             {/* Channels View */}
             {view === "channels" && (
               <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
+                <div className="p-2">
                   {channels.map((ch) => (
                     <button
                       key={ch.id}
                       onClick={() => handleSelectChannel(ch.id)}
                       className={cn(
-                        "w-full flex items-center gap-2 p-2 rounded-lg transition-colors text-left",
+                        "w-full flex items-center gap-2 p-3 rounded-lg transition-all text-left",
+                        "hover:bg-white dark:hover:bg-slate-800",
                         currentChannelId === ch.id 
-                          ? "bg-teal/20 text-teal" 
-                          : "hover:bg-muted"
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+                          : "border border-transparent"
                       )}
                     >
-                      <Hash className="h-4 w-4 shrink-0" />
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center",
+                        currentChannelId === ch.id
+                          ? "bg-blue-100 dark:bg-blue-900/30"
+                          : "bg-slate-100 dark:bg-slate-800"
+                      )}>
+                        <Hash className="h-4 w-4" />
+                      </div>
                       <span className="font-medium text-sm">{ch.name}</span>
                     </button>
                   ))}
 
                   {showNewChannel ? (
-                    <div className="p-2 space-y-2">
+                    <div className="p-3 mt-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                       <Input
                         placeholder="Channel name"
                         value={newChannelName}
                         onChange={(e) => setNewChannelName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                        className="mb-2"
                         autoFocus
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={handleCreateChannel} className="flex-1">
+                        <Button size="sm" onClick={handleCreateChannel} className="flex-1 bg-blue-600 hover:bg-blue-700">
                           Create
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setShowNewChannel(false)}>
@@ -1034,7 +1170,12 @@ const FloatingChat: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => setShowNewChannel(true)}
-                      className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                      className={cn(
+                        "w-full flex items-center gap-2 p-3 rounded-lg transition-all",
+                        "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300",
+                        "hover:bg-white dark:hover:bg-slate-800",
+                        "border border-dashed border-slate-300 dark:border-slate-700 mt-2"
+                      )}
                     >
                       <Plus className="h-4 w-4" />
                       <span className="text-sm">New Channel</span>
@@ -1047,152 +1188,196 @@ const FloatingChat: React.FC = () => {
             {/* Channel Chat View */}
             {view === "chat" && (
               <>
-                <ScrollArea className="flex-1 p-3">
-                  <div className="space-y-3">
-                    {filteredChannelMessages.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-4">
-                        {searchQuery ? "No messages found" : "No messages yet. Start the conversation!"}
-                      </p>
-                    ) : (
-                      filteredChannelMessages.map((msg) => {
-                        const isOwn = msg.user_id === user.id;
-                        const profile = profiles[msg.user_id];
-                        const displayName = profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
-                        const replyMessage = getReplyMessage(msg.reply_to_id) as ChannelMessage | undefined;
+                <ScrollArea 
+                  className="flex-1 px-3 py-2" 
+                  ref={scrollAreaRef}
+                  onScrollCapture={handleScroll as any}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {groupedChannelMessages.length === 0 ? (
+                        <div className="text-center py-12">
+                          <MessageCircle className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                          <p className="text-slate-500 text-sm">
+                            {searchQuery ? "No messages found" : "No messages yet"}
+                          </p>
+                          <p className="text-slate-400 text-xs mt-1">Start the conversation!</p>
+                        </div>
+                      ) : (
+                        groupedChannelMessages.map((group) => (
+                          <div key={group.date}>
+                            <div className="flex items-center gap-2 my-3">
+                              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                              <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
+                              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                            </div>
+                            <div className="space-y-2">
+                              {group.messages.map((msg) => {
+                                const channelMsg = msg as ChannelMessage;
+                                const isOwn = channelMsg.user_id === user.id;
+                                const profile = profiles[channelMsg.user_id];
+                                const displayName = profile?.full_name || channelMsg.user_name || channelMsg.user_email.split("@")[0];
+                                const replyMessage = getReplyMessage(channelMsg.reply_to_id) as ChannelMessage | undefined;
 
-                        return (
-                          <div
-                            key={msg.id}
-                            className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
-                          >
-                            {!isOwn && (
-                              <Avatar className="h-8 w-8 shrink-0">
-                                <AvatarImage src={profile?.avatar_url || undefined} />
-                                <AvatarFallback className="bg-teal/20 text-teal text-xs">
-                                  {getInitials(displayName, msg.user_email)}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                            <div className="max-w-[75%]">
-                              {replyMessage && (
-                                <div className={cn(
-                                  "text-xs px-2 py-1 mb-1 rounded border-l-2 border-teal/50 bg-muted/50",
-                                  isOwn && "ml-auto"
-                                )}>
-                                  <span className="font-medium text-teal/70">
-                                    {profiles[replyMessage.user_id]?.full_name || replyMessage.user_name}
-                                  </span>
-                                  <p className="text-muted-foreground truncate">{replyMessage.content}</p>
-                                </div>
-                              )}
-                              <div
-                                className={cn(
-                                  "p-2.5 rounded-lg group relative",
-                                  isOwn ? "bg-teal text-teal-foreground" : "bg-muted"
-                                )}
-                              >
-                                {!isOwn && (
-                                  <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
-                                )}
-                                {editingMessageId === msg.id ? (
-                                  <div className="space-y-2">
-                                    <Input
-                                      value={editContent}
-                                      onChange={(e) => setEditContent(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleEditMessage(msg.id, true);
-                                        if (e.key === "Escape") setEditingMessageId(null);
-                                      }}
-                                      className="h-7 text-sm"
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(msg.id, true)}>
-                                        Save
-                                      </Button>
-                                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
-                                        Cancel
-                                      </Button>
+                                return (
+                                  <div
+                                    key={channelMsg.id}
+                                    className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
+                                  >
+                                    {!isOwn && (
+                                      <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
+                                        <AvatarImage src={profile?.avatar_url || undefined} />
+                                        <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">
+                                          {getInitials(displayName, channelMsg.user_email)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    )}
+                                    <div className="max-w-[75%]">
+                                      {replyMessage && (
+                                        <div className={cn(
+                                          "text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800",
+                                          isOwn && "ml-auto"
+                                        )}>
+                                          <span className="font-medium text-blue-600 dark:text-blue-400">
+                                            {profiles[replyMessage.user_id]?.full_name || replyMessage.user_name}
+                                          </span>
+                                          <p className="text-slate-500 truncate">{replyMessage.content}</p>
+                                        </div>
+                                      )}
+                                      <div
+                                        className={cn(
+                                          "p-3 rounded-2xl group relative",
+                                          isOwn 
+                                            ? "bg-blue-600 text-white rounded-br-md" 
+                                            : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
+                                        )}
+                                      >
+                                        {!isOwn && (
+                                          <p className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400">{displayName}</p>
+                                        )}
+                                        {editingMessageId === channelMsg.id ? (
+                                          <div className="space-y-2">
+                                            <Input
+                                              value={editContent}
+                                              onChange={(e) => setEditContent(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleEditMessage(channelMsg.id, true);
+                                                if (e.key === "Escape") setEditingMessageId(null);
+                                              }}
+                                              className="h-7 text-sm"
+                                              autoFocus
+                                            />
+                                            <div className="flex gap-1">
+                                              <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(channelMsg.id, true)}>
+                                                Save
+                                              </Button>
+                                              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <p className="text-sm leading-relaxed">{channelMsg.content}</p>
+                                        )}
+                                        <div className="flex items-center gap-1 mt-1.5">
+                                          <span className={cn(
+                                            "text-[10px]",
+                                            isOwn ? "text-blue-200" : "text-slate-400"
+                                          )}>
+                                            {formatTime(channelMsg.created_at)}
+                                          </span>
+                                          {channelMsg.edited_at && (
+                                            <span className="text-[10px] text-slate-400">(edited)</span>
+                                          )}
+                                        </div>
+                                        {renderReactions(channelMsg.id, 'channel')}
+                                        
+                                        {/* Message actions */}
+                                        <div className={cn(
+                                          "absolute -top-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
+                                          "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-1",
+                                          isOwn ? "left-0" : "right-0"
+                                        )}>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors" title="React">
+                                                <Smile className="h-3.5 w-3.5 text-slate-500" />
+                                              </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-2" align="end">
+                                              <div className="flex gap-1">
+                                                {COMMON_EMOJIS.map(emoji => (
+                                                  <button
+                                                    key={emoji}
+                                                    onClick={() => handleReaction(channelMsg.id, emoji, 'channel')}
+                                                    className="text-lg hover:scale-125 transition-transform p-1"
+                                                  >
+                                                    {emoji}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                          <button
+                                            onClick={() => setReplyTo(channelMsg)}
+                                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                                            title="Reply"
+                                          >
+                                            <Reply className="h-3.5 w-3.5 text-slate-500" />
+                                          </button>
+                                          {isOwn && (
+                                            <button
+                                              onClick={() => {
+                                                setEditingMessageId(channelMsg.id);
+                                                setEditContent(channelMsg.content);
+                                              }}
+                                              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                                              title="Edit"
+                                            >
+                                              <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                ) : (
-                                  <p className="text-sm">{msg.content}</p>
-                                )}
-                                <div className="flex items-center gap-1 mt-1">
-                                  <span className={cn(
-                                    "text-xs",
-                                    isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
-                                  )}>
-                                    {formatTime(msg.created_at)}
-                                  </span>
-                                  {msg.edited_at && (
-                                    <span className="text-xs text-muted-foreground">(edited)</span>
-                                  )}
-                                </div>
-                                {renderReactions(msg.id, 'channel')}
-                                
-                                {/* Message actions */}
-                                <div className={cn(
-                                  "absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-card border rounded-md shadow-sm p-0.5",
-                                  isOwn ? "left-0" : "right-0"
-                                )}>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <button className="p-1 hover:bg-muted rounded" title="React">
-                                        <Smile className="h-3 w-3" />
-                                      </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-2" align="end">
-                                      <div className="flex gap-1">
-                                        {COMMON_EMOJIS.map(emoji => (
-                                          <button
-                                            key={emoji}
-                                            onClick={() => handleReaction(msg.id, emoji, 'channel')}
-                                            className="text-lg hover:scale-125 transition-transform"
-                                          >
-                                            {emoji}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                  <button
-                                    onClick={() => setReplyTo(msg)}
-                                    className="p-1 hover:bg-muted rounded"
-                                    title="Reply"
-                                  >
-                                    <Reply className="h-3 w-3" />
-                                  </button>
-                                  {isOwn && (
-                                    <button
-                                      onClick={() => {
-                                        setEditingMessageId(msg.id);
-                                        setEditContent(msg.content);
-                                      }}
-                                      className="p-1 hover:bg-muted rounded"
-                                      title="Edit"
-                                    >
-                                      <Edit2 className="h-3 w-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
                 </ScrollArea>
+
+                {/* Scroll to bottom button */}
+                {showScrollButton && (
+                  <button
+                    onClick={() => scrollToBottom()}
+                    className={cn(
+                      "absolute bottom-24 left-1/2 -translate-x-1/2",
+                      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                      "shadow-lg border border-slate-200 dark:border-slate-700",
+                      "p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                    )}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
+                )}
 
                 {/* Typing indicator */}
                 {typingUsers.length > 0 && (
-                  <div className="text-xs text-muted-foreground px-3 pb-1 flex items-center gap-1">
+                  <div className="text-xs text-slate-500 px-4 pb-1 flex items-center gap-2">
                     <span className="flex gap-0.5">
-                      <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
-                      <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
-                      <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
                     </span>
                     <span>
                       {typingUsers.length === 1
@@ -1204,38 +1389,48 @@ const FloatingChat: React.FC = () => {
 
                 {/* Reply preview */}
                 {replyTo && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-t border-l-2 border-l-teal">
-                    <Reply className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-900">
+                    <div className="w-1 h-8 bg-blue-500 rounded-full" />
+                    <Reply className="h-4 w-4 text-blue-500 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-teal">
-                        {view === "chat" 
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        Replying to {view === "chat" 
                           ? profiles[(replyTo as ChannelMessage).user_id]?.full_name || (replyTo as ChannelMessage).user_name
                           : getDisplayName((replyTo as DirectMessage).sender_id)
                         }
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+                      <p className="text-xs text-slate-500 truncate">{replyTo.content}</p>
                     </div>
-                    <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
-                      <X className="h-3 w-3" />
+                    <button onClick={() => setReplyTo(null)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-colors">
+                      <X className="h-3.5 w-3.5 text-blue-500" />
                     </button>
                   </div>
                 )}
 
-                {/* Input */}
-                <div className="p-3 border-t flex gap-2">
-                  <Input
-                    placeholder="Type a message..."
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      handleTyping();
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="flex-1"
-                  />
-                  <Button size="icon" onClick={handleSendMessage} className="bg-teal hover:bg-teal/90">
-                    <Send className="h-4 w-4" />
-                  </Button>
+                {/* Input area */}
+                <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 relative">
+                      <Input
+                        placeholder="Type a message..."
+                        value={input}
+                        onChange={(e) => {
+                          setInput(e.target.value);
+                          handleTyping();
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                        className="pr-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500"
+                      />
+                    </div>
+                    <Button 
+                      size="icon" 
+                      onClick={handleSendMessage} 
+                      className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                      disabled={!input.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
@@ -1243,187 +1438,240 @@ const FloatingChat: React.FC = () => {
             {/* Direct Message View */}
             {view === "dm" && (
               <>
-                <ScrollArea className="flex-1 p-3">
-                  <div className="space-y-3">
-                    {filteredDirectMessages.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-4">
-                        {searchQuery ? "No messages found" : "No messages yet. Start the conversation!"}
-                      </p>
-                    ) : (
-                      filteredDirectMessages.map((msg) => {
-                        const isOwn = msg.sender_id === user.id;
-                        const senderId = msg.sender_id;
-                        const profile = profiles[senderId];
-                        const displayName = profile?.full_name || profile?.email?.split("@")[0] || "User";
-                        const replyMessage = getReplyMessage(msg.reply_to_id) as DirectMessage | undefined;
+                <ScrollArea 
+                  className="flex-1 px-3 py-2"
+                  onScrollCapture={handleScroll as any}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {groupedDirectMessages.length === 0 ? (
+                        <div className="text-center py-12">
+                          <MessageCircle className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                          <p className="text-slate-500 text-sm">
+                            {searchQuery ? "No messages found" : "No messages yet"}
+                          </p>
+                          <p className="text-slate-400 text-xs mt-1">Say hello!</p>
+                        </div>
+                      ) : (
+                        groupedDirectMessages.map((group) => (
+                          <div key={group.date}>
+                            <div className="flex items-center gap-2 my-3">
+                              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                              <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
+                              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                            </div>
+                            <div className="space-y-2">
+                              {group.messages.map((msg) => {
+                                const dmMsg = msg as DirectMessage;
+                                const isOwn = dmMsg.sender_id === user.id;
+                                const senderId = dmMsg.sender_id;
+                                const profile = profiles[senderId];
+                                const displayName = profile?.full_name || profile?.email?.split("@")[0] || "User";
+                                const replyMessage = getReplyMessage(dmMsg.reply_to_id) as DirectMessage | undefined;
 
-                        return (
-                          <div
-                            key={msg.id}
-                            className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
-                          >
-                            {!isOwn && (
-                              <Avatar className="h-8 w-8 shrink-0">
-                                <AvatarImage src={profile?.avatar_url || undefined} />
-                                <AvatarFallback className="bg-teal/20 text-teal text-xs">
-                                  {getInitials(displayName, profile?.email || "")}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                            <div className="max-w-[75%]">
-                              {replyMessage && (
-                                <div className={cn(
-                                  "text-xs px-2 py-1 mb-1 rounded border-l-2 border-teal/50 bg-muted/50",
-                                  isOwn && "ml-auto"
-                                )}>
-                                  <span className="font-medium text-teal/70">
-                                    {getDisplayName(replyMessage.sender_id)}
-                                  </span>
-                                  <p className="text-muted-foreground truncate">{replyMessage.content}</p>
-                                </div>
-                              )}
-                              <div
-                                className={cn(
-                                  "p-2.5 rounded-lg group relative",
-                                  isOwn ? "bg-teal text-teal-foreground" : "bg-muted"
-                                )}
-                              >
-                                {editingMessageId === msg.id ? (
-                                  <div className="space-y-2">
-                                    <Input
-                                      value={editContent}
-                                      onChange={(e) => setEditContent(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleEditMessage(msg.id, false);
-                                        if (e.key === "Escape") setEditingMessageId(null);
-                                      }}
-                                      className="h-7 text-sm"
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(msg.id, false)}>
-                                        Save
-                                      </Button>
-                                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
-                                        Cancel
-                                      </Button>
+                                return (
+                                  <div
+                                    key={dmMsg.id}
+                                    className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
+                                  >
+                                    {!isOwn && (
+                                      <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
+                                        <AvatarImage src={profile?.avatar_url || undefined} />
+                                        <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">
+                                          {getInitials(displayName, profile?.email || "")}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    )}
+                                    <div className="max-w-[75%]">
+                                      {replyMessage && (
+                                        <div className={cn(
+                                          "text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800",
+                                          isOwn && "ml-auto"
+                                        )}>
+                                          <span className="font-medium text-blue-600 dark:text-blue-400">
+                                            {getDisplayName(replyMessage.sender_id)}
+                                          </span>
+                                          <p className="text-slate-500 truncate">{replyMessage.content}</p>
+                                        </div>
+                                      )}
+                                      <div
+                                        className={cn(
+                                          "p-3 rounded-2xl group relative",
+                                          isOwn 
+                                            ? "bg-blue-600 text-white rounded-br-md" 
+                                            : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
+                                        )}
+                                      >
+                                        {editingMessageId === dmMsg.id ? (
+                                          <div className="space-y-2">
+                                            <Input
+                                              value={editContent}
+                                              onChange={(e) => setEditContent(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleEditMessage(dmMsg.id, false);
+                                                if (e.key === "Escape") setEditingMessageId(null);
+                                              }}
+                                              className="h-7 text-sm"
+                                              autoFocus
+                                            />
+                                            <div className="flex gap-1">
+                                              <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(dmMsg.id, false)}>
+                                                Save
+                                              </Button>
+                                              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <p className="text-sm leading-relaxed">{dmMsg.content}</p>
+                                        )}
+                                        <div className="flex items-center gap-1 mt-1.5">
+                                          <span className={cn(
+                                            "text-[10px]",
+                                            isOwn ? "text-blue-200" : "text-slate-400"
+                                          )}>
+                                            {formatTime(dmMsg.created_at)}
+                                          </span>
+                                          {dmMsg.edited_at && (
+                                            <span className="text-[10px] text-slate-400">(edited)</span>
+                                          )}
+                                          {renderReadReceipt(dmMsg)}
+                                        </div>
+                                        {renderReactions(dmMsg.id, 'direct')}
+                                        
+                                        {/* Message actions */}
+                                        <div className={cn(
+                                          "absolute -top-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
+                                          "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-1",
+                                          isOwn ? "left-0" : "right-0"
+                                        )}>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors" title="React">
+                                                <Smile className="h-3.5 w-3.5 text-slate-500" />
+                                              </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-2" align="end">
+                                              <div className="flex gap-1">
+                                                {COMMON_EMOJIS.map(emoji => (
+                                                  <button
+                                                    key={emoji}
+                                                    onClick={() => handleReaction(dmMsg.id, emoji, 'direct')}
+                                                    className="text-lg hover:scale-125 transition-transform p-1"
+                                                  >
+                                                    {emoji}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                          <button
+                                            onClick={() => setReplyTo(dmMsg)}
+                                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                                            title="Reply"
+                                          >
+                                            <Reply className="h-3.5 w-3.5 text-slate-500" />
+                                          </button>
+                                          {isOwn && (
+                                            <button
+                                              onClick={() => {
+                                                setEditingMessageId(dmMsg.id);
+                                                setEditContent(dmMsg.content);
+                                              }}
+                                              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                                              title="Edit"
+                                            >
+                                              <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                ) : (
-                                  <p className="text-sm">{msg.content}</p>
-                                )}
-                                <div className="flex items-center gap-1 mt-1">
-                                  <span className={cn(
-                                    "text-xs",
-                                    isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
-                                  )}>
-                                    {formatTime(msg.created_at)}
-                                  </span>
-                                  {msg.edited_at && (
-                                    <span className="text-xs text-muted-foreground">(edited)</span>
-                                  )}
-                                  {renderReadReceipt(msg)}
-                                </div>
-                                {renderReactions(msg.id, 'direct')}
-                                
-                                {/* Message actions */}
-                                <div className={cn(
-                                  "absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-card border rounded-md shadow-sm p-0.5",
-                                  isOwn ? "left-0" : "right-0"
-                                )}>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <button className="p-1 hover:bg-muted rounded" title="React">
-                                        <Smile className="h-3 w-3" />
-                                      </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-2" align="end">
-                                      <div className="flex gap-1">
-                                        {COMMON_EMOJIS.map(emoji => (
-                                          <button
-                                            key={emoji}
-                                            onClick={() => handleReaction(msg.id, emoji, 'direct')}
-                                            className="text-lg hover:scale-125 transition-transform"
-                                          >
-                                            {emoji}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                  <button
-                                    onClick={() => setReplyTo(msg)}
-                                    className="p-1 hover:bg-muted rounded"
-                                    title="Reply"
-                                  >
-                                    <Reply className="h-3 w-3" />
-                                  </button>
-                                  {isOwn && (
-                                    <button
-                                      onClick={() => {
-                                        setEditingMessageId(msg.id);
-                                        setEditContent(msg.content);
-                                      }}
-                                      className="p-1 hover:bg-muted rounded"
-                                      title="Edit"
-                                    >
-                                      <Edit2 className="h-3 w-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
                 </ScrollArea>
+
+                {/* Scroll to bottom button */}
+                {showScrollButton && (
+                  <button
+                    onClick={() => scrollToBottom()}
+                    className={cn(
+                      "absolute bottom-24 left-1/2 -translate-x-1/2",
+                      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                      "shadow-lg border border-slate-200 dark:border-slate-700",
+                      "p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                    )}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
+                )}
 
                 {/* Typing indicator */}
                 {typingUsers.length > 0 && (
-                  <div className="text-xs text-muted-foreground px-3 pb-1 flex items-center gap-1">
+                  <div className="text-xs text-slate-500 px-4 pb-1 flex items-center gap-2">
                     <span className="flex gap-0.5">
-                      <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
-                      <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
-                      <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                      <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
                     </span>
-                    <span>{currentDMUser?.name} is typing...</span>
+                    <span>{typingUsers[0].name} is typing...</span>
                   </div>
                 )}
 
                 {/* Reply preview */}
                 {replyTo && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-t border-l-2 border-l-teal">
-                    <Reply className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-900">
+                    <div className="w-1 h-8 bg-blue-500 rounded-full" />
+                    <Reply className="h-4 w-4 text-blue-500 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-teal">
-                        {getDisplayName((replyTo as DirectMessage).sender_id)}
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        Replying to {getDisplayName((replyTo as DirectMessage).sender_id)}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+                      <p className="text-xs text-slate-500 truncate">{replyTo.content}</p>
                     </div>
-                    <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
-                      <X className="h-3 w-3" />
+                    <button onClick={() => setReplyTo(null)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-colors">
+                      <X className="h-3.5 w-3.5 text-blue-500" />
                     </button>
                   </div>
                 )}
 
-                {/* Input */}
-                <div className="p-3 border-t flex gap-2">
-                  <Input
-                    placeholder={`Message ${currentDMUser?.name || ""}...`}
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      handleTyping();
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="flex-1"
-                  />
-                  <Button size="icon" onClick={handleSendMessage} className="bg-teal hover:bg-teal/90">
-                    <Send className="h-4 w-4" />
-                  </Button>
+                {/* Input area */}
+                <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 relative">
+                      <Input
+                        placeholder="Type a message..."
+                        value={input}
+                        onChange={(e) => {
+                          setInput(e.target.value);
+                          handleTyping();
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                        className="pr-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500"
+                      />
+                    </div>
+                    <Button 
+                      size="icon" 
+                      onClick={handleSendMessage} 
+                      className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                      disabled={!input.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
