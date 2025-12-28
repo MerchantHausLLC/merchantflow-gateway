@@ -6,13 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Message = {
   id: string;
@@ -379,6 +381,10 @@ const Chat: React.FC = () => {
   const { tasks } = useTasks();
   const { unreadByChannel, markChannelAsRead } = useUnreadMessages();
 
+  // Connection status and typing utilities
+  const { isConnected, isReconnecting } = useConnectionStatus();
+  const { startTyping, stopTyping } = useTypingIndicator(presenceChannelRef, userName);
+
   // Get user's tasks
   const myTasks = tasks.filter(t => t.assignee?.toLowerCase() === userName.toLowerCase() && t.status !== 'done');
 
@@ -580,22 +586,10 @@ const Chat: React.FC = () => {
     };
   }, [currentChannelId, user, userName]);
 
+  // Use the improved typing indicator
   const handleTyping = useCallback(() => {
-    if (!presenceChannelRef.current) return;
-
-    // Set typing to true
-    presenceChannelRef.current.track({ typing: true, name: userName });
-
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // Set timeout to stop typing indicator after 2 seconds
-    typingTimeoutRef.current = setTimeout(() => {
-      presenceChannelRef.current?.track({ typing: false, name: userName });
-    }, 2000);
-  }, [userName]);
+    startTyping();
+  }, [startTyping]);
 
   const handleSelectChannel = (id: string) => {
     setCurrentChannelId(id);
@@ -659,10 +653,31 @@ const Chat: React.FC = () => {
   };
 
   const handleSendMessage = async (text: string, replyToId?: string) => {
+    // Validate message
+    const validation = validateMessage(text);
+    if (!validation.valid) {
+      if (validation.error) toast.error(validation.error);
+      return;
+    }
+
     if (!user || !currentChannelId) return;
 
     // Stop typing indicator when sending
-    presenceChannelRef.current?.track({ typing: false, name: userName });
+    stopTyping();
+
+    // Optimistic update
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      channel_id: currentChannelId,
+      user_id: user.id,
+      user_email: user.email || "",
+      user_name: userName,
+      content: text,
+      created_at: new Date().toISOString(),
+      reply_to_id: replyToId || null
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
 
     const { error } = await supabase
       .from("chat_messages")
@@ -676,7 +691,9 @@ const Chat: React.FC = () => {
       });
 
     if (error) {
-      toast.error("Failed to send message");
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      toast.error("Failed to send message. Please try again.");
     }
   };
 
@@ -711,6 +728,38 @@ const Chat: React.FC = () => {
           <span className="text-sm text-muted-foreground">
             Signed in as <span className="font-medium text-foreground">{userName}</span>
           </span>
+          {/* Connection status indicator */}
+          {!isConnected && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                    isReconnecting 
+                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400" 
+                      : "bg-red-500/20 text-red-600 dark:text-red-400"
+                  )}>
+                    {isReconnecting ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Reconnecting
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="h-3 w-3" />
+                        Offline
+                      </>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isReconnecting 
+                    ? "Attempting to reconnect to the server..." 
+                    : "Connection lost. Messages may not be delivered."}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Tasks Modal Button */}

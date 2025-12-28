@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { 
   MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, 
   Smile, Search, Edit2, Bell, BellOff, Paperclip, Image, FileText, Download,
-  MoreHorizontal, Pin, Trash2, ArrowDown
+  MoreHorizontal, Pin, Trash2, ArrowDown, Wifi, WifiOff, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
+import { useConnectionStatus, useTypingIndicator, validateMessage, formatMessageTime } from "@/hooks/useChatUtils";
 
 type DirectMessage = {
   id: string;
@@ -132,6 +133,12 @@ const FloatingChat: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
+
+  // Connection status tracking
+  const { isConnected, isReconnecting, handleConnectionChange } = useConnectionStatus();
+
+  // Typing indicator with proper debouncing
+  const { startTyping, stopTyping } = useTypingIndicator(presenceChannelRef, userName);
 
   // Chat notifications hook
   const { requestPermission, toggleNotifications, notificationsEnabled, isSupported, permissionStatus } = useChatNotifications({
@@ -615,25 +622,41 @@ const FloatingChat: React.FC = () => {
     };
   }, [currentDMUserId, user, userName, view]);
 
+  // Use the improved typing indicator from useChatUtils
   const handleTyping = useCallback(() => {
-    if (!presenceChannelRef.current) return;
-
-    presenceChannelRef.current.track({ typing: true, name: userName });
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      presenceChannelRef.current?.track({ typing: false, name: userName });
-    }, 2000);
-  }, [userName]);
+    startTyping();
+  }, [startTyping]);
 
   const handleSendChannelMessage = async () => {
     const text = input.trim();
-    if (!text || !user || !currentChannelId) return;
+    
+    // Validate message
+    const validation = validateMessage(text);
+    if (!validation.valid) {
+      if (validation.error) toast.error(validation.error);
+      return;
+    }
+    
+    if (!user || !currentChannelId) return;
 
-    presenceChannelRef.current?.track({ typing: false, name: userName });
+    // Stop typing indicator
+    stopTyping();
+
+    // Optimistic update - add message immediately
+    const optimisticMessage: ChannelMessage = {
+      id: `temp-${Date.now()}`,
+      channel_id: currentChannelId,
+      user_id: user.id,
+      user_email: user.email || "",
+      user_name: userName,
+      content: text,
+      created_at: new Date().toISOString(),
+      reply_to_id: replyTo?.id || null,
+    };
+
+    setChannelMessages(prev => [...prev, optimisticMessage]);
+    setInput("");
+    setReplyTo(null);
 
     const { error } = await supabase
       .from("chat_messages")
@@ -647,19 +670,41 @@ const FloatingChat: React.FC = () => {
       });
 
     if (error) {
-      toast.error("Failed to send message");
-      return;
+      // Remove optimistic message on failure
+      setChannelMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      toast.error("Failed to send message. Please try again.");
     }
-
-    setInput("");
-    setReplyTo(null);
   };
 
   const handleSendDirectMessage = async () => {
     const text = input.trim();
-    if (!text || !user || !currentDMUserId) return;
+    
+    // Validate message
+    const validation = validateMessage(text);
+    if (!validation.valid) {
+      if (validation.error) toast.error(validation.error);
+      return;
+    }
+    
+    if (!user || !currentDMUserId) return;
 
-    presenceChannelRef.current?.track({ typing: false, name: userName });
+    // Stop typing indicator
+    stopTyping();
+
+    // Optimistic update
+    const optimisticMessage: DirectMessage = {
+      id: `temp-${Date.now()}`,
+      sender_id: user.id,
+      receiver_id: currentDMUserId,
+      content: text,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      reply_to_id: replyTo?.id || null,
+    };
+
+    setDirectMessages(prev => [...prev, optimisticMessage]);
+    setInput("");
+    setReplyTo(null);
 
     const { error } = await supabase
       .from("direct_messages")
@@ -671,12 +716,10 @@ const FloatingChat: React.FC = () => {
       });
 
     if (error) {
-      toast.error("Failed to send message");
-      return;
+      // Remove optimistic message on failure
+      setDirectMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      toast.error("Failed to send message. Please try again.");
     }
-
-    setInput("");
-    setReplyTo(null);
   };
 
   const handleSendMessage = () => {
@@ -971,6 +1014,28 @@ const FloatingChat: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-0.5">
+              {/* Connection status indicator */}
+              {!isConnected && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded text-xs",
+                      isReconnecting 
+                        ? "bg-amber-500/20 text-amber-300" 
+                        : "bg-red-500/20 text-red-300"
+                    )}>
+                      {isReconnecting ? (
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <WifiOff className="h-3 w-3" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isReconnecting ? "Reconnecting..." : "Connection lost"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {isSupported && (
                 <Tooltip>
                   <TooltipTrigger asChild>
