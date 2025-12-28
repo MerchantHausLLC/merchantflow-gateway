@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Contact, Account, TEAM_MEMBERS, STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -11,12 +11,37 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Plus, Search, ArrowRightCircle, Eye, Filter, Trash } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Pencil, 
+  Plus, 
+  Search, 
+  ArrowRightCircle, 
+  Eye, 
+  Trash, 
+  Users, 
+  UserCheck, 
+  Link2,
+  Building2,
+  Mail,
+  Phone,
+  MoreHorizontal
+} from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import ThemeToggle from "@/components/ThemeToggle";
+import { SortableTableHead } from "@/components/SortableTableHead";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
@@ -34,14 +59,8 @@ type ContactQueryResult = ContactWithAccount & {
   opportunities?: { id: string; assigned_to: string | null; stage: string | null }[];
 };
 
-const TEAM_BG_COLORS: Record<string, string> = {
-  'Wesley': 'bg-team-wesley/20',
-  'Jamie': 'bg-team-jamie/20',
-  'Darryn': 'bg-team-darryn/20',
-  'Taryn': 'bg-team-taryn/20',
-  'Yaseen': 'bg-team-yaseen/20',
-  'Sales': 'bg-team-sales/20',
-};
+type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage';
+type SortDirection = 'asc' | 'desc';
 
 const STAGE_LABELS: Record<string, string> = {
   'application_started': 'New',
@@ -56,17 +75,6 @@ const STAGE_LABELS: Record<string, string> = {
   'closed_lost': 'Closed Lost',
 };
 
-/**
- * Contacts page
- *
- * This component extends the existing contacts management page with a
- * handful of user‑experience improvements.  Search and filter inputs
- * are wider by default, dialogs employ more generous spacing, and
- * autopopulation logic has been added to the new contact form to
- * reduce the number of clicks required when only one account is
- * available.  These enhancements build upon the project’s
- * established patterns without changing its core functionality.
- */
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -76,6 +84,11 @@ const Contacts = () => {
   const [isNewAccount, setIsNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState<string>('all');
+  const [accountFilter, setAccountFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('first_name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -86,51 +99,18 @@ const Contacts = () => {
     account_id: '',
   });
   const [selectedContact, setSelectedContact] = useState<ContactWithAccount | null>(null);
-  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
-  // When opening the new contact dialog, preselect the first account if one exists and
-  // the user isn’t creating a new account.  This reduces clicks when there is only
-  // one account on file.
   useEffect(() => {
     if (isNewDialogOpen && !isNewAccount && accounts.length > 0 && !formData.account_id) {
       setFormData((data) => ({ ...data, account_id: accounts[0].id }));
     }
   }, [isNewDialogOpen, isNewAccount, accounts]);
 
-  const filteredContacts = contacts
-    .filter((contact) => {
-      const query = searchQuery.toLowerCase();
-      const firstName = (contact.first_name || '').toLowerCase();
-      const lastName = (contact.last_name || '').toLowerCase();
-      const email = (contact.email || '').toLowerCase();
-      const accountName = (contact.account?.name || '').toLowerCase();
-      return (
-        firstName.includes(query) ||
-        lastName.includes(query) ||
-        email.includes(query) ||
-        accountName.includes(query)
-      );
-    })
-    .filter((contact) => {
-      if (assignmentFilter === 'assigned') return !!contact.assigned_to;
-      if (assignmentFilter === 'unassigned') return !contact.assigned_to;
-      return true;
-    });
-
-  const totalContacts = contacts.length;
-  const assignedContacts = contacts.filter((contact) => !!contact.assigned_to).length;
-  const opportunityContacts = contacts.filter((contact) => !!contact.opportunity_id).length;
-
   useEffect(() => {
     fetchContacts();
     fetchAccounts();
   }, []);
 
-  /**
-   * Loads contacts along with their account name and the first linked
-   * opportunity so assignment and stage data can be shown in the list without
-   * additional queries.
-   */
   const fetchContacts = async () => {
     const { data, error } = await supabase
       .from('contacts')
@@ -157,6 +137,91 @@ const Contacts = () => {
       setAccounts(data);
     }
   };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field as SortField);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredContacts = useMemo(() => {
+    let filtered = [...contacts];
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((contact) => {
+        const firstName = (contact.first_name || '').toLowerCase();
+        const lastName = (contact.last_name || '').toLowerCase();
+        const email = (contact.email || '').toLowerCase();
+        const accountName = (contact.account?.name || '').toLowerCase();
+        return (
+          firstName.includes(query) ||
+          lastName.includes(query) ||
+          email.includes(query) ||
+          accountName.includes(query)
+        );
+      });
+    }
+
+    // Assignment filter
+    if (assignmentFilter !== 'all') {
+      if (assignmentFilter === 'assigned') {
+        filtered = filtered.filter((contact) => !!contact.assigned_to);
+      } else if (assignmentFilter === 'unassigned') {
+        filtered = filtered.filter((contact) => !contact.assigned_to);
+      } else {
+        filtered = filtered.filter((contact) => contact.assigned_to === assignmentFilter);
+      }
+    }
+
+    // Account filter
+    if (accountFilter !== 'all') {
+      filtered = filtered.filter((contact) => contact.account_id === accountFilter);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'first_name':
+          comparison = (a.first_name || '').localeCompare(b.first_name || '');
+          break;
+        case 'last_name':
+          comparison = (a.last_name || '').localeCompare(b.last_name || '');
+          break;
+        case 'email':
+          comparison = (a.email || '').localeCompare(b.email || '');
+          break;
+        case 'phone':
+          comparison = (a.phone || '').localeCompare(b.phone || '');
+          break;
+        case 'account':
+          comparison = (a.account?.name || '').localeCompare(b.account?.name || '');
+          break;
+        case 'assigned_to':
+          comparison = (a.assigned_to || 'zzz').localeCompare(b.assigned_to || 'zzz');
+          break;
+        case 'stage':
+          comparison = (a.stage || 'zzz').localeCompare(b.stage || 'zzz');
+          break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [contacts, searchQuery, assignmentFilter, accountFilter, sortField, sortDirection]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = contacts.length;
+    const assigned = contacts.filter((c) => !!c.assigned_to).length;
+    const linked = contacts.filter((c) => !!c.opportunity_id).length;
+    return { total, assigned, linked };
+  }, [contacts]);
 
   const openEditDialog = (contact: ContactWithAccount) => {
     setEditingContact(contact);
@@ -186,25 +251,23 @@ const Contacts = () => {
     setIsNewDialogOpen(true);
   };
 
-      // Delete a contact with confirmation and update state
-      const handleDeleteContact = async (contactId: string) => {
-        const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
-        if (!confirmDelete) return;
-        try {
-          const { error } = await supabase.from('contacts').delete().eq('id', contactId);
-          if (error) {
-            toast.error('Failed to delete contact');
-            return;
-          }
-          setContacts((prev) => prev.filter((c) => c.id !== contactId));
-          toast.success('Contact deleted');
-        } catch (err) {
-          console.error(err);
-          toast.error('An unexpected error occurred');
-        }
-      };
+  const handleDeleteContact = async (contactId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
+    if (!confirmDelete) return;
+    try {
+      const { error } = await supabase.from('contacts').delete().eq('id', contactId);
+      if (error) {
+        toast.error('Failed to delete contact');
+        return;
+      }
+      setContacts((prev) => prev.filter((c) => c.id !== contactId));
+      toast.success('Contact deleted');
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
+    }
+  };
 
-  // Auto-save callback for contacts
   const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!editingContact) return;
     
@@ -235,7 +298,6 @@ const Contacts = () => {
       }
     }
 
-    // Silently refresh contacts list
     fetchContacts();
   }, [editingContact]);
 
@@ -246,7 +308,6 @@ const Contacts = () => {
     enabled: !!editingContact,
   });
 
-  // Reset auto-save state when opening edit dialog
   useEffect(() => {
     if (editingContact) {
       resetInitialData();
@@ -257,7 +318,6 @@ const Contacts = () => {
     try {
       let accountId = formData.account_id;
 
-      // Create new account if needed
       if (isNewAccount) {
         if (!newAccountName.trim()) {
           toast.error('Please enter a company name');
@@ -274,7 +334,7 @@ const Contacts = () => {
           return;
         }
         accountId = newAccount.id;
-        fetchAccounts(); // Refresh accounts list
+        fetchAccounts();
       } else if (!accountId) {
         toast.error('Please select an account');
         return;
@@ -339,199 +399,298 @@ const Contacts = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-20 flex items-center px-4 md:px-6 border-b border-border gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-medium">Relationship Hub</p>
-              <h1 className="text-lg md:text-xl font-semibold text-foreground">Contacts</h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">Search, filter, and collaborate on every merchant contact in one view.</p>
-            </div>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search contacts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-72" // widen search field
-                />
-              </div>
-              <Select value={assignmentFilter} onValueChange={(value: 'all' | 'assigned' | 'unassigned') => setAssignmentFilter(value)}>
-                <SelectTrigger className="w-[160px]">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Filter" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All assignments</SelectItem>
-                  <SelectItem value="assigned">Assigned only</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={openNewDialog}>
-                <Plus className="h-4 w-4 mr-1" />
-                New Contact
-              </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-6">
-            <div className="grid gap-4 md:grid-cols-3 mb-6">
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Total contacts</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{totalContacts}</div>
-                  <p className="text-xs text-muted-foreground mt-1">All saved contact records</p>
-                </CardContent>
-              </Card>
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Assigned</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{assignedContacts}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Contacts with an owner</p>
-                </CardContent>
-              </Card>
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Linked to pipeline</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{opportunityContacts}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Have an active opportunity</p>
-                </CardContent>
-              </Card>
-            </div>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Contact directory</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>First Name</TableHead>
-                      <TableHead>Last Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead className="w-20">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredContacts.length ? (
-                      filteredContacts.map((contact) => {
-                        const stageConfig = contact.stage
-                          ? STAGE_CONFIG[contact.stage as OpportunityStage]
-                          : null;
+      <AppSidebar />
+      <SidebarInset className="flex flex-col h-screen">
+        {/* Header */}
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">Contacts</h1>
+          </div>
+          <ThemeToggle />
+        </header>
 
-                        return (
-                          <TableRow
-                            key={contact.id}
-                            className={`hover:bg-muted/50 ${contact.assigned_to ? TEAM_BG_COLORS[contact.assigned_to] || '' : ''}`}
-                          >
-                            <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
-                            <TableCell>{contact.last_name || '-'}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
-                            <TableCell className="text-sm">{contact.phone || '-'}</TableCell>
-                            <TableCell>{contact.account?.name || '-'}</TableCell>
-                            <TableCell>
-                              {contact.assigned_to ? (
-                                <Badge variant="outline" className="bg-background/60 border-border/60">
-                                  {contact.assigned_to}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Unassigned</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {stageConfig ? (
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "text-[11px] font-medium border",
-                                    stageConfig.badgeClass
-                                  )}
-                                >
-                                  {stageConfig.label}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setSelectedContact(contact)}
-                                  title="View Contact Details"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditDialog(contact)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                {!contact.opportunity_id && contact.account_id && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleConvertToOpportunity(contact)}
-                                    title="Convert to Opportunity"
-                                  >
-                                    <ArrowRightCircle className="h-4 w-4 text-primary" />
-                                  </Button>
-                                )}
-                                {/* Delete contact button */}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteContact(contact.id)}
-                                  title="Delete Contact"
-                                >
-                                  <Trash className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
+        <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+          {/* Stats - Compact header-style badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
+              <Users className="h-3 w-3" />Total {stats.total}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
+              <UserCheck className="h-3 w-3" />Assigned {stats.assigned}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
+              <Link2 className="h-3 w-3" />Linked {stats.linked}
+            </Badge>
+          </div>
+
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, account..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Assignment" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">All Assignments</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    <DropdownMenuSeparator />
+                    {TEAM_MEMBERS.map(member => (
+                      <SelectItem key={member} value={member}>{member}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={accountFilter} onValueChange={setAccountFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Account" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">All Accounts</SelectItem>
+                    {accounts.map(account => (
+                      <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button onClick={openNewDialog} className="ml-auto">
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Contact
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Results */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">
+                  {filteredContacts.length} Contacts
+                </CardTitle>
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
+                  <TabsList className="h-8">
+                    <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
+                    <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : viewMode === 'table' ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
-                          No contacts match your filters yet.
-                        </TableCell>
+                        <TableHead className="w-12">#</TableHead>
+                        <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>First Name</SortableTableHead>
+                        <SortableTableHead field="last_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Last Name</SortableTableHead>
+                        <SortableTableHead field="email" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Email</SortableTableHead>
+                        <SortableTableHead field="phone" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Phone</SortableTableHead>
+                        <SortableTableHead field="account" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                        <SortableTableHead field="assigned_to" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Assigned To</SortableTableHead>
+                        <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </main>
-        </SidebarInset>
-      </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredContacts.length ? (
+                        filteredContacts.map((contact, index) => {
+                          const stageConfig = contact.stage
+                            ? STAGE_CONFIG[contact.stage as OpportunityStage]
+                            : null;
+
+                          return (
+                            <TableRow
+                              key={contact.id}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => setSelectedContact(contact)}
+                            >
+                              <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
+                              <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
+                              <TableCell>{contact.last_name || '-'}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
+                              <TableCell className="text-sm">{contact.phone || '-'}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                                  <span>{contact.account?.name || '-'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {contact.assigned_to ? (
+                                  <Badge variant="outline" className="bg-background/60 border-border/60">
+                                    {contact.assigned_to}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Unassigned</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {stageConfig ? (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn("text-xs", stageConfig?.colorClass && "border-current")}
+                                    style={{ color: stageConfig?.color }}
+                                  >
+                                    {stageConfig.label}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-popover">
+                                    <DropdownMenuItem onClick={() => setSelectedContact(contact)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openEditDialog(contact)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    {!contact.opportunity_id && contact.account_id && (
+                                      <DropdownMenuItem onClick={() => handleConvertToOpportunity(contact)}>
+                                        <ArrowRightCircle className="h-4 w-4 mr-2" />
+                                        Convert to Opportunity
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteContact(contact.id)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                            No contacts found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredContacts.map(contact => {
+                    const stageConfig = contact.stage
+                      ? STAGE_CONFIG[contact.stage as OpportunityStage]
+                      : null;
+
+                    return (
+                      <Card 
+                        key={contact.id} 
+                        className="cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setSelectedContact(contact)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className="font-medium">
+                                {contact.first_name || contact.last_name 
+                                  ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+                                  : 'Unnamed Contact'}
+                              </h3>
+                              <p className="text-xs text-muted-foreground">{contact.email || '-'}</p>
+                            </div>
+                            {stageConfig && (
+                              <Badge 
+                                variant="outline"
+                                style={{ borderColor: stageConfig?.color, color: stageConfig?.color }}
+                              >
+                                {stageConfig?.label}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Account</span>
+                              <span>{contact.account?.name || '-'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Phone</span>
+                              <span>{contact.phone || '-'}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Owner</span>
+                              <span>{contact.assigned_to || 'Unassigned'}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 pt-3 border-t flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditDialog(contact);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            {!contact.opportunity_id && contact.account_id && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConvertToOpportunity(contact);
+                                }}
+                              >
+                                <ArrowRightCircle className="h-3 w-3 mr-1" />
+                                Convert
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </SidebarInset>
 
       {/* Contact Details Dialog */}
       <Dialog
@@ -619,7 +778,6 @@ const Contacts = () => {
       <Dialog
         open={!!editingContact}
         onOpenChange={(open) => {
-          // Only clear the editing contact when the dialog is closed
           if (!open) setEditingContact(null);
         }}
       >
