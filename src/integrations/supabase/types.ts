@@ -635,6 +635,7 @@ export type Database = {
           description: string | null
           due_at: string | null
           id: string
+          priority: string | null
           related_contact_id: string | null
           related_opportunity_id: string | null
           source: string | null
@@ -649,6 +650,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           id?: string
+          priority?: string | null
           related_contact_id?: string | null
           related_opportunity_id?: string | null
           source?: string | null
@@ -663,6 +665,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           id?: string
+          priority?: string | null
           related_contact_id?: string | null
           related_opportunity_id?: string | null
           source?: string | null

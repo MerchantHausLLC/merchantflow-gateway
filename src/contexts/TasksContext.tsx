@@ -30,7 +30,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     const { data, error } = await supabase
       .from("tasks")
       .select(`
-        id, title, description, assignee, created_by, created_at, status, due_at, 
+        id, title, description, assignee, created_by, created_at, status, priority, due_at, 
         related_opportunity_id, related_contact_id, comments, source,
         opportunities:related_opportunity_id (
           account_id,
@@ -62,6 +62,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
             createdBy: task.created_by || undefined,
             createdAt: task.created_at,
             status: task.status as Task["status"],
+            priority: (task.priority as Task["priority"]) || "medium",
             dueAt: task.due_at || undefined,
             relatedOpportunityId: task.related_opportunity_id || undefined,
             relatedContactId: task.related_contact_id || undefined,
@@ -106,6 +107,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
               createdBy: (task.created_by as string) || undefined,
               createdAt: task.created_at as string,
               status: task.status as Task["status"],
+              priority: (task.priority as Task["priority"]) || "medium",
               dueAt: (task.due_at as string) || undefined,
               relatedOpportunityId: (task.related_opportunity_id as string) || undefined,
               relatedContactId: (task.related_contact_id as string) || undefined,
@@ -147,6 +149,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       created_by: newTask.createdBy,
       created_at: newTask.createdAt,
       status: newTask.status,
+      priority: newTask.priority || "medium",
       due_at: newTask.dueAt,
       related_opportunity_id: newTask.relatedOpportunityId,
       related_contact_id: newTask.relatedContactId,
@@ -190,6 +193,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     if (update.assignee !== undefined) dbUpdate.assignee = update.assignee;
     if (update.createdBy !== undefined) dbUpdate.created_by = update.createdBy;
     if (update.status !== undefined) dbUpdate.status = update.status;
+    if (update.priority !== undefined) dbUpdate.priority = update.priority;
     if (update.dueAt !== undefined) dbUpdate.due_at = update.dueAt;
     if (update.relatedOpportunityId !== undefined) dbUpdate.related_opportunity_id = update.relatedOpportunityId;
     if (update.relatedContactId !== undefined) dbUpdate.related_contact_id = update.relatedContactId;
