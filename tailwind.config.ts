@@ -157,15 +157,16 @@ export default {
           yaseen: 'hsl(var(--team-yaseen))',
           sales: 'hsl(var(--team-sales))'
         },
+        // Legacy merchant colors - now using HSL for consistency
         merchant: {
-          black: '#0f0f0f',
-          dark: '#1a1a1a',
-          red: '#8B0000',
-          redLight: '#dc2626',
-          gray: '#2d2d2d',
-          text: '#e5e5e5',
-          blue: '#3b82f6',
-          blueDark: '#1e3a8a'
+          black: 'hsl(0 0% 6%)',
+          dark: 'hsl(0 0% 10%)',
+          red: 'hsl(0 100% 27%)',
+          redLight: 'hsl(0 84% 50%)',
+          gray: 'hsl(0 0% 18%)',
+          text: 'hsl(0 0% 90%)',
+          blue: 'hsl(217 91% 60%)',
+          blueDark: 'hsl(224 76% 33%)'
         }
       },
       borderRadius: {

@@ -1,14 +1,16 @@
-import { useState, useRef, useEffect } from "react";
-import { GripVertical, Calendar, CreditCard, Zap } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { GripVertical, Calendar, CreditCard, Zap, AlertTriangle, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, differenceInHours, differenceInDays } from "date-fns";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -57,6 +59,37 @@ const OpportunityCard = ({
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Calculate SLA status based on time in stage
+  const slaInfo = useMemo(() => {
+    const stageEnteredAt = opportunity.stage_entered_at 
+      ? new Date(opportunity.stage_entered_at) 
+      : new Date(opportunity.created_at);
+    const hoursInStage = differenceInHours(new Date(), stageEnteredAt);
+    const daysInStage = differenceInDays(new Date(), stageEnteredAt);
+    
+    // Use explicit sla_status if set, otherwise calculate
+    if (opportunity.sla_status) {
+      return {
+        status: opportunity.sla_status as 'green' | 'amber' | 'red',
+        hours: hoursInStage,
+        days: daysInStage,
+        label: opportunity.sla_status === 'red' ? 'Overdue' 
+             : opportunity.sla_status === 'amber' ? 'At Risk' 
+             : 'On Track'
+      };
+    }
+    
+    // Auto-calculate SLA based on hours in stage
+    // Green: < 24h, Amber: 24-48h, Red: > 48h
+    if (hoursInStage >= 48) {
+      return { status: 'red' as const, hours: hoursInStage, days: daysInStage, label: 'Overdue' };
+    } else if (hoursInStage >= 24) {
+      return { status: 'amber' as const, hours: hoursInStage, days: daysInStage, label: 'At Risk' };
+    }
+    return { status: 'green' as const, hours: hoursInStage, days: daysInStage, label: 'On Track' };
+  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status]);
+
 
   // Fetch profile avatar for assigned team member
   useEffect(() => {
@@ -181,22 +214,39 @@ const OpportunityCard = ({
         {/* Footer: Date + SLA + Assignment Avatar - hidden when collapsed */}
         {!isCollapsed && (
           <div className="flex items-center justify-between pt-0.5 landscape:pt-0 border-t border-border/30">
-            {/* Date Created + SLA Dot */}
-            <div className="flex items-center gap-1 text-[9px] landscape:text-[8px] text-muted-foreground">
-              <Calendar className="h-2 w-2 landscape:h-1.5 landscape:w-1.5" />
-              <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
-              {/* SLA Status Dot */}
-              <span 
-                className={cn(
-                  "h-1.5 w-1.5 landscape:h-1 landscape:w-1 rounded-full flex-shrink-0",
-                  opportunity.sla_status === 'red' && "bg-red-500",
-                  opportunity.sla_status === 'amber' && "bg-amber-500",
-                  opportunity.sla_status === 'green' && "bg-green-500",
-                  !opportunity.sla_status && "bg-green-500" // Default to green
-                )}
-                title={`SLA: ${opportunity.sla_status || 'green'}`}
-              />
-            </div>
+            {/* Date Created + SLA Indicator */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-[9px] landscape:text-[8px] text-muted-foreground">
+                    <Calendar className="h-2 w-2 landscape:h-1.5 landscape:w-1.5" />
+                    <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
+                    {/* Enhanced SLA Status Indicator */}
+                    <span 
+                      className={cn(
+                        "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-medium",
+                        slaInfo.status === 'red' && "bg-red-500/20 text-red-500",
+                        slaInfo.status === 'amber' && "bg-amber-500/20 text-amber-500",
+                        slaInfo.status === 'green' && "bg-green-500/20 text-green-500"
+                      )}
+                    >
+                      {slaInfo.status === 'red' && <AlertTriangle className="h-2 w-2" />}
+                      {slaInfo.status === 'amber' && <Clock className="h-2 w-2" />}
+                      {slaInfo.days > 0 ? `${slaInfo.days}d` : `${slaInfo.hours}h`}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p className="font-medium">{slaInfo.label}</p>
+                  <p className="text-muted-foreground">
+                    {slaInfo.days > 0 
+                      ? `${slaInfo.days} day${slaInfo.days !== 1 ? 's' : ''} in stage`
+                      : `${slaInfo.hours} hour${slaInfo.hours !== 1 ? 's' : ''} in stage`
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Assignment Avatar with Dropdown */}
             <Popover>
