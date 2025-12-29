@@ -122,9 +122,10 @@ const FloatingChat: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -182,12 +183,24 @@ const FloatingChat: React.FC = () => {
   // Handle scroll to check if scroll button should be shown
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
-    setShowScrollButton(!isNearBottom);
+    const threshold = 100;
+    const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < threshold;
+    setIsNearBottom(nearBottom);
+    setShowScrollButton(!nearBottom);
   }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+    const viewport = scrollViewportRef.current;
+    if (viewport) {
+      if (smooth) {
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior: "smooth"
+        });
+      } else {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -400,12 +413,28 @@ const FloatingChat: React.FC = () => {
     }
   }, [currentDMUserId, view, fetchDirectMessages]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (only if user was near bottom)
   useEffect(() => {
-    if (!showScrollButton) {
-      scrollToBottom(false);
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      if (isNearBottom) {
+        scrollToBottom(false);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [channelMessages.length, directMessages.length, isNearBottom, scrollToBottom]);
+
+  // Scroll to bottom when entering a chat
+  useEffect(() => {
+    if ((view === "chat" && currentChannelId) || (view === "dm" && currentDMUserId)) {
+      const timer = setTimeout(() => {
+        scrollToBottom(false);
+        setIsNearBottom(true);
+        setShowScrollButton(false);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [channelMessages, directMessages, showScrollButton, scrollToBottom]);
+  }, [view, currentChannelId, currentDMUserId, scrollToBottom]);
 
   // Global presence tracking for online/offline status
   useEffect(() => {
@@ -1265,8 +1294,8 @@ const FloatingChat: React.FC = () => {
               <>
                 <ScrollArea 
                   className="flex-1 px-3 py-2" 
-                  ref={scrollAreaRef}
-                  onScrollCapture={handleScroll as any}
+                  viewportRef={scrollViewportRef}
+                  onScrollChange={handleScroll}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center py-8">
@@ -1431,20 +1460,27 @@ const FloatingChat: React.FC = () => {
                   )}
                 </ScrollArea>
 
-                {/* Scroll to bottom button */}
-                {showScrollButton && (
+                {/* Scroll to bottom button with smooth transition */}
+                <div className={cn(
+                  "absolute bottom-24 left-1/2 -translate-x-1/2 transition-all duration-200 z-10",
+                  showScrollButton 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-2 pointer-events-none"
+                )}>
                   <button
                     onClick={() => scrollToBottom()}
                     className={cn(
-                      "absolute bottom-24 left-1/2 -translate-x-1/2",
                       "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
                       "shadow-lg border border-slate-200 dark:border-slate-700",
-                      "p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                      "p-2.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700",
+                      "hover:scale-110 active:scale-95 transition-all duration-150",
+                      "flex items-center justify-center"
                     )}
+                    aria-label="Scroll to bottom"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
-                )}
+                </div>
 
                 {/* Typing indicator */}
                 {typingUsers.length > 0 && (
@@ -1515,7 +1551,8 @@ const FloatingChat: React.FC = () => {
               <>
                 <ScrollArea 
                   className="flex-1 px-3 py-2"
-                  onScrollCapture={handleScroll as any}
+                  viewportRef={scrollViewportRef}
+                  onScrollChange={handleScroll}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center py-8">
@@ -1679,20 +1716,27 @@ const FloatingChat: React.FC = () => {
                   )}
                 </ScrollArea>
 
-                {/* Scroll to bottom button */}
-                {showScrollButton && (
+                {/* Scroll to bottom button with smooth transition */}
+                <div className={cn(
+                  "absolute bottom-24 left-1/2 -translate-x-1/2 transition-all duration-200 z-10",
+                  showScrollButton 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-2 pointer-events-none"
+                )}>
                   <button
                     onClick={() => scrollToBottom()}
                     className={cn(
-                      "absolute bottom-24 left-1/2 -translate-x-1/2",
                       "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
                       "shadow-lg border border-slate-200 dark:border-slate-700",
-                      "p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                      "p-2.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700",
+                      "hover:scale-110 active:scale-95 transition-all duration-150",
+                      "flex items-center justify-center"
                     )}
+                    aria-label="Scroll to bottom"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
-                )}
+                </div>
 
                 {/* Typing indicator */}
                 {typingUsers.length > 0 && (
