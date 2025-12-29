@@ -61,7 +61,7 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/30 overflow-hidden",
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/30 overflow-hidden snap-start",
         isCompact 
           ? "rounded-md w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] landscape:w-[90px]" 
           : "rounded-lg w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px]"

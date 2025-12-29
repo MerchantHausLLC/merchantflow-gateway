@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { CreditCard, Zap, Minimize2, Maximize2 } from "lucide-react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { CreditCard, Zap, Minimize2, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Opportunity,
   OpportunityStage,
@@ -14,6 +14,8 @@ import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DualPipelineBoardProps {
   opportunities: Opportunity[];
@@ -63,6 +65,50 @@ const PipelineSection = ({
   const totalCount = opportunities.length;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+
+  // Calculate column width based on compact mode and screen size
+  const getColumnWidth = useCallback(() => {
+    if (typeof window === 'undefined') return 150;
+    const width = window.innerWidth;
+    if (isCompact) {
+      if (width < 640) return 90;
+      if (width < 768) return 110;
+      if (width < 1024) return 130;
+      return 150;
+    }
+    if (width < 640) return 100;
+    if (width < 768) return 130;
+    if (width < 1024) return 150;
+    return 180;
+  }, [isCompact]);
+
+  // Scroll to specific column
+  const scrollToColumn = useCallback((index: number) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    const clampedIndex = Math.max(0, Math.min(index, stages.length - 1));
+    const columnWidth = getColumnWidth();
+    const gap = isCompact ? 2 : 4;
+    const scrollPosition = clampedIndex * (columnWidth + gap);
+    
+    container.scrollTo({
+      left: scrollPosition,
+      behavior: 'smooth'
+    });
+    
+    setCurrentColumnIndex(clampedIndex);
+  }, [stages.length, getColumnWidth, isCompact]);
+
+  // Swipe handlers for mobile navigation
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: () => scrollToColumn(currentColumnIndex + 1),
+    onSwipeRight: () => scrollToColumn(currentColumnIndex - 1),
+    threshold: 50,
+    enabled: isMobile,
+  });
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -73,6 +119,14 @@ const PipelineSection = ({
     const syncHeaderToContent = () => {
       if (headerScroll) {
         headerScroll.scrollLeft = scrollContainer.scrollLeft;
+      }
+      
+      // Update current column index based on scroll position
+      if (isMobile) {
+        const columnWidth = getColumnWidth();
+        const gap = isCompact ? 2 : 4;
+        const newIndex = Math.round(scrollContainer.scrollLeft / (columnWidth + gap));
+        setCurrentColumnIndex(Math.max(0, Math.min(newIndex, stages.length - 1)));
       }
     };
 
@@ -89,7 +143,7 @@ const PipelineSection = ({
       scrollContainer.removeEventListener('scroll', syncHeaderToContent);
       headerScroll.removeEventListener('scroll', syncContentToHeader);
     };
-  }, []);
+  }, [isMobile, getColumnWidth, isCompact, stages.length]);
 
   const getOpportunitiesByStage = (stage: OpportunityStage) => {
     return opportunities
@@ -205,10 +259,14 @@ const PipelineSection = ({
           </div>
         </div>
 
-        {/* Scrollable Columns Content Area */}
+        {/* Scrollable Columns Content Area with Swipe Support */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10"
+          className={cn(
+            "flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10",
+            isMobile && "snap-x snap-mandatory scroll-smooth"
+          )}
+          {...swipeHandlers}
         >
           <div className={cn(
             "flex items-stretch min-w-max min-h-0 pt-1",
@@ -232,6 +290,47 @@ const PipelineSection = ({
             ))}
           </div>
         </div>
+
+        {/* Mobile Navigation Indicators */}
+        {isMobile && (
+          <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-muted/30">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground"
+              onClick={() => scrollToColumn(currentColumnIndex - 1)}
+              disabled={currentColumnIndex === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {stages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => scrollToColumn(index)}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all duration-200",
+                    index === currentColumnIndex
+                      ? "bg-primary w-3"
+                      : "bg-muted-foreground/40 hover:bg-muted-foreground/60"
+                  )}
+                  aria-label={`Go to column ${index + 1}`}
+                />
+              ))}
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground"
+              onClick={() => scrollToColumn(currentColumnIndex + 1)}
+              disabled={currentColumnIndex === stages.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
