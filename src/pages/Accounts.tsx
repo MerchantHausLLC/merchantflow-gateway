@@ -213,26 +213,23 @@ const Accounts = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-20 flex items-center px-4 md:px-6 border-b border-border gap-2">
+          <header className="h-14 flex items-center px-4 lg:px-6 border-b border-border gap-4">
             <SidebarTrigger className="md:hidden" />
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-medium">Company records</p>
-              <h1 className="text-lg md:text-xl font-semibold text-foreground">Accounts</h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">Keep every merchant profile organized and ready for outreach.</p>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-foreground">Accounts</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Merchant profiles and company records</p>
             </div>
-            <div className="ml-auto">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search accounts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-72" // widen search input from 64 to 72
-                />
-              </div>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search accounts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 w-48 lg:w-64"
+              />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
             <div className="grid gap-4 md:grid-cols-3 mb-6">
               <Card className="border-muted/70">
                 <CardHeader className="pb-2">
