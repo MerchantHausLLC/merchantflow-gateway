@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { 
   MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, 
   Smile, Search, Edit2, Bell, BellOff, Paperclip, Image, FileText, Download,
-  MoreHorizontal, Pin, Trash2, ArrowDown, Wifi, WifiOff, RefreshCw
+  MoreHorizontal, Pin, Trash2, ArrowDown, Wifi, WifiOff, RefreshCw, Volume2, VolumeX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage, formatMessageTime } from "@/hooks/useChatUtils";
+import { useChatSounds } from "@/hooks/useChatSounds";
 
 type DirectMessage = {
   id: string;
@@ -147,6 +148,9 @@ const FloatingChat: React.FC = () => {
     currentChannelId,
     currentDMUserId,
   });
+
+  // Chat sounds hook
+  const { soundEnabled, toggleSound, playMessageSound, playSentSound } = useChatSounds();
 
   // Listen for openFloatingChat event from notifications
   useEffect(() => {
@@ -478,12 +482,41 @@ const FloatingChat: React.FC = () => {
   useEffect(() => {
     if (!currentChannelId || view !== "chat") return;
 
+    let lastMessageCount = channelMessages.length;
+
     const channel = supabase
       .channel(`chat-messages-${currentChannelId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `channel_id=eq.${currentChannelId}`
+        },
+        (payload) => {
+          const newMsg = payload.new as ChannelMessage;
+          // Play sound if message is from another user
+          if (newMsg.user_id !== user?.id) {
+            playMessageSound();
+          }
+          fetchChannelMessages();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `channel_id=eq.${currentChannelId}`
+        },
+        () => fetchChannelMessages()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
           schema: "public",
           table: "chat_messages",
           filter: `channel_id=eq.${currentChannelId}`
@@ -495,7 +528,7 @@ const FloatingChat: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentChannelId, view, fetchChannelMessages]);
+  }, [currentChannelId, view, fetchChannelMessages, user?.id, playMessageSound]);
 
   // Subscribe to realtime direct messages
   useEffect(() => {
@@ -519,12 +552,18 @@ const FloatingChat: React.FC = () => {
               (newMsg.sender_id === currentDMUserId && newMsg.receiver_id === user.id);
             
             if (isPartOfConversation) {
+              // Play sound for incoming message from other user
+              if (payload.eventType === 'INSERT' && newMsg.sender_id !== user.id) {
+                playMessageSound();
+              }
               fetchDirectMessages();
               return;
             }
           }
           
           if (payload.eventType === 'INSERT' && newMsg.receiver_id === user.id) {
+            // Play notification sound for messages when not in that conversation
+            playMessageSound();
             setOnlineUsers(prev => prev.map(u => 
               u.id === newMsg.sender_id 
                 ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
@@ -542,7 +581,7 @@ const FloatingChat: React.FC = () => {
       supabase.removeChannel(dmChannel);
       dmChannelRef.current = null;
     };
-  }, [user, view, currentDMUserId, fetchDirectMessages]);
+  }, [user, view, currentDMUserId, fetchDirectMessages, playMessageSound]);
 
   // Subscribe to reactions
   useEffect(() => {
@@ -1102,6 +1141,24 @@ const FloatingChat: React.FC = () => {
                   </TooltipContent>
                 </Tooltip>
               )}
+              {/* Sound toggle button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleSound}
+                    className="hover:bg-white/10 p-2 rounded-lg transition-colors"
+                  >
+                    {soundEnabled ? (
+                      <Volume2 className="h-4 w-4" />
+                    ) : (
+                      <VolumeX className="h-4 w-4 opacity-60" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {soundEnabled ? "Mute sounds" : "Unmute sounds"}
+                </TooltipContent>
+              </Tooltip>
               {(view === "chat" || view === "dm") && (
                 <button
                   onClick={() => setShowSearch(!showSearch)}
