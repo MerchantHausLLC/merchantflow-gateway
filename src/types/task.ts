@@ -1,3 +1,5 @@
+export type TaskPriority = "low" | "medium" | "high";
+
 export interface Task {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export interface Task {
   createdBy?: string;
   createdAt: string;
   status: "open" | "in_progress" | "done";
+  priority?: TaskPriority;
   dueAt?: string;
   relatedOpportunityId?: string;
   relatedContactId?: string;
@@ -21,6 +24,7 @@ export type TaskInput = {
   description?: string;
   assignee: string;
   createdBy?: string;
+  priority?: TaskPriority;
   dueAt?: string;
   relatedOpportunityId?: string;
   relatedContactId?: string;

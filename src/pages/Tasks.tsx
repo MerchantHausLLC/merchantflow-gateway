@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/contexts/TasksContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Task } from "@/types/task";
+import { Task, TaskPriority } from "@/types/task";
 import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,10 @@ import {
   Building2,
   User,
   Link2,
+  Flag,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
 import {
   Bar,
@@ -72,10 +76,18 @@ const statusLabels: Record<Task["status"], string> = {
   done: "Done",
 };
 
-type SortKey = "title" | "account" | "contact" | "createdAt" | "dueAt" | "assignee" | "status";
+// Priority configuration
+const priorityConfig: Record<TaskPriority, { label: string; color: string; icon: typeof ArrowUp }> = {
+  high: { label: "High", color: "text-red-500 border-red-500/30", icon: ArrowUp },
+  medium: { label: "Medium", color: "text-amber-500 border-amber-500/30", icon: Minus },
+  low: { label: "Low", color: "text-blue-500 border-blue-500/30", icon: ArrowDown },
+};
+
+type SortKey = "title" | "account" | "contact" | "createdAt" | "dueAt" | "assignee" | "status" | "priority";
 type SortDirection = 'asc' | 'desc';
 type StatusFilter = 'all' | 'open' | 'in_progress' | 'done';
 type ViewFilter = 'all' | 'mine' | 'team';
+type PriorityFilter = 'all' | TaskPriority;
 
 const Tasks = () => {
   const { user } = useAuth();
@@ -88,6 +100,7 @@ const Tasks = () => {
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
@@ -100,6 +113,7 @@ const Tasks = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
+  const [priority, setPriority] = useState<TaskPriority>("medium");
   const [dueAt, setDueAt] = useState<string>("");
   const [showNewModal, setShowNewModal] = useState(false);
   const [relatedOpportunityId, setRelatedOpportunityId] = useState<string>("");
@@ -202,6 +216,11 @@ const Tasks = () => {
       result = result.filter((task) => task.status === statusFilter);
     }
 
+    // Priority filter
+    if (priorityFilter !== 'all') {
+      result = result.filter((task) => task.priority === priorityFilter);
+    }
+
     // View filter
     if (viewFilter === 'mine') {
       result = result.filter((task) => task.assignee === displayName || task.assignee === user?.email);
@@ -228,13 +247,18 @@ const Tasks = () => {
           return (a.assignee || '').localeCompare(b.assignee || '') * dir;
         case 'status':
           return (a.status || '').localeCompare(b.status || '') * dir;
+        case 'priority':
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          const aPriority = priorityOrder[a.priority || 'medium'];
+          const bPriority = priorityOrder[b.priority || 'medium'];
+          return (aPriority - bPriority) * dir;
         default:
           return 0;
       }
     });
 
     return result;
-  }, [tasks, dateRange, filterBy, searchQuery, statusFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
+  }, [tasks, dateRange, filterBy, searchQuery, statusFilter, priorityFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
 
   // Stats
   const stats = useMemo(() => {
@@ -264,6 +288,7 @@ const Tasks = () => {
       title,
       description,
       assignee,
+      priority,
       dueAt: dueAt || undefined,
       createdBy: displayName,
       comments: description,
@@ -274,6 +299,7 @@ const Tasks = () => {
 
     setTitle('');
     setDescription('');
+    setPriority('medium');
     setDueAt('');
     setRelatedOpportunityId('');
     setRelatedContactId('');
@@ -364,6 +390,33 @@ const Tasks = () => {
                   </SelectContent>
                 </Select>
 
+                <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as PriorityFilter)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="high">
+                      <div className="flex items-center gap-1.5">
+                        <ArrowUp className="h-3 w-3 text-red-500" />
+                        High
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <div className="flex items-center gap-1.5">
+                        <Minus className="h-3 w-3 text-amber-500" />
+                        Medium
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="low">
+                      <div className="flex items-center gap-1.5">
+                        <ArrowDown className="h-3 w-3 text-blue-500" />
+                        Low
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
                 {viewFilter === 'team' && (
                   <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
                     <SelectTrigger className="w-[140px]">
@@ -432,14 +485,46 @@ const Tasks = () => {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="due">Due date</Label>
-                          <Input
-                            id="due"
-                            type="date"
-                            value={dueAt}
-                            onChange={(e) => setDueAt(e.target.value)}
-                          />
+                          <Label className="flex items-center gap-1.5">
+                            <Flag className="h-3.5 w-3.5" />
+                            Priority
+                          </Label>
+                          <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="high">
+                                <div className="flex items-center gap-1.5">
+                                  <ArrowUp className="h-3 w-3 text-red-500" />
+                                  High
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="medium">
+                                <div className="flex items-center gap-1.5">
+                                  <Minus className="h-3 w-3 text-amber-500" />
+                                  Medium
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="low">
+                                <div className="flex items-center gap-1.5">
+                                  <ArrowDown className="h-3 w-3 text-blue-500" />
+                                  Low
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="due">Due date</Label>
+                        <Input
+                          id="due"
+                          type="date"
+                          value={dueAt}
+                          onChange={(e) => setDueAt(e.target.value)}
+                        />
                       </div>
 
                       <div className="space-y-2">
@@ -529,11 +614,11 @@ const Tasks = () => {
                         <TableRow>
                           <TableHead className="w-12">#</TableHead>
                           <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
+                          <SortableTableHead field="priority" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Priority</SortableTableHead>
                           <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                           <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
                           <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
                           <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
-                          <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -547,6 +632,19 @@ const Tasks = () => {
                                   <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const taskPriority = task.priority || 'medium';
+                                const config = priorityConfig[taskPriority];
+                                const IconComponent = config.icon;
+                                return (
+                                  <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
+                                    <IconComponent className="h-3 w-3" />
+                                    {config.label}
+                                  </Badge>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               {task.accountName ? (
@@ -593,9 +691,6 @@ const Tasks = () => {
                                 {formatDate(task.dueAt)}
                               </div>
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDate(task.createdAt)}
-                            </TableCell>
                           </TableRow>
                         ))}
                         {filteredTasks.length === 0 && (
@@ -610,44 +705,56 @@ const Tasks = () => {
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {filteredTasks.map((task) => (
-                      <Card key={task.id} className="p-3">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium text-sm leading-tight">{task.title}</h4>
-                            <Badge variant="outline" className={cn(
-                              "text-xs flex-shrink-0",
-                              task.status === 'open' && "border-blue-500/30 text-blue-500",
-                              task.status === 'in_progress' && "border-amber-500/30 text-amber-500",
-                              task.status === 'done' && "border-emerald-500/30 text-emerald-500"
-                            )}>
-                              {statusLabels[task.status]}
-                            </Badge>
-                          </div>
-                          {task.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {task.accountName && (
-                              <div className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                {task.accountName}
+                    {filteredTasks.map((task) => {
+                      const taskPriority = task.priority || 'medium';
+                      const priorityConf = priorityConfig[taskPriority];
+                      const PriorityIcon = priorityConf.icon;
+                      return (
+                        <Card key={task.id} className="p-3">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />
+                                <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
                               </div>
-                            )}
-                            <div className="flex items-center gap-1">
-                              <UserRound className="h-3 w-3" />
-                              {task.assignee || 'Unassigned'}
+                              <Badge variant="outline" className={cn(
+                                "text-xs flex-shrink-0",
+                                task.status === 'open' && "border-blue-500/30 text-blue-500",
+                                task.status === 'in_progress' && "border-amber-500/30 text-amber-500",
+                                task.status === 'done' && "border-emerald-500/30 text-emerald-500"
+                              )}>
+                                {statusLabels[task.status]}
+                              </Badge>
                             </div>
-                            {task.dueAt && (
-                              <div className="flex items-center gap-1">
-                                <CalendarClock className="h-3 w-3" />
-                                {formatDate(task.dueAt)}
-                              </div>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                             )}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}>
+                                <PriorityIcon className="h-2.5 w-2.5" />
+                                {priorityConf.label}
+                              </Badge>
+                              {task.accountName && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {task.accountName}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <UserRound className="h-3 w-3" />
+                                {task.assignee || 'Unassigned'}
+                              </div>
+                              {task.dueAt && (
+                                <div className="flex items-center gap-1">
+                                  <CalendarClock className="h-3 w-3" />
+                                  {formatDate(task.dueAt)}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                     {filteredTasks.length === 0 && (
                       <div className="col-span-2 py-12 text-center text-muted-foreground">
                         No tasks found.
