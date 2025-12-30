@@ -324,6 +324,19 @@ All colors MUST be HSL.
   }
 }
 
+/* Mobile-landscape (short height) hardening */
+@media (orientation: landscape) and (max-height: 500px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Containment can clip / mis-measure in some mobile browsers */
+  .orientation-stable {
+    contain: none;
+  }
+}
+
 /* Prevent flickering during orientation change animation */
 @media screen and (orientation: portrait) {
   html, body {

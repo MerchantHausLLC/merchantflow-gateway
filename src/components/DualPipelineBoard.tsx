@@ -418,7 +418,7 @@ const DualPipelineBoard = ({
   return (
     <>
       {/* Compact Toggle Header */}
-      <div className="flex-shrink-0 px-2 py-1 flex justify-end">
+      <div className="flex-shrink-0 px-2 py-1 flex justify-end landscape:hidden">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -447,8 +447,8 @@ const DualPipelineBoard = ({
       </div>
 
       <div className={cn(
-        "flex-1 min-h-0 w-full flex flex-col gap-2 overflow-auto orientation-stable",
-        isCompact ? "p-1 gap-1 landscape:p-1 landscape:gap-1" : "p-2"
+        "flex-1 min-h-0 w-full flex flex-col gap-2 overflow-auto orientation-stable landscape:flex-row landscape:overflow-hidden",
+        isCompact ? "p-1 gap-1 landscape:p-1 landscape:gap-1" : "p-2 landscape:p-1"
       )}>
         {/* NMI Payments Pipeline Section */}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
