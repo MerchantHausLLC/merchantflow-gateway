@@ -158,10 +158,16 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area */}
-      <div className={cn(
-        "flex-1 overflow-y-auto overscroll-contain min-h-0",
-        isCompact ? "p-0.5 space-y-0.5" : "p-1 space-y-1"
-      )} style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div 
+        className={cn(
+          "flex-1 overflow-y-auto overscroll-contain min-h-0",
+          isCompact ? "p-0.5 space-y-0.5" : "p-1 space-y-1"
+        )} 
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y'
+        }}
+      >
         {opportunities.length === 0 ? (
           <div className={cn(
             "flex items-center justify-center text-muted-foreground/60 border border-dashed border-border/30 rounded",
