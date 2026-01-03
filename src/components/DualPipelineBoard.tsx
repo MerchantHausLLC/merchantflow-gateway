@@ -14,7 +14,7 @@ import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DualPipelineBoardProps {
@@ -102,13 +102,7 @@ const PipelineSection = ({
     setCurrentColumnIndex(clampedIndex);
   }, [stages.length, getColumnWidth, isCompact]);
 
-  // Swipe handlers for mobile navigation
-  const swipeHandlers = useSwipeGesture({
-    onSwipeLeft: () => scrollToColumn(currentColumnIndex + 1),
-    onSwipeRight: () => scrollToColumn(currentColumnIndex - 1),
-    threshold: 50,
-    enabled: isMobile,
-  });
+  // Native scroll handles swipe navigation - no custom handlers needed
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -265,14 +259,18 @@ const PipelineSection = ({
           </div>
         </div>
 
-        {/* Scrollable Columns Content Area with Swipe Support */}
+        {/* Scrollable Columns Content Area */}
         <div
           ref={scrollContainerRef}
           className={cn(
             "flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10",
-            isMobile && "snap-x snap-mandatory scroll-smooth"
+            isMobile && "snap-x snap-mandatory"
           )}
-          {...swipeHandlers}
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
+            touchAction: 'pan-x pan-y'
+          }}
         >
           <div className={cn(
             "flex items-stretch min-w-max min-h-0 pt-1",
