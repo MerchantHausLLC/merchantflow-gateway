@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AppLayout } from "@/components/AppLayout";
 
 type Message = {
   id: string;
@@ -714,167 +715,168 @@ const Chat: React.FC = () => {
 
   if (loading || loadingData) {
     return (
-      <div className="p-4 flex items-center justify-center h-[70vh]">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <AppLayout>
+        <div className="p-4 flex items-center justify-center h-[70vh]">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold">Chat</h1>
-          <span className="text-sm text-muted-foreground">
-            Signed in as <span className="font-medium text-foreground">{userName}</span>
-          </span>
-          {/* Connection status indicator */}
-          {!isConnected && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                    isReconnecting 
-                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400" 
-                      : "bg-red-500/20 text-red-600 dark:text-red-400"
-                  )}>
-                    {isReconnecting ? (
-                      <>
-                        <RefreshCw className="h-3 w-3 animate-spin" />
-                        Reconnecting
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="h-3 w-3" />
-                        Offline
-                      </>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isReconnecting 
-                    ? "Attempting to reconnect to the server..." 
-                    : "Connection lost. Messages may not be delivered."}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Tasks Modal Button */}
-          <Dialog open={tasksModalOpen} onOpenChange={setTasksModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="relative">
-                <ListTodo className="h-4 w-4 mr-2" />
-                My Tasks
-                {myTasks.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                    {myTasks.length > 9 ? '9+' : myTasks.length}
-                  </span>
-                )}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <ListTodo className="h-5 w-5" />
-                  My Tasks ({myTasks.length})
-                </DialogTitle>
-              </DialogHeader>
-              <div className="overflow-y-auto max-h-[60vh] space-y-2 mt-4">
-                {myTasks.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No pending tasks</p>
-                ) : (
-                  myTasks.map(task => (
-                    <div
-                      key={task.id}
-                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{task.title}</p>
-                          {task.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Badge variant={task.status === 'open' ? 'default' : 'secondary'} className="text-xs">
-                              {task.status === 'open' ? 'Open' : 'In Progress'}
-                            </Badge>
-                            {task.accountName && (
-                              <span className="text-xs text-muted-foreground">
-                                {task.accountName}
-                              </span>
+    <AppLayout>
+      <div className="flex flex-col h-full p-4 gap-4">
+        <div className="flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-semibold">Team Chat</h1>
+            <span className="text-sm text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{userName}</span>
+            </span>
+            {/* Connection status indicator */}
+            {!isConnected && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                      isReconnecting 
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400" 
+                        : "bg-red-500/20 text-red-600 dark:text-red-400"
+                    )}>
+                      {isReconnecting ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                          Reconnecting
+                        </>
+                      ) : (
+                        <>
+                          <WifiOff className="h-3 w-3" />
+                          Offline
+                        </>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isReconnecting 
+                      ? "Attempting to reconnect to the server..." 
+                      : "Connection lost. Messages may not be delivered."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Tasks Modal Button */}
+            <Dialog open={tasksModalOpen} onOpenChange={setTasksModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="relative">
+                  <ListTodo className="h-4 w-4 mr-2" />
+                  My Tasks
+                  {myTasks.length > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {myTasks.length > 9 ? '9+' : myTasks.length}
+                    </span>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <ListTodo className="h-5 w-5" />
+                    My Tasks ({myTasks.length})
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="overflow-y-auto max-h-[60vh] space-y-2 mt-4">
+                  {myTasks.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No pending tasks</p>
+                  ) : (
+                    myTasks.map(task => (
+                      <div
+                        key={task.id}
+                        className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{task.title}</p>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {task.description}
+                              </p>
                             )}
-                            {task.dueAt && (
-                              <span className="text-xs text-muted-foreground">
-                                Due: {new Date(task.dueAt).toLocaleDateString()}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <Badge variant={task.status === 'open' ? 'default' : 'secondary'} className="text-xs">
+                                {task.status === 'open' ? 'Open' : 'In Progress'}
+                              </Badge>
+                              {task.accountName && (
+                                <span className="text-xs text-muted-foreground">
+                                  {task.accountName}
+                                </span>
+                              )}
+                              {task.dueAt && (
+                                <span className="text-xs text-muted-foreground">
+                                  Due: {new Date(task.dueAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/tasks" onClick={() => setTasksModalOpen(false)}>
-                    View All Tasks
-                  </Link>
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" asChild>
-            <Link to="/">Home</Link>
-          </Button>
-        </div>
-      </div>
-      <div className="flex flex-col lg:flex-row gap-4 h-[70vh]">
-        <aside className="lg:w-1/4 border rounded-md p-4 bg-background overflow-y-auto">
-          <ChannelList
-            channels={channels}
-            current={currentChannelId}
-            onSelect={handleSelectChannel}
-            onCreate={handleCreateChannel}
-            onCreateDM={handleCreateDM}
-            currentUserName={userName}
-            unreadByChannel={unreadByChannel}
-          />
-        </aside>
-        <div className="flex-grow border rounded-md p-4 bg-background flex flex-col">
-          <div className="flex items-center gap-2 mb-2">
-            {currentChannel?.channel_type === 'direct' ? (
-              <>
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="font-semibold">{currentChannel.participant_name}</h2>
-              </>
-            ) : (
-              <>
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <h2 className="font-semibold">{getChannelDisplayName()}</h2>
-              </>
-            )}
+                    ))
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/my-tasks" onClick={() => setTasksModalOpen(false)}>
+                      View All Tasks
+                    </Link>
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-          <ChatBox
-            messages={messages}
-            currentUserId={user?.id || ""}
-            onSendMessage={handleSendMessage}
-            profiles={profiles}
-            typingUsers={typingUsers}
-            onTyping={handleTyping}
-          />
+        </div>
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+          <aside className="lg:w-1/4 border rounded-md p-4 bg-background overflow-y-auto">
+            <ChannelList
+              channels={channels}
+              current={currentChannelId}
+              onSelect={handleSelectChannel}
+              onCreate={handleCreateChannel}
+              onCreateDM={handleCreateDM}
+              currentUserName={userName}
+              unreadByChannel={unreadByChannel}
+            />
+          </aside>
+          <div className="flex-grow border rounded-md p-4 bg-background flex flex-col min-h-0">
+            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+              {currentChannel?.channel_type === 'direct' ? (
+                <>
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h2 className="font-semibold">{currentChannel.participant_name}</h2>
+                </>
+              ) : (
+                <>
+                  <Hash className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="font-semibold">{getChannelDisplayName()}</h2>
+                </>
+              )}
+            </div>
+            <ChatBox
+              messages={messages}
+              currentUserId={user?.id || ""}
+              onSendMessage={handleSendMessage}
+              profiles={profiles}
+              typingUsers={typingUsers}
+              onTyping={handleTyping}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

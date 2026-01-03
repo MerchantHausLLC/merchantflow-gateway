@@ -792,6 +792,7 @@ const Index = () => {
             onDelete={handleDelete}
             onConvertToGateway={handleConvertToGatewayTrack}
             onMoveToProcessing={handleMoveToProcessing}
+            onRefresh={fetchOpportunities}
           />
         </main>
       </div>

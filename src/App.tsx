@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import FloatingChat from "@/components/FloatingChat";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Accounts from "./pages/Accounts";
@@ -24,12 +23,14 @@ import SOP from "./pages/SOP";
 import RevenueCalculator from "./pages/RevenueCalculator";
 import PreboardingWizard from "./pages/PreboardingWizard";
 import Tasks from "./pages/Tasks";
+import MyTasks from "./pages/MyTasks";
 import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import DeletionRequests from "./pages/DeletionRequests";
 import DataExport from "./pages/DataExport";
 import Opportunities from "./pages/Opportunities";
 import OpportunityDetail from "./pages/OpportunityDetail";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -61,15 +62,15 @@ const App = () => (
                 <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
                 <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              {/* Floating chat widget - available on all pages for authenticated users */}
-              <FloatingChat />
             </TasksProvider>
           </AuthProvider>
         </BrowserRouter>

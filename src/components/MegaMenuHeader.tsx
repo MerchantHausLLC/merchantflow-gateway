@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,12 +47,14 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
 interface NavItem {
@@ -78,6 +81,7 @@ const navMain: NavGroup[] = [
       { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
       { title: "My Tasks", url: "/my-tasks", icon: ClipboardList, description: "Tasks assigned to you" },
+      { title: "Team Chat", url: "/chat", icon: MessageCircle, description: "Chat with team members" },
     ],
   },
   {
@@ -115,6 +119,61 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  // Fetch unread DM count
+  const fetchUnreadChatCount = useCallback(async () => {
+    if (!user) return;
+
+    const { count, error } = await supabase
+      .from("direct_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("receiver_id", user.id)
+      .is("read_at", null);
+
+    if (!error && count !== null) {
+      setUnreadChatCount(count);
+    }
+  }, [user]);
+
+  // Subscribe to new messages for unread count
+  useEffect(() => {
+    if (!user) return;
+
+    fetchUnreadChatCount();
+
+    const channel = supabase
+      .channel("header-chat-unread")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "direct_messages",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        () => {
+          setUnreadChatCount((prev) => prev + 1);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "direct_messages",
+        },
+        () => {
+          // Refetch when messages are marked as read
+          fetchUnreadChatCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchUnreadChatCount]);
 
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
@@ -266,6 +325,26 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Chat Button with Unread Count */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/chat")}
+                className="h-9 w-9 relative"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
+                    {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                  </span>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Team Chat</TooltipContent>
+          </Tooltip>
 
           <NotificationBell />
 
