@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
     console.log("Starting data export for admin:", user.email);
 
-    // Fetch all tables
+    // Fetch all tables including chat data
     const tables = [
       "accounts",
       "applications",
@@ -57,6 +57,10 @@ Deno.serve(async (req) => {
       "profiles",
       "user_roles",
       "onboarding_wizard_states",
+      "chat_channels",
+      "chat_messages",
+      "direct_messages",
+      "message_reactions",
     ];
 
     const exportData: Record<string, unknown[]> = {};

@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2 } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive } from "lucide-react";
+import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 
 // Theme variant icons mapping
@@ -30,6 +31,7 @@ const Settings = () => {
   const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -193,6 +195,56 @@ const Settings = () => {
       toast.error("Failed to sign out all users");
     } finally {
       setIsSigningOutAll(false);
+    }
+  };
+
+  const handleDataExport = async () => {
+    setIsExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const response = await supabase.functions.invoke("export-data", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const { data, metadata } = response.data;
+
+      // Create ZIP file
+      const zip = new JSZip();
+
+      // Add metadata
+      zip.file("_metadata.json", JSON.stringify(metadata, null, 2));
+
+      // Add each table as JSON file
+      for (const [table, records] of Object.entries(data)) {
+        zip.file(`${table}.json`, JSON.stringify(records, null, 2));
+      }
+
+      // Generate and download
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `merchantflow-export-${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Data exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to export data");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -412,6 +464,54 @@ const Settings = () => {
                   </p>
                 </CardContent>
               </Card>
+
+              {/* Data Export - Admin Only */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileArchive className="h-5 w-5" />
+                      Data Export
+                    </CardTitle>
+                    <CardDescription>
+                      Download a complete backup of all application data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p className="font-medium">Includes:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Accounts & Contacts</li>
+                        <li>Opportunities & Applications</li>
+                        <li>Tasks & Activities</li>
+                        <li>Comments & Documents metadata</li>
+                        <li>Chat messages & Direct messages</li>
+                        <li>Notifications & User profiles</li>
+                      </ul>
+                    </div>
+                    <Button 
+                      onClick={handleDataExport} 
+                      disabled={isExporting}
+                      className="w-full"
+                    >
+                      {isExporting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download ZIP Backup
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Exports all data as JSON files in a ZIP archive
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Admin Controls - Only for admins */}
               {isAdmin && (
