@@ -54,6 +54,7 @@ export const NotificationBell = () => {
       const { data } = await supabase
         .from('notifications')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
       
@@ -62,7 +63,7 @@ export const NotificationBell = () => {
 
     fetchNotifications();
 
-    // Subscribe to new notifications
+    // Subscribe to new notifications for this user
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -71,6 +72,7 @@ export const NotificationBell = () => {
           event: '*',
           schema: 'public',
           table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
         },
         () => fetchNotifications()
       )
