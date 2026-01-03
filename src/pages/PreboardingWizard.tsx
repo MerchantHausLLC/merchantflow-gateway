@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
-import {
-  AppSidebar
-} from "@/components/AppSidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -396,20 +389,13 @@ export default function PreboardingWizard() {
   const currentStep = STEPS[stepIndex];
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-merchant-black text-merchant-text flex">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-merchant-gray bg-merchant-black gap-2">
-            <SidebarTrigger className="md:hidden text-gray-400" />
-            <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-merchant-redLight" />
-              <h1 className="text-lg font-semibold text-white">Preboarding Wizard</h1>
-            </div>
-            <div className="ml-auto text-xs text-gray-400">Step {stepIndex + 1} of {STEPS.length}</div>
-          </header>
-
-          <main className="flex-1 overflow-auto p-4 md:p-8">
+    <AppLayout
+      pageTitle="Preboarding Wizard"
+      headerActions={
+        <span className="text-xs text-muted-foreground">Step {stepIndex + 1} of {STEPS.length}</span>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 md:p-8">
             <div className="max-w-6xl mx-auto space-y-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
@@ -584,10 +570,8 @@ export default function PreboardingWizard() {
                 </aside>
               </div>
             </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+      </main>
+    </AppLayout>
   );
 }
 
