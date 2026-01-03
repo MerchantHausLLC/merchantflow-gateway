@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { CreditCard, Zap, Minimize2, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CreditCard, Zap, Minimize2, Maximize2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import {
   Opportunity,
   OpportunityStage,
@@ -27,6 +27,7 @@ interface DualPipelineBoardProps {
   onDelete?: (id: string) => void;
   onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
   onMoveToProcessing?: (opportunity: Opportunity) => Promise<void> | void;
+  onRefresh?: () => Promise<void>;
 }
 
 interface PipelineSectionProps {
@@ -351,10 +352,24 @@ const DualPipelineBoard = ({
   onDelete,
   onConvertToGateway,
   onMoveToProcessing,
+  onRefresh,
 }: DualPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isCompact, setIsCompact] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isMobile = useIsMobile();
+  
+  const handleRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const { processingOpportunities, gatewayOpportunities } = useMemo(() => {
     const processing: Opportunity[] = [];
     const gateway: Opportunity[] = [];
@@ -422,8 +437,26 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      {/* Compact Toggle Header */}
-      <div className="flex-shrink-0 px-2 py-1 flex justify-end mobile-landscape:hidden">
+      {/* Compact Toggle & Refresh Header */}
+      <div className="flex-shrink-0 px-2 py-1 flex items-center justify-between mobile-landscape:hidden">
+        {/* Refresh Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-7 px-2 gap-1 text-xs"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Pull to refresh data</TooltipContent>
+        </Tooltip>
+
+        {/* Compact Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
