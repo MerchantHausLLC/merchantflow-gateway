@@ -202,12 +202,12 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
                       className={({ isActive }) =>
                         cn(
                           navigationMenuTriggerStyle(),
-                          "bg-transparent",
+                          "bg-transparent flex items-center",
                           isActive && "bg-accent text-accent-foreground"
                         )
                       }
                     >
-                      <item.icon className="h-4 w-4 mr-2" />
+                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
                       {item.title}
                     </RouterNavLink>
                   </NavigationMenuLink>
