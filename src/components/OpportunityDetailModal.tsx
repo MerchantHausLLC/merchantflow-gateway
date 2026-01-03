@@ -493,12 +493,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   return (
     <>
       <Dialog open={!!opportunity} onOpenChange={onClose}>
-        <DialogContent className={cn(
-          "overflow-hidden transition-all duration-200",
-          isMaximized 
-            ? "sm:max-w-[95vw] max-h-[95vh]" 
-            : "sm:max-w-2xl max-h-[90vh]"
-        )}>
+        <DialogContent 
+          className={cn(
+            "flex flex-col transition-all duration-200",
+            isMaximized 
+              ? "sm:max-w-[95vw] h-[95vh]" 
+              : "sm:max-w-2xl h-[90vh]"
+          )}
+          aria-describedby={undefined}
+        >
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -719,8 +722,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             <StagePath opportunity={opportunity} />
           </div>
 
-          <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-5">
+          <Tabs defaultValue="overview" className="mt-4 flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
               <TabsTrigger value="overview" className="flex items-center gap-1">
                 <ClipboardList className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Overview</span>
@@ -743,10 +746,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsTrigger>
             </TabsList>
 
-            <div className={cn(
-              "overflow-y-auto pr-2",
-              isMaximized ? "max-h-[65vh]" : "max-h-[50vh]"
-            )}>
+            <div className="flex-1 min-h-0 overflow-y-auto pr-2">
               {/* Overview Tab - Application Progress */}
               <TabsContent value="overview" className="mt-4 space-y-4">
                 <ApplicationProgress 
