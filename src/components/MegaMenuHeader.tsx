@@ -599,30 +599,17 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
 
                 {/* Quick Actions */}
                 <div className="p-3 border-b border-border/50 bg-muted/20">
-                  <div className="grid grid-cols-2 gap-2">
-                    <SheetClose asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-11 justify-start gap-2 bg-background hover:bg-accent"
-                        onClick={() => navigate("/settings")}
-                      >
-                        <Settings className="h-4 w-4 text-primary" />
-                        Settings
-                      </Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-11 justify-start gap-2 bg-background hover:bg-accent"
-                        onClick={() => navigate("/notifications")}
-                      >
-                        <Bell className="h-4 w-4 text-primary" />
-                        Notifications
-                      </Button>
-                    </SheetClose>
-                  </div>
+                  <SheetClose asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full h-11 justify-start gap-2 bg-background hover:bg-accent"
+                      onClick={() => navigate("/settings")}
+                    >
+                      <Settings className="h-4 w-4 text-primary" />
+                      Settings
+                    </Button>
+                  </SheetClose>
                 </div>
 
                 {/* Navigation */}
