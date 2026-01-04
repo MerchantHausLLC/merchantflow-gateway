@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Square } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle } from "lucide-react";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 
@@ -21,10 +21,12 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
   'dark-midnight': <Stars className="h-4 w-4" />,
   'dark-forest': <Trees className="h-4 w-4" />,
   'dark-slate': <Cloudy className="h-4 w-4" />,
+  'dark-mono': <Circle className="h-4 w-4" />,
   'light-default': <Sun className="h-4 w-4" />,
   'light-ocean': <Waves className="h-4 w-4" />,
   'light-warm': <Flame className="h-4 w-4" />,
-  'light-slate': <Square className="h-4 w-4" />,
+  'light-slate': <Cloudy className="h-4 w-4" />,
+  'light-mono': <Circle className="h-4 w-4" />,
 };
 
 const Settings = () => {

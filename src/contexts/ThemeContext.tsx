@@ -7,10 +7,12 @@ export type ThemeVariant =
   | 'dark-midnight' 
   | 'dark-forest'
   | 'dark-slate'
+  | 'dark-mono'
   | 'light-default' 
   | 'light-ocean' 
   | 'light-warm'
-  | 'light-slate';
+  | 'light-slate'
+  | 'light-mono';
 
 export interface ThemeOption {
   id: ThemeVariant;
@@ -24,10 +26,12 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'dark-midnight', name: 'Midnight', mode: 'dark', description: 'Deep blue tones' },
   { id: 'dark-forest', name: 'Forest', mode: 'dark', description: 'Dark green accents' },
   { id: 'dark-slate', name: 'Slate', mode: 'dark', description: 'Cool grey tones' },
+  { id: 'dark-mono', name: 'Mono', mode: 'dark', description: 'Minimalist black & white' },
   { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
   { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
   { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
   { id: 'light-slate', name: 'Slate', mode: 'light', description: 'Neutral grey tones' },
+  { id: 'light-mono', name: 'Mono', mode: 'light', description: 'Minimalist black & white' },
 ];
 
 interface ThemeContextType {
@@ -150,7 +154,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-slate', 'light-default', 'light-ocean', 'light-warm', 'light-slate');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-slate', 'dark-mono', 'light-default', 'light-ocean', 'light-warm', 'light-slate', 'light-mono');
     
     // Add base mode and variant
     root.classList.add(theme);
