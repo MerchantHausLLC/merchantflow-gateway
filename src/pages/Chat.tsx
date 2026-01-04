@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -70,6 +70,7 @@ interface ChatBoxProps {
   profiles: Record<string, Profile>;
   typingUsers: TypingUser[];
   onTyping: () => void;
+  searchQuery: string;
 }
 
 const ChatBox: React.FC<ChatBoxProps> = ({ 
@@ -78,15 +79,30 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   onSendMessage, 
   profiles, 
   typingUsers,
-  onTyping 
+  onTyping,
+  searchQuery
 }) => {
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const highlightedRef = useRef<HTMLDivElement | null>(null);
+
+  // Filter messages based on search query
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(msg => 
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.user_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.user_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (searchQuery.trim() && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, searchQuery]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -117,7 +133,38 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   };
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatFullDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+  };
+
+  const getDateKey = (timestamp: string) => {
+    return new Date(timestamp).toDateString();
+  };
+
+  // Highlight matching text in search
+  const highlightText = (text: string) => {
+    if (!searchQuery.trim()) return text;
+    const parts = text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === searchQuery.toLowerCase() 
+        ? <mark key={i} className="bg-yellow-300 dark:bg-yellow-600 rounded px-0.5">{part}</mark>
+        : part
+    );
   };
 
   const getReplyMessage = (replyToId: string | null) => {
@@ -133,67 +180,92 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   // Filter out current user from typing users
   const otherTypingUsers = typingUsers.filter(u => u.id !== currentUserId);
 
+  // Group messages by date
+  let lastDateKey = '';
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-grow overflow-y-auto space-y-3 border rounded-md p-4 mb-4 bg-background">
-        {messages.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm">No messages yet. Start the conversation!</p>
+        {filteredMessages.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm">
+            {searchQuery.trim() ? `No messages matching "${searchQuery}"` : 'No messages yet. Start the conversation!'}
+          </p>
         ) : (
-          messages.map((msg) => {
+          filteredMessages.map((msg, index) => {
             const isOwn = msg.user_id === currentUserId;
             const profile = profiles[msg.user_id];
             const displayName = getDisplayName(msg);
             const avatarUrl = profile?.avatar_url;
             const replyMessage = getReplyMessage(msg.reply_to_id);
+            const dateKey = getDateKey(msg.created_at);
+            const showDateSeparator = dateKey !== lastDateKey;
+            lastDateKey = dateKey;
+            const isFirstMatch = searchQuery.trim() && index === 0;
 
             return (
-              <div
-                key={msg.id}
-                className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}
-              >
-                {!isOwn && (
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
-                      {getInitials(displayName, msg.user_email)}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div className="max-w-xs">
-                  {/* Reply preview */}
-                  {replyMessage && (
-                    <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
-                      <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
-                      <p className="text-muted-foreground truncate">{replyMessage.content}</p>
-                    </div>
-                  )}
-                  <div className={`${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg group relative`}>
-                    {!isOwn && (
-                      <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
-                    )}
-                    <p className="text-sm">{msg.content}</p>
-                    <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                      {formatTime(msg.created_at)}
-                    </p>
-                    {/* Reply button */}
-                    <button
-                      onClick={() => setReplyTo(msg)}
-                      className={`absolute top-1 ${isOwn ? "left-1" : "right-1"} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10`}
-                      title="Reply"
-                    >
-                      <Reply className="h-3 w-3" />
-                    </button>
+              <React.Fragment key={msg.id}>
+                {/* Date separator */}
+                {showDateSeparator && (
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground font-medium px-2">
+                      {formatFullDate(msg.created_at)}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
-                </div>
-                {isOwn && (
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
-                      {getInitials(displayName, msg.user_email)}
-                    </AvatarFallback>
-                  </Avatar>
                 )}
-              </div>
+                <div
+                  ref={isFirstMatch ? highlightedRef : null}
+                  className={cn(
+                    "flex gap-2",
+                    isOwn ? "justify-end" : "justify-start",
+                    searchQuery.trim() && "bg-accent/30 rounded-lg p-1 -m-1"
+                  )}
+                >
+                  {!isOwn && (
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
+                        {getInitials(displayName, msg.user_email)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className="max-w-xs">
+                    {/* Reply preview */}
+                    {replyMessage && (
+                      <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
+                        <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
+                        <p className="text-muted-foreground truncate">{replyMessage.content}</p>
+                      </div>
+                    )}
+                    <div className={`${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg group relative`}>
+                      {!isOwn && (
+                        <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
+                      )}
+                      <p className="text-sm">{highlightText(msg.content)}</p>
+                      <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                      {/* Reply button */}
+                      <button
+                        onClick={() => setReplyTo(msg)}
+                        className={`absolute top-1 ${isOwn ? "left-1" : "right-1"} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10`}
+                        title="Reply"
+                      >
+                        <Reply className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                  {isOwn && (
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
+                        {getInitials(displayName, msg.user_email)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              </React.Fragment>
             );
           })
         )}
@@ -885,6 +957,9 @@ const Chat: React.FC = () => {
 
   // Toggle show archived channels
   const [showArchived, setShowArchived] = useState(false);
+  
+  // Message search
+  const [messageSearch, setMessageSearch] = useState("");
 
   const handleSendMessage = async (text: string, replyToId?: string) => {
     // Validate message
@@ -1088,22 +1163,42 @@ const Chat: React.FC = () => {
             />
           </aside>
           <div className="flex-grow border rounded-md p-4 bg-background flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-              {currentChannel?.channel_type === 'direct' ? (
-                <>
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                      {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h2 className="font-semibold">{currentChannel.participant_name}</h2>
-                </>
-              ) : (
-                <>
-                  <Hash className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="font-semibold">{getChannelDisplayName()}</h2>
-                </>
-              )}
+            <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                {currentChannel?.channel_type === 'direct' ? (
+                  <>
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                        {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <h2 className="font-semibold">{currentChannel.participant_name}</h2>
+                  </>
+                ) : (
+                  <>
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <h2 className="font-semibold">{getChannelDisplayName()}</h2>
+                  </>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search messages..."
+                  value={messageSearch}
+                  onChange={(e) => setMessageSearch(e.target.value)}
+                  className="h-8 w-48 pl-8 text-sm"
+                />
+                {messageSearch && (
+                  <button
+                    onClick={() => setMessageSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded"
+                  >
+                    <X className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
             </div>
             <ChatBox
               messages={messages}
@@ -1112,6 +1207,7 @@ const Chat: React.FC = () => {
               profiles={profiles}
               typingUsers={typingUsers}
               onTyping={handleTyping}
+              searchQuery={messageSearch}
             />
           </div>
         </div>
