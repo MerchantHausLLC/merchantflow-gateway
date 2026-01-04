@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -47,6 +47,7 @@ type Channel = {
   id: string;
   name: string;
   created_at: string;
+  archived_at?: string | null;
   channel_type?: 'group' | 'direct';
   participant_name?: string;
 };
@@ -252,13 +253,22 @@ interface ChannelListProps {
   onCreate: (name: string) => void;
   onCreateDM: (memberName: string) => void;
   onDeleteChannel: (id: string, name: string) => void;
+  onRenameChannel: (id: string, newName: string) => void;
+  onArchiveChannel: (id: string, name: string) => void;
+  onRestoreChannel: (id: string, name: string) => void;
   currentUserName: string;
   unreadByChannel: Record<string, number>;
   isAdmin: boolean;
+  showArchived: boolean;
+  onToggleShowArchived: () => void;
 }
 
-const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, currentUserName, unreadByChannel, isAdmin }) => {
+const ChannelList: React.FC<ChannelListProps> = ({ 
+  channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, onRenameChannel, onArchiveChannel, onRestoreChannel, currentUserName, unreadByChannel, isAdmin, showArchived, onToggleShowArchived 
+}) => {
   const [newChannel, setNewChannel] = useState("");
+  const [renamingChannel, setRenamingChannel] = useState<{ id: string; name: string } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const handleCreate = () => {
     const trimmed = newChannel.trim();
@@ -268,8 +278,19 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
     }
   };
 
-  // Separate group channels and direct messages
-  const groupChannels = channels.filter(ch => ch.channel_type !== 'direct');
+  const handleRenameSubmit = () => {
+    if (renamingChannel && renameValue.trim() && renameValue.trim() !== renamingChannel.name) {
+      onRenameChannel(renamingChannel.id, renameValue.trim());
+    }
+    setRenamingChannel(null);
+    setRenameValue("");
+  };
+
+  // Separate group channels and direct messages, filtering by archived status
+  const allGroupChannels = channels.filter(ch => ch.channel_type !== 'direct');
+  const groupChannels = showArchived 
+    ? allGroupChannels 
+    : allGroupChannels.filter(ch => !ch.archived_at);
   
   // Deduplicate direct channels by participant name (keep most recent)
   const directChannelsRaw = channels.filter(ch => ch.channel_type === 'direct');
@@ -291,13 +312,26 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
     !existingDMNames.includes(member.toLowerCase())
   );
 
+  const archivedCount = allGroupChannels.filter(ch => ch.archived_at).length;
+
   return (
     <div className="space-y-4">
       {/* Group Channels */}
       <div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase font-semibold mb-2">
-          <Hash className="h-3 w-3" />
-          Channels
+        <div className="flex items-center justify-between text-xs text-muted-foreground uppercase font-semibold mb-2">
+          <div className="flex items-center gap-2">
+            <Hash className="h-3 w-3" />
+            Channels
+          </div>
+          {isAdmin && archivedCount > 0 && (
+            <button
+              onClick={onToggleShowArchived}
+              className="flex items-center gap-1 hover:text-foreground transition-colors normal-case font-normal"
+            >
+              <Archive className="h-3 w-3" />
+              {showArchived ? 'Hide archived' : `${archivedCount} archived`}
+            </button>
+          )}
         </div>
         <ul className="space-y-1">
           {groupChannels.map((ch) => (
@@ -305,17 +339,36 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
               <div
                 className={cn(
                   "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
-                  current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                  current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted",
+                  ch.archived_at && "opacity-60"
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => onSelect(ch.id)}
-                  className="flex-1 flex items-center gap-1 text-left"
-                >
-                  <Hash className="h-3 w-3 text-muted-foreground" />
-                  {ch.name}
-                </button>
+                {renamingChannel?.id === ch.id ? (
+                  <form 
+                    onSubmit={(e) => { e.preventDefault(); handleRenameSubmit(); }}
+                    className="flex-1 flex items-center gap-1"
+                  >
+                    <Hash className="h-3 w-3 text-muted-foreground" />
+                    <Input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={handleRenameSubmit}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { setRenamingChannel(null); setRenameValue(""); }}}
+                      className="h-6 text-sm py-0 px-1"
+                      autoFocus
+                    />
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSelect(ch.id)}
+                    className="flex-1 flex items-center gap-1 text-left"
+                  >
+                    <Hash className="h-3 w-3 text-muted-foreground" />
+                    {ch.name}
+                    {ch.archived_at && <Archive className="h-3 w-3 ml-1 text-muted-foreground" />}
+                  </button>
+                )}
                 <div className="flex items-center gap-1">
                   {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
                     <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
@@ -329,7 +382,41 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
                           <MoreVertical className="h-3 w-3 text-muted-foreground" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-32">
+                      <DropdownMenuContent align="end" className="w-36">
+                        {!ch.archived_at && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingChannel({ id: ch.id, name: ch.name });
+                                setRenameValue(ch.name);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onArchiveChannel(ch.id, ch.name);
+                              }}
+                            >
+                              <Archive className="h-3 w-3 mr-2" />
+                              Archive
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {ch.archived_at && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRestoreChannel(ch.id, ch.name);
+                            }}
+                          >
+                            <ArchiveRestore className="h-3 w-3 mr-2" />
+                            Restore
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
@@ -710,7 +797,7 @@ const Chat: React.FC = () => {
 
   // Delete a channel (admin only)
   const handleDeleteChannel = async (channelId: string, channelName: string) => {
-    if (!confirm(`Are you sure you want to delete the channel "${channelName}"? This will delete all messages in this channel.`)) {
+    if (!confirm(`Are you sure you want to permanently delete the channel "${channelName}"? This will delete all messages in this channel.`)) {
       return;
     }
 
@@ -738,6 +825,66 @@ const Chat: React.FC = () => {
       }
     }
   };
+
+  // Rename a channel (admin only)
+  const handleRenameChannel = async (channelId: string, newName: string) => {
+    const exists = channels.some(ch => ch.id !== channelId && ch.name.toLowerCase() === newName.toLowerCase() && ch.channel_type === 'group');
+    if (exists) {
+      toast.error("A channel with that name already exists");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("chat_channels")
+      .update({ name: newName })
+      .eq("id", channelId);
+
+    if (error) {
+      console.error("Failed to rename channel:", error);
+      toast.error("Failed to rename channel");
+      return;
+    }
+
+    toast.success(`Channel renamed to "${newName}"`);
+    setChannels(prev => prev.map(ch => ch.id === channelId ? { ...ch, name: newName } : ch));
+  };
+
+  // Archive a channel (admin only)
+  const handleArchiveChannel = async (channelId: string, channelName: string) => {
+    const { error } = await supabase
+      .from("chat_channels")
+      .update({ archived_at: new Date().toISOString() })
+      .eq("id", channelId);
+
+    if (error) {
+      console.error("Failed to archive channel:", error);
+      toast.error("Failed to archive channel");
+      return;
+    }
+
+    toast.success(`Channel "${channelName}" archived`);
+    setChannels(prev => prev.map(ch => ch.id === channelId ? { ...ch, archived_at: new Date().toISOString() } : ch));
+  };
+
+  // Restore an archived channel (admin only)
+  const handleRestoreChannel = async (channelId: string, channelName: string) => {
+    const { error } = await supabase
+      .from("chat_channels")
+      .update({ archived_at: null })
+      .eq("id", channelId);
+
+    if (error) {
+      console.error("Failed to restore channel:", error);
+      toast.error("Failed to restore channel");
+      return;
+    }
+
+    toast.success(`Channel "${channelName}" restored`);
+    setChannels(prev => prev.map(ch => ch.id === channelId ? { ...ch, archived_at: null } : ch));
+  };
+
+  // Toggle show archived channels
+  const [showArchived, setShowArchived] = useState(false);
 
   const handleSendMessage = async (text: string, replyToId?: string) => {
     // Validate message
@@ -930,9 +1077,14 @@ const Chat: React.FC = () => {
               onCreate={handleCreateChannel}
               onCreateDM={handleCreateDM}
               onDeleteChannel={handleDeleteChannel}
+              onRenameChannel={handleRenameChannel}
+              onArchiveChannel={handleArchiveChannel}
+              onRestoreChannel={handleRestoreChannel}
               currentUserName={userName}
               unreadByChannel={unreadByChannel}
               isAdmin={isAdmin}
+              showArchived={showArchived}
+              onToggleShowArchived={() => setShowArchived(prev => !prev)}
             />
           </aside>
           <div className="flex-grow border rounded-md p-4 bg-background flex flex-col min-h-0">
