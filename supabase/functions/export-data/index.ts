@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
     });
     
     const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user || user.email !== "admin@merchanthaus.io") {
+    const adminEmails = ["admin@merchanthaus.io", "darryn@merchanthaus.io"];
+    if (userError || !user || !adminEmails.includes(user.email || "")) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
