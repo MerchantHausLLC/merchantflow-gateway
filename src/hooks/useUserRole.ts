@@ -21,8 +21,9 @@ export const useUserRole = () => {
         return;
       }
 
-      // Check if user is the designated admin
-      const isAdminEmail = user.email === 'admin@merchanthaus.io';
+      // Check if user is one of the designated admins
+      const adminEmails = ['admin@merchanthaus.io', 'darryn@merchanthaus.io'];
+      const isAdminEmail = adminEmails.includes(user.email);
       setIsAdmin(isAdminEmail);
       setLoading(false);
     };

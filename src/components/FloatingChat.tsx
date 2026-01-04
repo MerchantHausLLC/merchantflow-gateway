@@ -124,7 +124,8 @@ const FloatingChat: React.FC = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [isNearBottom, setIsNearBottom] = useState(true);
-
+  const [stickyDate, setStickyDate] = useState<string | null>(null);
+  const [showStickyDate, setShowStickyDate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -184,13 +185,29 @@ const FloatingChat: React.FC = () => {
     return groups;
   }, [formatMessageDate]);
 
-  // Handle scroll to check if scroll button should be shown
+  // Handle scroll to check if scroll button should be shown and update sticky date
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const threshold = 100;
     const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < threshold;
     setIsNearBottom(nearBottom);
     setShowScrollButton(!nearBottom);
+    
+    // Find visible date separator for sticky header
+    const dateSeparators = target.querySelectorAll('[data-date-separator]');
+    let currentDate: string | null = null;
+    
+    dateSeparators.forEach((separator) => {
+      const rect = separator.getBoundingClientRect();
+      const containerRect = target.getBoundingClientRect();
+      // If the separator is above or at the top of the visible area
+      if (rect.top <= containerRect.top + 50) {
+        currentDate = separator.getAttribute('data-date-separator');
+      }
+    });
+    
+    setStickyDate(currentDate);
+    setShowStickyDate(target.scrollTop > 50 && currentDate !== null);
   }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -1349,6 +1366,18 @@ const FloatingChat: React.FC = () => {
             {/* Channel Chat View */}
             {view === "chat" && (
               <>
+                {/* Sticky date header */}
+                <div className={cn(
+                  "absolute top-0 left-0 right-0 z-20 flex justify-center py-2 transition-all duration-200",
+                  showStickyDate && stickyDate
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-2 pointer-events-none"
+                )}>
+                  <span className="text-xs text-slate-600 dark:text-slate-300 font-medium px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+                    {stickyDate}
+                  </span>
+                </div>
+                
                 <ScrollArea 
                   className="flex-1 px-3 py-2" 
                   viewportRef={scrollViewportRef}
@@ -1371,7 +1400,7 @@ const FloatingChat: React.FC = () => {
                       ) : (
                         groupedChannelMessages.map((group) => (
                           <div key={group.date}>
-                            <div className="flex items-center gap-2 my-3">
+                            <div className="flex items-center gap-2 my-3" data-date-separator={group.date}>
                               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                               <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
                               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
@@ -1606,6 +1635,18 @@ const FloatingChat: React.FC = () => {
             {/* Direct Message View */}
             {view === "dm" && (
               <>
+                {/* Sticky date header */}
+                <div className={cn(
+                  "absolute top-0 left-0 right-0 z-20 flex justify-center py-2 transition-all duration-200",
+                  showStickyDate && stickyDate
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-2 pointer-events-none"
+                )}>
+                  <span className="text-xs text-slate-600 dark:text-slate-300 font-medium px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+                    {stickyDate}
+                  </span>
+                </div>
+                
                 <ScrollArea 
                   className="flex-1 px-3 py-2"
                   viewportRef={scrollViewportRef}
@@ -1628,7 +1669,7 @@ const FloatingChat: React.FC = () => {
                       ) : (
                         groupedDirectMessages.map((group) => (
                           <div key={group.date}>
-                            <div className="flex items-center gap-2 my-3">
+                            <div className="flex items-center gap-2 my-3" data-date-separator={group.date}>
                               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                               <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
                               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
