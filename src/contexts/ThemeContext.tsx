@@ -29,6 +29,8 @@ export const THEME_OPTIONS: ThemeOption[] = [
 interface ThemeContextType {
   theme: ThemeMode;
   variant: ThemeVariant;
+  defaultDarkVariant: ThemeVariant;
+  defaultLightVariant: ThemeVariant;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
   setVariant: (variant: ThemeVariant) => void;
@@ -50,6 +52,8 @@ interface ThemeProviderProps {
 
 const STORAGE_KEY = 'merchantflow-theme';
 const VARIANT_STORAGE_KEY = 'merchantflow-theme-variant';
+const DEFAULT_DARK_KEY = 'merchantflow-default-dark';
+const DEFAULT_LIGHT_KEY = 'merchantflow-default-light';
 
 const getStoredTheme = (): ThemeMode => {
   try {
@@ -75,6 +79,30 @@ const getStoredVariant = (): ThemeVariant => {
   return 'dark-default';
 };
 
+const getStoredDefaultDark = (): ThemeVariant => {
+  try {
+    const saved = localStorage.getItem(DEFAULT_DARK_KEY) as ThemeVariant | null;
+    if (saved && THEME_OPTIONS.some(opt => opt.id === saved && opt.mode === 'dark')) {
+      return saved;
+    }
+  } catch (error) {
+    console.warn('Default dark theme unavailable.', error);
+  }
+  return 'dark-default';
+};
+
+const getStoredDefaultLight = (): ThemeVariant => {
+  try {
+    const saved = localStorage.getItem(DEFAULT_LIGHT_KEY) as ThemeVariant | null;
+    if (saved && THEME_OPTIONS.some(opt => opt.id === saved && opt.mode === 'light')) {
+      return saved;
+    }
+  } catch (error) {
+    console.warn('Default light theme unavailable.', error);
+  }
+  return 'light-default';
+};
+
 const persistTheme = (theme: ThemeMode) => {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
@@ -91,9 +119,27 @@ const persistVariant = (variant: ThemeVariant) => {
   }
 };
 
+const persistDefaultDark = (variant: ThemeVariant) => {
+  try {
+    localStorage.setItem(DEFAULT_DARK_KEY, variant);
+  } catch (error) {
+    console.warn('Unable to persist default dark theme.', error);
+  }
+};
+
+const persistDefaultLight = (variant: ThemeVariant) => {
+  try {
+    localStorage.setItem(DEFAULT_LIGHT_KEY, variant);
+  } catch (error) {
+    console.warn('Unable to persist default light theme.', error);
+  }
+};
+
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [variant, setVariantState] = useState<ThemeVariant>(getStoredVariant);
+  const [defaultDarkVariant, setDefaultDarkVariant] = useState<ThemeVariant>(getStoredDefaultDark);
+  const [defaultLightVariant, setDefaultLightVariant] = useState<ThemeVariant>(getStoredDefaultLight);
 
   useEffect(() => {
     // Apply theme class to document root
@@ -113,9 +159,9 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const toggleTheme = () => {
     setThemeState(prev => {
       const newMode = prev === 'dark' ? 'light' : 'dark';
-      // Also update variant to match mode
-      const defaultVariant = newMode === 'dark' ? 'dark-default' : 'light-default';
-      setVariantState(defaultVariant);
+      // Switch to the user's saved default for that mode
+      const newVariant = newMode === 'dark' ? defaultDarkVariant : defaultLightVariant;
+      setVariantState(newVariant);
       return newMode;
     });
   };
@@ -129,11 +175,20 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     if (option) {
       setThemeState(option.mode);
       setVariantState(newVariant);
+      
+      // Save as the new default for this mode
+      if (option.mode === 'dark') {
+        setDefaultDarkVariant(newVariant);
+        persistDefaultDark(newVariant);
+      } else {
+        setDefaultLightVariant(newVariant);
+        persistDefaultLight(newVariant);
+      }
     }
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, variant, toggleTheme, setTheme, setVariant }}>
+    <ThemeContext.Provider value={{ theme, variant, defaultDarkVariant, defaultLightVariant, toggleTheme, setTheme, setVariant }}>
       {children}
     </ThemeContext.Provider>
   );
