@@ -1,7 +1,7 @@
+// src/types/application.ts
+
 // TypeScript interface for the Application data
 // This corresponds to the 'applications' table in Supabase
-// NOTE: You must create the 'applications' table in Supabase with matching columns
-
 export interface Application {
   id?: string;
   full_name: string;
@@ -39,10 +39,11 @@ export interface ApplicationFormData {
   message: string;
 }
 
-// New Interface for the Detailed Merchant Application (from Public Website)
-// Matches the 'merchant_applications' table created for the full 4-step intake
+// --- NEW INTERFACE ---
+// Matches the 'merchant_applications' table created for the detailed public website intake
 export interface PublicMerchantApplication {
   id: string;
+  
   // Business Profile
   dba_name: string;
   dba_contact_first: string;
