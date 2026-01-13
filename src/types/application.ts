@@ -1,7 +1,4 @@
-// src/types/application.ts
-
 // TypeScript interface for the Application data
-// This corresponds to the 'applications' table in Supabase
 export interface Application {
   id?: string;
   full_name: string;
@@ -39,8 +36,7 @@ export interface ApplicationFormData {
   message: string;
 }
 
-// --- NEW INTERFACE ---
-// Matches the 'merchant_applications' table created for the detailed public website intake
+// --- NEW INTERFACE FOR WEB SUBMISSIONS DASHBOARD ---
 export interface PublicMerchantApplication {
   id: string;
   
