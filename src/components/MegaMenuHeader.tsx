@@ -75,6 +75,10 @@ interface NavGroup {
   items?: NavItem[];
 }
 
+// Define top‑level navigation groups.  The Pipeline group now includes a
+// Web Submissions entry which links to the admin page for incoming
+// merchant applications.  See src/pages/WebSubmissions.tsx for the page
+// implementation.
 const navMain: NavGroup[] = [
   {
     title: "Pipeline",
@@ -84,6 +88,8 @@ const navMain: NavGroup[] = [
       { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
       { title: "Team Chat", url: "/chat", icon: MessageCircle, description: "Chat with team members" },
+      // Newly added navigation entry for the Web Submissions admin page
+      { title: "Web Submissions", url: "/admin/web-submissions", icon: ClipboardList, description: "Incoming web applications" },
     ],
   },
   {
@@ -206,9 +212,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     const lastReadTimestamps = getLastReadTimestamps();
 
     // Get all channels
-    const { data: channels } = await supabase
-      .from("chat_channels")
-      .select("id");
+    const { data: channels } = await supabase.from("chat_channels").select("id");
 
     if (!channels) return;
 
@@ -435,15 +439,15 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => handleNewClick("opportunity")}>
+              <DropdownMenuItem onClick={() => handleNewClick("opportunity")}> 
                 <Briefcase className="h-4 w-4 mr-2" />
                 Create Opportunity
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleNewClick("account")}>
+              <DropdownMenuItem onClick={() => handleNewClick("account")}> 
                 <Building2 className="h-4 w-4 mr-2" />
                 Create Account
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleNewClick("contact")}>
+              <DropdownMenuItem onClick={() => handleNewClick("contact")}> 
                 <Users className="h-4 w-4 mr-2" />
                 Create Contact
               </DropdownMenuItem>
