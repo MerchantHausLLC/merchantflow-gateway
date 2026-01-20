@@ -309,14 +309,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
       {/* Typing indicator */}
       {otherTypingUsers.length > 0 && (
-        <div className="text-xs text-muted-foreground px-2 pb-2 flex items-center gap-1">
+        <div className="text-sm text-muted-foreground px-3 pb-3 flex items-center gap-1">
           <span className="flex gap-1">
             <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
             <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
             <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
           </span>
           <span>
-            {otherTypingUsers.length === 1 
+            {otherTypingUsers.length === 1
               ? `${otherTypingUsers[0].name} is typing...`
               : `${otherTypingUsers.length} people are typing...`
             }
@@ -326,11 +326,11 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-md border-l-2 border-primary">
+        <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-t-md border-l-2 border-primary">
           <Reply className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-primary">{getDisplayName(replyTo)}</p>
-            <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+            <p className="text-sm font-medium text-primary">{getDisplayName(replyTo)}</p>
+            <p className="text-sm text-muted-foreground truncate">{replyTo.content}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
             <X className="h-4 w-4" />
@@ -1181,7 +1181,7 @@ const Chat: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full p-2 sm:p-4 gap-2 sm:gap-4">
+      <div className="flex flex-col h-full p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
         {/* Desktop header - hidden on mobile */}
         <div className="hidden sm:flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -1344,7 +1344,7 @@ const Chat: React.FC = () => {
           </aside>
           
           {/* Main chat area */}
-          <div className="flex-grow border rounded-md p-2 sm:p-4 bg-background flex flex-col min-h-0 lg:ml-4">
+          <div className="flex-grow border rounded-md p-3 sm:p-4 bg-background flex flex-col min-h-0 lg:ml-4">
             <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
               <div className="flex items-center gap-2">
                 {/* Mobile channel toggle button */}

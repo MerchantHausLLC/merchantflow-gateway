@@ -80,7 +80,7 @@ const Notifications = () => {
         </Button>
       }
     >
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
@@ -88,13 +88,14 @@ const Notifications = () => {
             </div>
           ) : notifications.length === 0 ? (
             <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+              <CardContent className="flex flex-col items-center justify-center py-16">
                 <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No notifications yet</p>
+                <p className="text-lg text-muted-foreground">No notifications yet</p>
+                <p className="text-sm text-muted-foreground mt-1">You'll see notifications here when you receive them</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {notifications.map((notification) => (
                 <Card
                   key={notification.id}
@@ -103,7 +104,7 @@ const Notifications = () => {
                     !notification.read && 'border-primary/50 bg-primary/5'
                   )}
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-5">
                     <div className="flex items-start gap-4">
                       <div
                         className={cn(
@@ -116,15 +117,15 @@ const Notifications = () => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold">{notification.title}</h3>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          <h3 className="font-semibold text-base">{notification.title}</h3>
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
                             {format(new Date(notification.created_at), 'MMM d, h:mm a')}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-muted-foreground mt-1 leading-relaxed">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                           {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                         </p>
                       </div>
@@ -133,6 +134,7 @@ const Notifications = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-9 w-9"
                             onClick={() => markAsRead(notification.id)}
                           >
                             <Check className="h-4 w-4" />
@@ -141,6 +143,7 @@ const Notifications = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-9 w-9"
                           onClick={() => deleteNotification(notification.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />

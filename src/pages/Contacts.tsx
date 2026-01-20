@@ -541,23 +541,23 @@ const Contacts = () => {
         </Button>
       }
     >
-      <div className="p-4 lg:p-6 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Stats - Compact header-style badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
-              <Users className="h-3 w-3" />Total {stats.total}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="h-7 px-3 text-sm font-medium gap-1.5">
+              <Users className="h-3.5 w-3.5" />Total {stats.total}
             </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
-              <UserCheck className="h-3 w-3" />Assigned {stats.assigned}
+            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-emerald-500/30 text-emerald-500">
+              <UserCheck className="h-3.5 w-3.5" />Assigned {stats.assigned}
             </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
-              <Link2 className="h-3 w-3" />Linked {stats.linked}
+            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-blue-500/30 text-blue-500">
+              <Link2 className="h-3.5 w-3.5" />Linked {stats.linked}
             </Badge>
           </div>
 
           {/* Filters */}
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-4 sm:p-5">
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -565,12 +565,12 @@ const Contacts = () => {
                     placeholder="Search by name, email, account..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-10"
                   />
                 </div>
 
                 <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-[160px] h-10">
                     <SelectValue placeholder="Assignment" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -585,7 +585,7 @@ const Contacts = () => {
                 </Select>
 
                 <Select value={accountFilter} onValueChange={setAccountFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-[160px] h-10">
                     <SelectValue placeholder="Account" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -596,7 +596,7 @@ const Contacts = () => {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={openNewDialog} className="ml-auto">
+                <Button onClick={openNewDialog} className="ml-auto h-10">
                   <Plus className="h-4 w-4 mr-1" />
                   New Contact
                 </Button>
@@ -607,14 +607,14 @@ const Contacts = () => {
           {/* Bulk Actions Bar */}
           {selectedIds.size > 0 && viewMode === 'table' && (
             <Card className="border-primary/50 bg-primary/5">
-              <CardContent className="p-3">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-4 flex-wrap">
                   <span className="text-sm font-medium">
                     {selectedIds.size} selected
                   </span>
                   <div className="flex items-center gap-2">
                     <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
-                      <SelectTrigger className="w-[160px] h-8">
+                      <SelectTrigger className="w-[160px] h-9">
                         <SelectValue placeholder="Assign to..." />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
@@ -657,9 +657,9 @@ const Contacts = () => {
 
           {/* Results */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
+                <CardTitle className="text-lg">
                   {filteredContacts.length} Contacts
                   {totalPages > 1 && (
                     <span className="text-muted-foreground font-normal ml-2">
@@ -668,9 +668,9 @@ const Contacts = () => {
                   )}
                 </CardTitle>
                 <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
-                    <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="table" className="text-sm px-4">Table</TabsTrigger>
+                    <TabsTrigger value="cards" className="text-sm px-4">Cards</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -730,11 +730,11 @@ const Contacts = () => {
                                   aria-label={`Select ${contact.first_name || contact.last_name || 'contact'}`}
                                 />
                               </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">{globalIndex}</TableCell>
+                              <TableCell className="text-muted-foreground">{globalIndex}</TableCell>
                               <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
                               <TableCell>{contact.last_name || '-'}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
-                              <TableCell className="text-sm">{contact.phone || '-'}</TableCell>
+                              <TableCell className="text-muted-foreground">{contact.email || '-'}</TableCell>
+                              <TableCell>{contact.phone || '-'}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -754,19 +754,19 @@ const Contacts = () => {
                                 {stageConfig ? (
                                   <Badge
                                     variant="outline"
-                                    className={cn("text-xs", stageConfig?.colorClass && "border-current")}
+                                    className={cn("text-sm", stageConfig?.colorClass && "border-current")}
                                     style={{ color: stageConfig?.color }}
                                   >
                                     {stageConfig.label}
                                   </Badge>
                                 ) : (
-                                  <span className="text-muted-foreground text-sm">-</span>
+                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Button variant="ghost" size="icon" className="h-9 w-9">
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
@@ -817,20 +817,20 @@ const Contacts = () => {
                       : null;
 
                     return (
-                      <Card 
-                        key={contact.id} 
+                      <Card
+                        key={contact.id}
                         className="cursor-pointer hover:shadow-md transition-shadow"
                         onClick={() => setSelectedContact(contact)}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between mb-4">
                             <div>
-                              <h3 className="font-medium">
-                                {contact.first_name || contact.last_name 
+                              <h3 className="font-medium text-base">
+                                {contact.first_name || contact.last_name
                                   ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
                                   : 'Unnamed Contact'}
                               </h3>
-                              <p className="text-xs text-muted-foreground">{contact.email || '-'}</p>
+                              <p className="text-sm text-muted-foreground">{contact.email || '-'}</p>
                             </div>
                             {stageConfig && (
                               <Badge 
@@ -842,22 +842,22 @@ const Contacts = () => {
                             )}
                           </div>
                           
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">Account</span>
                               <span>{contact.account?.name || '-'}</span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">Phone</span>
                               <span>{contact.phone || '-'}</span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">Owner</span>
                               <span>{contact.assigned_to || 'Unassigned'}</span>
                             </div>
                           </div>
-                          
-                          <div className="mt-3 pt-3 border-t flex items-center gap-2">
+
+                          <div className="mt-4 pt-4 border-t flex items-center gap-2">
                             <Button 
                               variant="ghost" 
                               size="sm" 

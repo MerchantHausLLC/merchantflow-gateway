@@ -759,13 +759,13 @@ const Index = () => {
   }
   return (
     <AppLayout onNewApplication={() => setIsModalOpen(true)}>
-      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
-        <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
-          <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
-          <div className="ml-auto flex items-center gap-2">
+      <div className="flex-1 flex flex-col gap-3 sm:gap-4 p-3 sm:p-4 lg:p-6 min-h-0 overflow-hidden mobile-landscape:gap-2">
+        <header className="h-14 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-3 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
+          <h1 className="text-xl font-semibold text-foreground">Pipeline</h1>
+          <div className="ml-auto flex items-center gap-3">
             <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
-                <User className="h-3 w-3 mr-1" />
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-background border-border">
+                <User className="h-3.5 w-3.5 mr-1.5" />
                 <SelectValue placeholder="Filter by..." />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">

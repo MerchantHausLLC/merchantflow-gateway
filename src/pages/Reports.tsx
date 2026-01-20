@@ -302,7 +302,7 @@ const Reports = () => {
         />
       }
     >
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
@@ -311,8 +311,8 @@ const Reports = () => {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.activeOpps}</div>
-                  <p className="text-xs text-muted-foreground">opportunities in progress</p>
+                  <div className="text-3xl font-bold">{stats.activeOpps}</div>
+                  <p className="text-sm text-muted-foreground mt-1">opportunities in progress</p>
                 </CardContent>
               </Card>
               <Card>
@@ -321,8 +321,8 @@ const Reports = () => {
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.closedWon}</div>
-                  <p className="text-xs text-muted-foreground">successfully closed deals</p>
+                  <div className="text-3xl font-bold">{stats.closedWon}</div>
+                  <p className="text-sm text-muted-foreground mt-1">successfully closed deals</p>
                 </CardContent>
               </Card>
               <Card>
@@ -331,8 +331,8 @@ const Reports = () => {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.openTasks}</div>
-                  <p className="text-xs text-muted-foreground">tasks pending completion</p>
+                  <div className="text-3xl font-bold">{stats.openTasks}</div>
+                  <p className="text-sm text-muted-foreground mt-1">tasks pending completion</p>
                 </CardContent>
               </Card>
               <Card>
@@ -341,8 +341,8 @@ const Reports = () => {
                   <AlertTriangle className="h-4 w-4 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-destructive">{stats.overdueTasks}</div>
-                  <p className="text-xs text-muted-foreground">tasks past due date</p>
+                  <div className="text-3xl font-bold text-destructive">{stats.overdueTasks}</div>
+                  <p className="text-sm text-muted-foreground mt-1">tasks past due date</p>
                 </CardContent>
               </Card>
             </div>
