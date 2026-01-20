@@ -135,28 +135,29 @@ const DeletionRequests = () => {
 
   return (
     <AppLayout pageTitle="Deletion Requests">
-      <div className="p-6">
+      <div className="p-4 sm:p-6 lg:p-8">
         {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : requests.length === 0 ? (
             <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+              <CardContent className="flex flex-col items-center justify-center py-16">
                 <Trash2 className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No deletion requests</p>
+                <p className="text-lg text-muted-foreground">No deletion requests</p>
+                <p className="text-sm text-muted-foreground mt-1">Deletion requests from users will appear here</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {requests.map((request) => (
                 <Card key={request.id}>
-                  <CardContent className="p-4">
+                  <CardContent className="p-5">
                     <div className="flex items-start gap-4">
                       <AlertTriangle className="h-5 w-5 text-amber-500 mt-1 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{request.entity_name}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-base">{request.entity_name}</h3>
                           <Badge variant="outline" className="capitalize">
                             {request.entity_type}
                           </Badge>
@@ -172,17 +173,17 @@ const DeletionRequests = () => {
                             {request.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground">
                           Requested by: {request.requester_email}
                         </p>
                         {request.reason && (
-                          <p className="text-sm mt-2">Reason: {request.reason}</p>
+                          <p className="mt-2">Reason: {request.reason}</p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                           {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
                         </p>
                         {request.resolved_at && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             Resolved by {request.resolved_by} on{' '}
                             {format(new Date(request.resolved_at), 'MMM d, yyyy h:mm a')}
                           </p>
@@ -193,6 +194,7 @@ const DeletionRequests = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-9"
                             onClick={() =>
                               setConfirmDialog({ open: true, request, action: 'approve' })
                             }
@@ -203,6 +205,7 @@ const DeletionRequests = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-9"
                             onClick={() =>
                               setConfirmDialog({ open: true, request, action: 'reject' })
                             }

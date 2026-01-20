@@ -354,11 +354,11 @@ const DocumentsPage = () => {
         </>
       }
     >
-      <div className="p-4 lg:p-6">
+      <div className="p-4 sm:p-6 lg:p-8">
         {loading ? (
           <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
         ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {filteredDocs.length === 0 ? (
                   <div className="text-center py-16 text-muted-foreground">
                     <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -369,13 +369,13 @@ const DocumentsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/40">
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-muted/40">
                       <Checkbox
                         checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
                         onCheckedChange={toggleSelectAll}
                         aria-label="Select all documents"
                       />
-                      <span className="text-sm text-muted-foreground">Select all</span>
+                      <span className="text-muted-foreground">Select all</span>
                     </div>
                     {Object.entries(groupedDocs).map(([key, group]) => {
                       const accountAllSelected =
@@ -387,7 +387,7 @@ const DocumentsPage = () => {
                       return (
                         <Collapsible key={key} open={!isCollapsed} onOpenChange={() => toggleAccountCollapse(key)}>
                           <div className="border border-border/60 rounded-lg overflow-hidden">
-                            <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border/60">
+                            <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border/60">
                               <div className="flex items-center gap-3">
                                 <Checkbox
                                   checked={accountAllSelected ? true : accountPartiallySelected ? "indeterminate" : false}
@@ -404,25 +404,25 @@ const DocumentsPage = () => {
                                   </Button>
                                 </CollapsibleTrigger>
                                 <div>
-                                  <p className="text-sm font-semibold leading-tight">{group.label}</p>
-                                  <p className="text-xs text-muted-foreground">Account/Card grouping</p>
+                                  <p className="text-base font-semibold leading-snug">{group.label}</p>
+                                  <p className="text-sm text-muted-foreground">Account/Card grouping</p>
                                 </div>
                               </div>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-sm text-muted-foreground">
                                 {group.docs.length} document{group.docs.length === 1 ? "" : "s"}
                               </span>
                             </div>
                             <CollapsibleContent>
-                              <div className="p-2">
+                              <div className="p-3">
                                 <table className="w-full">
                                   <thead>
-                                    <tr className="text-xs text-muted-foreground border-b border-border/40">
-                                      <th className="text-left py-2 px-2 w-8"></th>
-                                      <th className="text-left py-2 px-2">File Name</th>
-                                      <th className="text-left py-2 px-2 w-[180px]">Document Type</th>
-                                      <th className="text-left py-2 px-2 w-32">Date Created</th>
-                                      <th className="text-left py-2 px-2 w-20">Size</th>
-                                      <th className="text-right py-2 px-2 w-24">Actions</th>
+                                    <tr className="text-sm text-muted-foreground border-b border-border/40">
+                                      <th className="text-left py-3 px-3 w-8"></th>
+                                      <th className="text-left py-3 px-3">File Name</th>
+                                      <th className="text-left py-3 px-3 w-[180px]">Document Type</th>
+                                      <th className="text-left py-3 px-3 w-32">Date Created</th>
+                                      <th className="text-left py-3 px-3 w-20">Size</th>
+                                      <th className="text-right py-3 px-3 w-24">Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -431,25 +431,25 @@ const DocumentsPage = () => {
                                         key={doc.id}
                                         className="border-b border-border/20 last:border-0 hover:bg-muted/30"
                                       >
-                                        <td className="py-2 px-2">
+                                        <td className="py-3 px-3">
                                           <Checkbox
                                             checked={selectedDocuments.has(doc.id)}
                                             onCheckedChange={(checked) => toggleSelection(doc.id, checked)}
                                             aria-label={`Select ${doc.file_name}`}
                                           />
                                         </td>
-                                        <td className="py-2 px-2">
+                                        <td className="py-3 px-3">
                                           <div className="flex items-center gap-2">
                                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                                            <span className="text-sm font-medium truncate">{doc.file_name}</span>
+                                            <span className="font-medium truncate">{doc.file_name}</span>
                                           </div>
                                         </td>
-                                        <td className="py-2 px-2">
+                                        <td className="py-3 px-3">
                                           <Select
                                             value={doc.document_type || "Unassigned"}
                                             onValueChange={(value) => handleUpdateDocType(doc.id, value)}
                                           >
-                                            <SelectTrigger className="h-8 text-xs">
+                                            <SelectTrigger className="h-9 text-sm">
                                               <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -461,18 +461,18 @@ const DocumentsPage = () => {
                                             </SelectContent>
                                           </Select>
                                         </td>
-                                        <td className="py-2 px-2 text-sm text-muted-foreground">
+                                        <td className="py-3 px-3 text-muted-foreground">
                                           {format(new Date(doc.created_at), "MMM d, yyyy")}
                                         </td>
-                                        <td className="py-2 px-2 text-sm text-muted-foreground">
+                                        <td className="py-3 px-3 text-muted-foreground">
                                           {formatFileSize(doc.file_size)}
                                         </td>
-                                        <td className="py-2 px-2">
+                                        <td className="py-3 px-3">
                                           <div className="flex items-center justify-end gap-1">
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-8 w-8"
+                                              className="h-9 w-9"
                                               onClick={() => handleDownload(doc)}
                                             >
                                               <Download className="h-4 w-4" />
@@ -480,7 +480,7 @@ const DocumentsPage = () => {
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-8 w-8"
+                                              className="h-9 w-9"
                                               onClick={() => handleDelete(doc)}
                                             >
                                               <span className="sr-only">Delete</span>
