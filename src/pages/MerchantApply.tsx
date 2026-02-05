@@ -147,7 +147,7 @@ export default function MerchantApply() {
             Thank you for your interest. Our team will review your application and contact you within 1-2 business days.
           </p>
           <a
-            href="https://merchant.haus"
+            href="https://merchanthaus.io"
             className="inline-block mt-4 rounded-xl bg-merchant-red px-6 py-3 text-sm font-semibold text-white hover:bg-merchant-redLight transition-colors"
           >
             Return to Website
