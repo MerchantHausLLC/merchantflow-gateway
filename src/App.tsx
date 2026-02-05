@@ -33,6 +33,7 @@ import OpportunityDetail from "./pages/OpportunityDetail";
 import Chat from "./pages/Chat";
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
 import WebSubmissions from "./pages/WebSubmissions";
+import MerchantApply from "./pages/MerchantApply";
 
 const queryClient = new QueryClient();
 
@@ -46,11 +47,13 @@ const App = () => (
           <AuthProvider>
             <TasksProvider>
               <Routes>
+                {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/apply" element={<Apply />} />
+                <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
