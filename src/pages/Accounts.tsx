@@ -287,15 +287,15 @@ const Accounts = () => {
         </div>
       }
     >
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="p-4 lg:p-6 space-y-6">
             <div className="grid gap-4 md:grid-cols-3 mb-6">
               <Card className="border-muted/70">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-muted-foreground">Total accounts</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="text-3xl font-semibold">{totalAccounts}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Merchant profiles captured</p>
+                  <div className="text-2xl font-semibold">{totalAccounts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Merchant profiles captured</p>
                 </CardContent>
               </Card>
               <Card className="border-muted/70">
@@ -303,8 +303,8 @@ const Accounts = () => {
                   <CardTitle className="text-sm text-muted-foreground">With contacts</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="text-3xl font-semibold">{accountsWithContacts}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Linked to at least one contact</p>
+                  <div className="text-2xl font-semibold">{accountsWithContacts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Linked to at least one contact</p>
                 </CardContent>
               </Card>
               <Card className="border-muted/70">
@@ -312,15 +312,15 @@ const Accounts = () => {
                   <CardTitle className="text-sm text-muted-foreground">With websites</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="text-3xl font-semibold">{accountsWithWebsites}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Ready for research</p>
+                  <div className="text-2xl font-semibold">{accountsWithWebsites}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Ready for research</p>
                 </CardContent>
               </Card>
             </div>
 
             <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Account directory</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Account directory</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>

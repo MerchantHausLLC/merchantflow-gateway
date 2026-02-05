@@ -9,8 +9,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  // Added 'new_web_application' to the allowed types
-  type: "stage_change" | "task_assignment" | "opportunity_assignment" | "new_web_application";
+  type: "stage_change" | "task_assignment" | "opportunity_assignment";
   recipientEmail: string;
   recipientName?: string;
   data: Record<string, unknown>;
@@ -24,9 +23,6 @@ const getEmailSubject = (type: string, data: Record<string, unknown>): string =>
       return `New Task Assigned: ${data.taskTitle}`;
     case "opportunity_assignment":
       return `Opportunity Assigned: ${data.accountName}`;
-    // NEW CASE
-    case "new_web_application":
-      return `🚀 New Website Application: ${data.dbaName}`;
     default:
       return "Notification from Ops Terminal";
   }
@@ -150,72 +146,6 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
                 ${data.contactName ? `<p style="margin: 0 0 8px 0;">Contact: ${data.contactName}</p>` : ""}
                 ${data.stage ? `<span class="stage">${data.stage}</span>` : ""}
               </div>
-              <div class="footer">
-                <p>This is an automated notification from Ops Terminal.</p>
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-    // NEW CASE: WEB APPLICATION
-    case "new_web_application":
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-            .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-            .field-row { background: white; border: 1px solid #e5e7eb; padding: 12px; margin-bottom: 8px; border-radius: 6px; }
-            .label { font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 700; letter-spacing: 0.05em; }
-            .value { font-size: 15px; font-weight: 500; color: #111827; margin-top: 2px; }
-            .btn { display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin-top: 16px; }
-            .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0; font-size: 20px;">🚀 New Application Received</h1>
-            </div>
-            <div class="content">
-              ${greeting}
-              <p>A new merchant application has been submitted from the website.</p>
-              
-              <div class="field-row">
-                <div class="label">Business Name</div>
-                <div class="value">${data.dbaName || 'N/A'}</div>
-              </div>
-              
-              <div class="field-row">
-                <div class="label">Contact Person</div>
-                <div class="value">${data.contactName || 'N/A'}</div>
-              </div>
-
-              <div class="field-row">
-                <div class="label">Email</div>
-                <div class="value"><a href="mailto:${data.email}">${data.email || 'N/A'}</a></div>
-              </div>
-
-              <div class="field-row">
-                <div class="label">Phone</div>
-                <div class="value">${data.phone || 'N/A'}</div>
-              </div>
-
-              <div class="field-row">
-                <div class="label">Est. Monthly Volume</div>
-                <div class="value">$${data.monthlyVolume || '0'}</div>
-              </div>
-
-              <center>
-                <a href="https://merchantflow.merchanthaus.io/admin/web-submissions" class="btn">View Application in CRM</a>
-              </center>
-
               <div class="footer">
                 <p>This is an automated notification from Ops Terminal.</p>
               </div>

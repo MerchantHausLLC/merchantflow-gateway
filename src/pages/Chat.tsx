@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
-// Import the Textarea component to allow multi-line chat input. Using a textarea
-// provides a better typing experience than a single-line input because users
-// can create multi-line messages with Shift+Enter. The Textarea component
-// already supports styling consistent with the rest of the UI.
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,22 +135,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     }
   };
 
-  // Handle key presses on the chat input. When the user presses Enter without
-  // holding Shift we send the message. If Shift+Enter is used we insert a
-  // newline, letting the Textarea handle it naturally. Preventing the default
-  // action on Enter stops newlines from being added unintentionally when
-  // sending.
-  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
   };
 
-  // Update the input value and notify other clients that the user is typing.
-  // The handler accepts both HTMLInputElement and HTMLTextAreaElement events
-  // because the Textarea component uses a textarea under the hood.
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     onTyping();
   };
@@ -260,7 +247,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   {!isOwn && (
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}> 
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                         {getInitials(displayName, msg.user_email)}
                       </AvatarFallback>
                     </Avatar>
@@ -268,7 +255,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   <div className="max-w-xs">
                     {/* Reply preview */}
                     {replyMessage && (
-                      <div className={`${isOwn ? "ml-auto" : ""} text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50`}>
+                      <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
                         <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
                         <p className="text-muted-foreground truncate">{replyMessage.content}</p>
                       </div>
@@ -278,7 +265,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                         <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
                       )}
                       <p className="text-sm">{highlightText(msg.content)}</p>
-                      <p className={`${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"} text-xs mt-1`}>
+                      <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                         {formatTime(msg.created_at)}
                       </p>
                       {/* Reply button */}
@@ -294,7 +281,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   {isOwn && (
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}> 
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                         {getInitials(displayName, msg.user_email)}
                       </AvatarFallback>
                     </Avatar>
@@ -309,14 +296,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
       {/* Typing indicator */}
       {otherTypingUsers.length > 0 && (
-        <div className="text-sm text-muted-foreground px-3 pb-3 flex items-center gap-1">
+        <div className="text-xs text-muted-foreground px-2 pb-2 flex items-center gap-1">
           <span className="flex gap-1">
             <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
             <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
             <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
           </span>
           <span>
-            {otherTypingUsers.length === 1
+            {otherTypingUsers.length === 1 
               ? `${otherTypingUsers[0].name} is typing...`
               : `${otherTypingUsers.length} people are typing...`
             }
@@ -326,11 +313,11 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-t-md border-l-2 border-primary">
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-md border-l-2 border-primary">
           <Reply className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-primary">{getDisplayName(replyTo)}</p>
-            <p className="text-sm text-muted-foreground truncate">{replyTo.content}</p>
+            <p className="text-xs font-medium text-primary">{getDisplayName(replyTo)}</p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
             <X className="h-4 w-4" />
@@ -338,28 +325,16 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         </div>
       )}
 
-      {/* Message input and send button */}
-      <div className="flex items-end gap-2">
-        {/*
-          Replace the single‑line Input with a Textarea to support multi‑line
-          messages. We limit the height to a reasonable size and remove the
-          ability to resize the box to keep the layout consistent. When
-          Shift+Enter is pressed, a newline is inserted; Enter alone sends
-          the message. The rounded‑t‑none class is retained when replying to
-          ensure the reply preview sits flush on top of the input area.
-        */}
-        <Textarea
+      <div className="flex items-center gap-2">
+        <Input
+          type="text"
           placeholder={replyTo ? "Type your reply..." : "Type a message..."}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          rows={1}
-          className={cn(
-            "resize-none leading-tight min-h-[3rem] max-h-[10rem] overflow-y-auto",
-            replyTo ? "rounded-t-none" : ""
-          )}
+          className={replyTo ? "rounded-t-none" : ""}
         />
-        <Button onClick={handleSend} className="h-10">Send</Button>
+        <Button onClick={handleSend}>Send</Button>
       </div>
     </div>
   );
@@ -444,16 +419,16 @@ const ChannelList: React.FC<ChannelListProps> = ({
     }
   });
   const directChannels = Array.from(seenParticipants.values());
-  
+
   // Get team members who don't have a DM channel yet
   const existingDMNames = directChannels.map(ch => ch.participant_name?.toLowerCase());
   const availableForDM = TEAM_MEMBERS.filter(member =>
     member.toLowerCase() !== currentUserName.toLowerCase() &&
     !existingDMNames.includes(member.toLowerCase())
   );
-  
+
   const archivedCount = allGroupChannels.filter(ch => ch.archived_at).length;
-  
+
   return (
     <div className="space-y-4">
       {/* Group Channels */}
@@ -1181,7 +1156,7 @@ const Chat: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
+      <div className="flex flex-col h-full p-2 sm:p-4 gap-2 sm:gap-4">
         {/* Desktop header - hidden on mobile */}
         <div className="hidden sm:flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -1344,7 +1319,7 @@ const Chat: React.FC = () => {
           </aside>
           
           {/* Main chat area */}
-          <div className="flex-grow border rounded-md p-3 sm:p-4 bg-background flex flex-col min-h-0 lg:ml-4">
+          <div className="flex-grow border rounded-md p-2 sm:p-4 bg-background flex flex-col min-h-0 lg:ml-4">
             <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
               <div className="flex items-center gap-2">
                 {/* Mobile channel toggle button */}

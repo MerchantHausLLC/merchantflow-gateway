@@ -323,31 +323,31 @@ const Opportunities = () => {
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
     >
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="p-4 lg:p-6 space-y-6">
         {/* Page title */}
-        <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Opportunities</h1>
+        <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
         {/* Stats - Compact header-style badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="h-7 px-3 text-sm font-medium gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5" />Active {stats.total}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
+              <TrendingUp className="h-3 w-3" />Active {stats.total}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-blue-500/30 text-blue-500">
-              <Plus className="h-3.5 w-3.5" />New {stats.new}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
+              <Plus className="h-3 w-3" />New {stats.new}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-amber-500/30 text-amber-500">
-              <AlertCircle className="h-3.5 w-3.5" />In Progress {stats.inProgress}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
+              <AlertCircle className="h-3 w-3" />In Progress {stats.inProgress}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-emerald-500/30 text-emerald-500">
-              <CheckCircle2 className="h-3.5 w-3.5" />Won {stats.won}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
+              <CheckCircle2 className="h-3 w-3" />Won {stats.won}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-destructive/30 text-destructive">
-              <XCircle className="h-3.5 w-3.5" />Closed {stats.lost}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-destructive/30 text-destructive">
+              <XCircle className="h-3 w-3" />Closed {stats.lost}
             </Badge>
           </div>
 
           {/* Filters */}
           <Card>
-            <CardContent className="p-4 sm:p-5">
+            <CardContent className="p-4">
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -355,12 +355,12 @@ const Opportunities = () => {
                     placeholder="Search by name, email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-10"
+                    className="pl-9"
                   />
                 </div>
                 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -371,7 +371,7 @@ const Opportunities = () => {
                 </Select>
 
                 <Select value={stageFilter} onValueChange={setStageFilter}>
-                  <SelectTrigger className="w-[160px] h-10">
+                  <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="Stage" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -383,7 +383,7 @@ const Opportunities = () => {
                 </Select>
 
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Owner" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -396,7 +396,7 @@ const Opportunities = () => {
                 </Select>
 
                 <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Pipeline" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -412,15 +412,15 @@ const Opportunities = () => {
 
           {/* Results */}
           <Card>
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
+                <CardTitle className="text-base">
                   {filteredOpportunities.length} Opportunities
                 </CardTitle>
                 <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
-                  <TabsList className="h-9">
-                    <TabsTrigger value="table" className="text-sm px-4">Table</TabsTrigger>
-                    <TabsTrigger value="cards" className="text-sm px-4">Cards</TabsTrigger>
+                  <TabsList className="h-8">
+                    <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
+                    <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -462,21 +462,21 @@ const Opportunities = () => {
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() => navigateToOpportunity(opp)}
                           >
-                            <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <p className="font-medium text-base">{opp.account?.name || 'Unknown'}</p>
+                                    <p className="font-medium">{opp.account?.name || 'Unknown'}</p>
                                     {opp.status === 'dead' && (
-                                      <Badge variant="outline" className="text-xs h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
+                                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
                                         <RotateCcw className="h-2.5 w-2.5" />
                                         Assign to reactivate
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-sm text-muted-foreground">
+                                  <p className="text-xs text-muted-foreground">
                                     {opp.contact?.email || '-'}
                                   </p>
                                 </div>
@@ -488,17 +488,17 @@ const Opportunities = () => {
                                 onValueChange={async (value) => {
                                   const newStage = value as OpportunityStage;
                                   const oldStage = opp.stage;
-
+                                  
                                   const { error } = await supabase
                                     .from('opportunities')
                                     .update({ stage: newStage })
                                     .eq('id', opp.id);
-
+                                  
                                   if (error) {
                                     toast({ title: "Failed to update stage", variant: "destructive" });
                                     return;
                                   }
-
+                                  
                                   // Log activity
                                   await supabase.from('activities').insert({
                                     opportunity_id: opp.id,
@@ -507,7 +507,7 @@ const Opportunities = () => {
                                     user_id: user?.id,
                                     user_email: user?.email,
                                   });
-
+                                  
                                   // Send email notification
                                   if (opp.assigned_to) {
                                     sendStageChangeEmail(
@@ -518,23 +518,23 @@ const Opportunities = () => {
                                       user?.email
                                     ).catch(err => console.error("Failed to send stage change email:", err));
                                   }
-
+                                  
                                   toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
                                 }}
                               >
-                                <SelectTrigger className="h-8 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1.5">
-                                  <div
-                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0" 
                                     style={{ backgroundColor: stageConfig?.color }}
                                   />
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
                                   {(serviceType === 'gateway_only' ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                                    <SelectItem key={stage} value={stage} className="text-sm">
+                                    <SelectItem key={stage} value={stage} className="text-xs">
                                       <div className="flex items-center gap-2">
-                                        <div
-                                          className="w-2 h-2 rounded-full"
+                                        <div 
+                                          className="w-2 h-2 rounded-full" 
                                           style={{ backgroundColor: STAGE_CONFIG[stage].color }}
                                         />
                                         {STAGE_CONFIG[stage].label}
@@ -545,16 +545,16 @@ const Opportunities = () => {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1">
                                 {serviceType === 'gateway_only' ? (
                                   <>
-                                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                                    <span className="text-sm">Gateway</span>
+                                    <Zap className="h-3 w-3 text-amber-500" />
+                                    <span className="text-xs">Gateway</span>
                                   </>
                                 ) : (
                                   <>
-                                    <CreditCard className="h-3.5 w-3.5 text-blue-500" />
-                                    <span className="text-sm">Processing</span>
+                                    <CreditCard className="h-3 w-3 text-blue-500" />
+                                    <span className="text-xs">Processing</span>
                                   </>
                                 )}
                               </div>
@@ -564,8 +564,8 @@ const Opportunities = () => {
                                 value={opp.assigned_to || 'unassigned'}
                                 onValueChange={(value) => handleAssignmentChange(opp, value)}
                               >
-                                <SelectTrigger className="h-8 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1.5">
-                                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <User className="h-3 w-3 text-muted-foreground" />
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
@@ -578,15 +578,15 @@ const Opportunities = () => {
                             </TableCell>
                             <TableCell>
                               {taskCount > 0 && (
-                                <Badge variant="secondary" className="text-sm">
+                                <Badge variant="secondary" className="text-xs">
                                   {taskCount} open
                                 </Badge>
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                  <div
+                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div 
                                     className={cn(
                                       "h-full rounded-full transition-all",
                                       progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary"
@@ -594,25 +594,25 @@ const Opportunities = () => {
                                     style={{ width: `${Math.min(progress, 100)}%` }}
                                   />
                                 </div>
-                                <span className="text-sm text-muted-foreground">{progress}%</span>
+                                <span className="text-xs text-muted-foreground">{progress}%</span>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                <Calendar className="h-3.5 w-3.5" />
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
                                 {format(new Date(opp.created_at), 'MMM d, yyyy')}
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                <Clock className="h-3.5 w-3.5" />
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
                                 {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true })}
                               </div>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -643,20 +643,20 @@ const Opportunities = () => {
                     const stageConfig = STAGE_CONFIG[opp.stage as OpportunityStage];
                     const serviceType = getServiceType(opp);
                     const progress = opp.wizard_state?.progress || 0;
-
+                    
                     return (
-                      <Card
-                        key={opp.id}
+                      <Card 
+                        key={opp.id} 
                         className="cursor-pointer hover:shadow-md transition-shadow"
                         onClick={() => navigateToOpportunity(opp)}
                       >
-                        <CardContent className="p-5">
-                          <div className="flex items-start justify-between mb-4">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h3 className="font-medium text-base">{opp.account?.name || 'Unknown'}</h3>
-                              <p className="text-sm text-muted-foreground">{opp.contact?.email}</p>
+                              <h3 className="font-medium">{opp.account?.name || 'Unknown'}</h3>
+                              <p className="text-xs text-muted-foreground">{opp.contact?.email}</p>
                               {opp.status === 'dead' && (
-                                <Badge variant="outline" className="mt-2 text-xs h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
+                                <Badge variant="outline" className="mt-1 text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
                                   <RotateCcw className="h-2.5 w-2.5" />
                                   Assign to reactivate
                                 </Badge>
@@ -668,17 +668,17 @@ const Opportunities = () => {
                                 onValueChange={async (value) => {
                                   const newStage = value as OpportunityStage;
                                   const oldStage = opp.stage;
-
+                                  
                                   const { error } = await supabase
                                     .from('opportunities')
                                     .update({ stage: newStage })
                                     .eq('id', opp.id);
-
+                                  
                                   if (error) {
                                     toast({ title: "Failed to update stage", variant: "destructive" });
                                     return;
                                   }
-
+                                  
                                   await supabase.from('activities').insert({
                                     opportunity_id: opp.id,
                                     type: 'stage_change',
@@ -686,7 +686,7 @@ const Opportunities = () => {
                                     user_id: user?.id,
                                     user_email: user?.email,
                                   });
-
+                                  
                                   if (opp.assigned_to) {
                                     sendStageChangeEmail(
                                       opp.assigned_to,
@@ -696,23 +696,23 @@ const Opportunities = () => {
                                       user?.email
                                     ).catch(err => console.error("Failed to send stage change email:", err));
                                   }
-
+                                  
                                   toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
                                 }}
                               >
-                                <SelectTrigger className="h-8 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1.5">
-                                  <div
-                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0" 
                                     style={{ backgroundColor: stageConfig?.color }}
                                   />
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
                                   {(serviceType === 'gateway_only' ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                                    <SelectItem key={stage} value={stage} className="text-sm">
+                                    <SelectItem key={stage} value={stage} className="text-xs">
                                       <div className="flex items-center gap-2">
-                                        <div
-                                          className="w-2 h-2 rounded-full"
+                                        <div 
+                                          className="w-2 h-2 rounded-full" 
                                           style={{ backgroundColor: STAGE_CONFIG[stage].color }}
                                         />
                                         {STAGE_CONFIG[stage].label}
@@ -723,15 +723,15 @@ const Opportunities = () => {
                               </Select>
                             </div>
                           </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm" onClick={(e) => e.stopPropagation()}>
                               <span className="text-muted-foreground">Owner</span>
                               <Select
                                 value={opp.assigned_to || 'unassigned'}
                                 onValueChange={(value) => handleAssignmentChange(opp, value)}
                               >
-                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm">
+                                <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-xs">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
@@ -742,22 +742,22 @@ const Opportunities = () => {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Pipeline</span>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1">
                                 {serviceType === 'gateway_only' ? (
-                                  <><Zap className="h-3.5 w-3.5 text-amber-500" />Gateway</>
+                                  <><Zap className="h-3 w-3 text-amber-500" />Gateway</>
                                 ) : (
-                                  <><CreditCard className="h-3.5 w-3.5 text-blue-500" />Processing</>
+                                  <><CreditCard className="h-3 w-3 text-blue-500" />Processing</>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Progress</span>
                               <span>{progress}%</span>
                             </div>
-                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                              <div
+                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div 
                                 className={cn(
                                   "h-full rounded-full",
                                   progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary"
@@ -766,8 +766,8 @@ const Opportunities = () => {
                               />
                             </div>
                           </div>
-
-                          <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+                          
+                          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
                             Updated {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true })}
                           </div>
                         </CardContent>

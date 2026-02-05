@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard, Globe } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ interface NavItem {
   title: string;
   url: string;
   icon: LucideIcon;
-  isActive?: boolean;
+  isActive?: boolean; // For default open state of collapsibles
   items?: {
     title: string;
     url: string;
@@ -30,6 +30,7 @@ interface NavItem {
   }[];
 }
 
+// Main navigation items
 const navMain: NavItem[] = [
   {
     title: "Pipeline",
@@ -72,11 +73,6 @@ const navMain: NavItem[] = [
     icon: Wrench,
     isActive: true,
     items: [
-      {
-        title: "Web Submissions",
-        url: "/admin/web-submissions",
-        icon: Globe,
-      },
       {
         title: "SOP",
         url: "/sop",
@@ -140,10 +136,12 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
 
+  // Handle +New button - navigate to opportunities with modal trigger if not already there
   const handleNewClick = () => {
     if (onNewApplication) {
       onNewApplication();
     } else {
+      // Fallback: navigate to opportunities page and trigger modal via query param
       navigate('/opportunities?new=true');
     }
   };
@@ -153,6 +151,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
     navigate('/auth');
   };
 
+  // Get display name from email mapping or use email prefix
   const userEmail = user?.email?.toLowerCase() || '';
   const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split('@')[0] || 'User';
 
@@ -182,6 +181,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* New Application Button + Notifications */}
               <SidebarMenuItem>
                 <div className={cn(
                   "flex items-center gap-1 mb-2",
@@ -203,7 +203,9 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                 </div>
               </SidebarMenuItem>
 
+              {/* Dynamic Navigation Loop */}
               {navMain.map((item) => {
+                // Render Collapsible Menu (Tools)
                 if (item.items && item.items.length > 0) {
                   return (
                     <Collapsible key={item.title} asChild defaultOpen={item.isActive} className="group/collapsible">
@@ -240,6 +242,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                     </Collapsible>
                   );
                 }
+                // Render Standard Menu Item
                 return (
                   <SidebarMenuItem key={item.title}>
                     <Tooltip>
@@ -253,6 +256,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                           >
                             <div className="relative">
                               <item.icon className="h-4 w-4" />
+                              {/* Unread message badge for Chat */}
                               {item.title === 'Chat' && unreadMessages > 0 && (
                                 <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
                                   {unreadMessages > 9 ? '9+' : unreadMessages}
@@ -262,6 +266,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                             {!isCollapsed && (
                               <span className="flex items-center gap-2">
                                 {item.title}
+                                {/* Expanded badge */}
                                 {item.title === 'Chat' && unreadMessages > 0 && (
                                   <span className="ml-auto h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
                                     {unreadMessages > 99 ? '99+' : unreadMessages}
@@ -293,6 +298,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
 
       <SidebarFooter>
         <SidebarMenu>
+          {/* Admin: Deletion Requests */}
           {isAdmin && (
             <SidebarMenuItem>
               <Tooltip>
@@ -312,6 +318,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
               </Tooltip>
             </SidebarMenuItem>
           )}
+          {/* Profile Menu */}
           <SidebarMenuItem>
             <DropdownMenu>
               <Tooltip>
@@ -333,6 +340,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
+          {/* Theme Toggle */}
           <SidebarMenuItem>
             <Tooltip>
               <TooltipTrigger asChild>

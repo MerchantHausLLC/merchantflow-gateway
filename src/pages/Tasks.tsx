@@ -420,36 +420,36 @@ const Tasks = () => {
         </>
       }
     >
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="p-4 lg:p-6 space-y-6">
           {/* Stats badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="h-7 px-3 text-sm font-medium gap-1.5">
-              <ListChecks className="h-3.5 w-3.5" />Total {stats.total}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
+              <ListChecks className="h-3 w-3" />Total {stats.total}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-blue-500/30 text-blue-500">
-              <CircleDot className="h-3.5 w-3.5" />Open {stats.open}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
+              <CircleDot className="h-3 w-3" />Open {stats.open}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-amber-500/30 text-amber-500">
-              <Clock className="h-3.5 w-3.5" />In Progress {stats.inProgress}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
+              <Clock className="h-3 w-3" />In Progress {stats.inProgress}
             </Badge>
-            <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-emerald-500/30 text-emerald-500">
-              <CheckCircle2 className="h-3.5 w-3.5" />Done {stats.done}
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
+              <CheckCircle2 className="h-3 w-3" />Done {stats.done}
             </Badge>
             {overdueCount > 0 && (
-              <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-red-500/30 text-red-500 bg-red-500/10">
-                <AlertTriangle className="h-3.5 w-3.5" />Overdue {overdueCount}
+              <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-red-500/30 text-red-500 bg-red-500/10">
+                <AlertTriangle className="h-3 w-3" />Overdue {overdueCount}
               </Badge>
             )}
             {dueSoonCount > 0 && (
-              <Badge variant="outline" className="h-7 px-3 text-sm font-medium gap-1.5 border-orange-500/30 text-orange-500 bg-orange-500/10">
-                <Bell className="h-3.5 w-3.5" />Due Soon {dueSoonCount}
+              <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-orange-500/30 text-orange-500 bg-orange-500/10">
+                <Bell className="h-3 w-3" />Due Soon {dueSoonCount}
               </Badge>
             )}
           </div>
 
           {/* Filters */}
           <Card>
-            <CardContent className="p-4 sm:p-5">
+            <CardContent className="p-4">
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -457,12 +457,12 @@ const Tasks = () => {
                     placeholder="Search tasks..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-10"
+                    className="pl-9"
                   />
                 </div>
 
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -474,7 +474,7 @@ const Tasks = () => {
                 </Select>
 
                 <Select value={viewFilter} onValueChange={(v) => setViewFilter(v as ViewFilter)}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="View" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -485,7 +485,7 @@ const Tasks = () => {
                 </Select>
 
                 <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as PriorityFilter)}>
-                  <SelectTrigger className="w-[140px] h-10">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Priority" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -513,7 +513,7 @@ const Tasks = () => {
 
                 {viewFilter === 'team' && (
                   <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                    <SelectTrigger className="w-[140px] h-10">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Assignee" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
@@ -527,7 +527,7 @@ const Tasks = () => {
 
                 <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
                   <DialogTrigger asChild>
-                    <Button className="ml-auto h-10">
+                    <Button className="ml-auto">
                       <Plus className="h-4 w-4 mr-1" />
                       New Task
                     </Button>
@@ -681,15 +681,15 @@ const Tasks = () => {
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             {/* Results */}
             <Card>
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-base">
                     {filteredTasks.length} Tasks
                   </CardTitle>
                   <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
-                    <TabsList className="h-9">
-                      <TabsTrigger value="table" className="text-sm px-4">Table</TabsTrigger>
-                      <TabsTrigger value="cards" className="text-sm px-4">Cards</TabsTrigger>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
+                      <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
@@ -729,16 +729,16 @@ const Tasks = () => {
                               dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
                             )}
                           >
-                            <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {dueStatus === 'overdue' && (
                                   <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
                                 <div>
-                                  <p className="font-medium text-base">{task.title}</p>
+                                  <p className="font-medium">{task.title}</p>
                                   {task.description && (
-                                    <p className="text-sm text-muted-foreground line-clamp-1">{task.description}</p>
+                                    <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                                   )}
                                 </div>
                               </div>
@@ -749,8 +749,8 @@ const Tasks = () => {
                                 const config = priorityConfig[taskPriority];
                                 const IconComponent = config.icon;
                                 return (
-                                  <Badge variant="outline" className={cn("text-sm gap-1.5", config.color)}>
-                                    <IconComponent className="h-3.5 w-3.5" />
+                                  <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
+                                    <IconComponent className="h-3 w-3" />
                                     {config.label}
                                   </Badge>
                                 );
@@ -760,16 +760,16 @@ const Tasks = () => {
                               {task.accountName ? (
                                 <div className="flex items-center gap-1.5">
                                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span>{task.accountName}</span>
+                                  <span className="text-sm">{task.accountName}</span>
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">-</span>
+                                <span className="text-muted-foreground text-sm">-</span>
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1.5">
                                 <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{task.assignee || 'Unassigned'}</span>
+                                <span className="text-sm">{task.assignee || 'Unassigned'}</span>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -777,7 +777,7 @@ const Tasks = () => {
                                 value={task.status}
                                 onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
                               >
-                                <SelectTrigger className="h-9 w-[130px]">
+                                <SelectTrigger className="h-8 w-[130px]">
                                   <div className="flex items-center gap-1.5">
                                     {getStatusIcon(task.status)}
                                     <SelectValue />
@@ -818,7 +818,7 @@ const Tasks = () => {
                               <TableCell>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </AlertDialogTrigger>
@@ -856,34 +856,34 @@ const Tasks = () => {
                     </Table>
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {filteredTasks.map((task) => {
                       const taskPriority = task.priority || 'medium';
                       const priorityConf = priorityConfig[taskPriority];
                       const PriorityIcon = priorityConf.icon;
                       const dueStatus = getDueDateStatus(task.dueAt, task.status);
                       return (
-                        <Card
-                          key={task.id}
+                        <Card 
+                          key={task.id} 
                           className={cn(
-                            "p-5",
+                            "p-3",
                             dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5",
                             dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5",
                             dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5"
                           )}
                         >
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 {dueStatus === 'overdue' ? (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                                 ) : (
-                                  <PriorityIcon className={cn("h-4 w-4 flex-shrink-0", priorityConf.color.split(' ')[0])} />
+                                  <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />
                                 )}
-                                <h4 className="font-medium text-base leading-snug truncate">{task.title}</h4>
+                                <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
                               </div>
                               <Badge variant="outline" className={cn(
-                                "text-sm flex-shrink-0",
+                                "text-xs flex-shrink-0",
                                 task.status === 'open' && "border-blue-500/30 text-blue-500",
                                 task.status === 'in_progress' && "border-amber-500/30 text-amber-500",
                                 task.status === 'done' && "border-emerald-500/30 text-emerald-500"
@@ -892,21 +892,21 @@ const Tasks = () => {
                               </Badge>
                             </div>
                             {task.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                             )}
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                              <Badge variant="outline" className={cn("text-xs gap-1 h-6", priorityConf.color)}>
-                                <PriorityIcon className="h-3 w-3" />
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}>
+                                <PriorityIcon className="h-2.5 w-2.5" />
                                 {priorityConf.label}
                               </Badge>
                               {task.accountName && (
                                 <div className="flex items-center gap-1">
-                                  <Building2 className="h-3.5 w-3.5" />
+                                  <Building2 className="h-3 w-3" />
                                   {task.accountName}
                                 </div>
                               )}
                               <div className="flex items-center gap-1">
-                                <UserRound className="h-3.5 w-3.5" />
+                                <UserRound className="h-3 w-3" />
                                 {task.assignee || 'Unassigned'}
                               </div>
                               {task.dueAt && (
@@ -918,11 +918,11 @@ const Tasks = () => {
                                   dueStatus === 'due-soon' && "text-amber-500/80"
                                 )}>
                                   {dueStatus === 'overdue' ? (
-                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    <AlertTriangle className="h-3 w-3" />
                                   ) : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? (
-                                    <Bell className="h-3.5 w-3.5" />
+                                    <Bell className="h-3 w-3" />
                                   ) : (
-                                    <CalendarClock className="h-3.5 w-3.5" />
+                                    <CalendarClock className="h-3 w-3" />
                                   )}
                                   {getDueDateLabel(task.dueAt, task.status)}
                                 </div>
