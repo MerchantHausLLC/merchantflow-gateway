@@ -1136,7 +1136,12 @@ const FloatingChat: React.FC = () => {
                       "w-1.5 h-1.5 rounded-full",
                       currentDMUser.isOnline ? "bg-emerald-400" : "bg-slate-500"
                     )} />
-                    {currentDMUser.isOnline ? "Online" : "Offline"}
+                    {currentDMUser.isOnline 
+                      ? "Online" 
+                      : currentDMUser.lastSeen 
+                        ? `Last seen ${formatDistanceToNow(new Date(currentDMUser.lastSeen), { addSuffix: true })}`
+                        : "Offline"
+                    }
                   </span>
                 )}
               </div>
