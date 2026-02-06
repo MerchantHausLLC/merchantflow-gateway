@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Info
 } from "lucide-react";
+import merchanthausLogo from "@/assets/merchanthaus-logo.png";
 
 const STEPS = [
   { label: "Business Profile", icon: Building2 },
@@ -418,13 +419,11 @@ Notes: ${form.notes}
       <header className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">Merchant Preboarding</h1>
-              <p className="text-xs text-gray-500">Intake Wizard v2.4</p>
-            </div>
+            <img 
+              src={merchanthausLogo} 
+              alt="MerchantHaus" 
+              className="h-10 w-auto"
+            />
           </div>
 
           <div className="flex items-center gap-3">
