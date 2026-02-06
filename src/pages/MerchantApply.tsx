@@ -3,17 +3,23 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  BadgeCheck,
+  Building2,
+  Scale,
+  CreditCard,
   CheckCircle2,
-  ShieldCheck,
-  Users,
-  Send,
-  CheckCircle
+  CheckCircle,
+  AlertCircle,
+  Info
 } from "lucide-react";
 
-const STEPS = ["Business Profile", "Processing Info", "Review & Submit"] as const;
+const STEPS = [
+  { label: "Business Profile", icon: Building2 },
+  { label: "Legal Information", icon: Scale },
+  { label: "Processing Info", icon: CreditCard },
+  { label: "Application Readiness", icon: CheckCircle2 }
+] as const;
 
-type SectionKey = "business" | "processing";
+type SectionKey = "business" | "legal" | "processing";
 
 const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   business: [
@@ -29,7 +35,29 @@ const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
     "state",
     "zip"
   ],
-  processing: ["monthlyVolume", "avgTicket", "highTicket"]
+  legal: [
+    "legalName",
+    "federalTaxId",
+    "stateOfIncorporation",
+    "businessStructure",
+    "dateEstablished",
+    "ownerName",
+    "ownerTitle",
+    "ownerDob",
+    "ownerSsn",
+    "ownerAddress",
+    "ownerCity"
+  ],
+  processing: [
+    "monthlyVolume",
+    "avgTicket",
+    "highTicket",
+    "currentProcessor",
+    "acceptedCards",
+    "ecommercePercent",
+    "inPersonPercent",
+    "keyed"
+  ]
 };
 
 interface MerchantForm {
@@ -47,11 +75,30 @@ interface MerchantForm {
   state: string;
   zip: string;
 
+  // legal
+  legalName: string;
+  federalTaxId: string;
+  stateOfIncorporation: string;
+  businessStructure: string;
+  dateEstablished: string;
+  ownerName: string;
+  ownerTitle: string;
+  ownerDob: string;
+  ownerSsn: string;
+  ownerAddress: string;
+  ownerCity: string;
+  ownerState: string;
+  ownerZip: string;
+
   // processing
   monthlyVolume: string;
   avgTicket: string;
   highTicket: string;
-  businessType: string;
+  currentProcessor: string;
+  acceptedCards: string;
+  ecommercePercent: string;
+  inPersonPercent: string;
+  keyed: string;
   website: string;
   notes: string;
 }
@@ -69,10 +116,27 @@ const initialState: MerchantForm = {
   city: "",
   state: "",
   zip: "",
+  legalName: "",
+  federalTaxId: "",
+  stateOfIncorporation: "",
+  businessStructure: "",
+  dateEstablished: "",
+  ownerName: "",
+  ownerTitle: "",
+  ownerDob: "",
+  ownerSsn: "",
+  ownerAddress: "",
+  ownerCity: "",
+  ownerState: "",
+  ownerZip: "",
   monthlyVolume: "",
   avgTicket: "",
   highTicket: "",
-  businessType: "",
+  currentProcessor: "",
+  acceptedCards: "",
+  ecommercePercent: "",
+  inPersonPercent: "",
+  keyed: "",
   website: "",
   notes: ""
 };
@@ -95,12 +159,14 @@ export default function MerchantApply() {
 
   const missingBySection = useMemo(() => ({
     business: getMissingFieldsForSection("business"),
+    legal: getMissingFieldsForSection("legal"),
     processing: getMissingFieldsForSection("processing")
   }), [form]);
 
-  const totalRequiredFields = REQUIRED_FIELDS.business.length + REQUIRED_FIELDS.processing.length;
+  const totalRequiredFields = REQUIRED_FIELDS.business.length + REQUIRED_FIELDS.legal.length + REQUIRED_FIELDS.processing.length;
   const completedRequiredFields =
     (REQUIRED_FIELDS.business.length - missingBySection.business.length) +
+    (REQUIRED_FIELDS.legal.length - missingBySection.legal.length) +
     (REQUIRED_FIELDS.processing.length - missingBySection.processing.length);
 
   const progress = Math.round((completedRequiredFields / totalRequiredFields) * 100);
@@ -108,14 +174,38 @@ export default function MerchantApply() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
+    const messageContent = `
+Products: ${form.products}
+Nature: ${form.natureOfBusiness}
+Legal Name: ${form.legalName}
+Federal Tax ID: ${form.federalTaxId}
+State of Inc: ${form.stateOfIncorporation}
+Business Structure: ${form.businessStructure}
+Date Established: ${form.dateEstablished}
+Owner: ${form.ownerName} (${form.ownerTitle})
+Owner DOB: ${form.ownerDob}
+Owner Address: ${form.ownerAddress}, ${form.ownerCity}, ${form.ownerState} ${form.ownerZip}
+Avg Ticket: $${form.avgTicket}
+High Ticket: $${form.highTicket}
+Current Processor: ${form.currentProcessor}
+Accepted Cards: ${form.acceptedCards}
+eCommerce: ${form.ecommercePercent}%
+In-Person: ${form.inPersonPercent}%
+Keyed: ${form.keyed}%
+Website: ${form.website}
+Address: ${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zip}
+
+Notes: ${form.notes}
+    `.trim();
+
     const { error } = await supabase.from("applications").insert({
       full_name: `${form.contactFirst} ${form.contactLast}`.trim(),
       email: form.email,
       phone: form.phone,
       company_name: form.dbaName,
-      business_type: form.businessType || form.natureOfBusiness,
+      business_type: form.businessStructure || form.natureOfBusiness,
       monthly_volume: form.monthlyVolume,
-      message: `Products: ${form.products}\nNature: ${form.natureOfBusiness}\nAvg Ticket: $${form.avgTicket}\nHigh Ticket: $${form.highTicket}\nWebsite: ${form.website}\nAddress: ${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zip}\n\nNotes: ${form.notes}`,
+      message: messageContent,
       status: "pending"
     });
 
@@ -137,18 +227,18 @@ export default function MerchantApply() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-merchant-black flex items-center justify-center p-4">
-        <div className="max-w-md w-full rounded-2xl border border-merchant-gray bg-merchant-dark p-8 shadow-xl text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-emerald-400" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-8 shadow-lg text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Application Received!</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl font-bold text-gray-900">Application Received!</h1>
+          <p className="text-gray-600">
             Thank you for your interest. Our team will review your application and contact you within 1-2 business days.
           </p>
           <a
             href="https://merchanthaus.io"
-            className="inline-block mt-4 rounded-xl bg-merchant-red px-6 py-3 text-sm font-semibold text-white hover:bg-merchant-redLight transition-colors"
+            className="inline-block mt-4 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
           >
             Return to Website
           </a>
@@ -158,140 +248,196 @@ export default function MerchantApply() {
   }
 
   return (
-    <div className="min-h-screen bg-merchant-black">
-      <div className="p-4 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-white">Merchant Application</h1>
-              <p className="text-sm text-gray-400">Complete the form below to get started with payment processing.</p>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-48 rounded-full bg-merchant-gray overflow-hidden">
-                  <div className="h-full bg-merchant-redLight transition-all" style={{ width: `${progress}%` }} />
-                </div>
-                <span className="text-sm font-semibold text-white">{progress}% complete</span>
-              </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
-
-            <div className="text-xs text-gray-400">
-              Step {stepIndex + 1} of {STEPS.length}
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">Merchant Preboarding</h1>
+              <p className="text-xs text-gray-500">Intake Wizard v2.4</p>
             </div>
           </div>
 
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+            </div>
+            <span className="text-sm font-medium text-gray-700">{progress}% Complete</span>
+          </div>
+        </div>
+      </header>
+
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Step Navigation */}
-          <ol className="flex flex-wrap gap-2 text-xs font-medium text-gray-400">
-            {STEPS.map((label, index) => (
-              <li
-                key={label}
-                onClick={() => setStepIndex(index)}
-                className={cn(
-                  "flex items-center gap-2 rounded-full border px-3 py-1 cursor-pointer transition-colors hover:bg-merchant-gray/30",
-                  index === stepIndex
-                    ? "border-merchant-redLight/70 bg-merchant-red/10 text-white"
-                    : index < stepIndex
-                      ? "border-merchant-gray bg-merchant-gray/20 text-white"
-                      : "border-merchant-gray text-gray-400"
-                )}
-              >
-                <span className="h-5 w-5 rounded-full border border-merchant-gray text-center text-[11px] leading-5">
-                  {index + 1}
-                </span>
-                <span>{label}</span>
-              </li>
-            ))}
-          </ol>
+          <nav className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
+            {STEPS.map((step, index) => {
+              const StepIcon = step.icon;
+              const isActive = index === stepIndex;
+              const isCompleted = index < stepIndex;
+              
+              return (
+                <button
+                  key={step.label}
+                  onClick={() => setStepIndex(index)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg flex-1 min-w-[180px] transition-all border-b-2",
+                    isActive
+                      ? "bg-white border-emerald-500 shadow-sm"
+                      : isCompleted
+                        ? "bg-white/50 border-emerald-300"
+                        : "bg-transparent border-transparent hover:bg-white/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    isActive
+                      ? "bg-emerald-100 text-emerald-600"
+                      : isCompleted
+                        ? "bg-emerald-50 text-emerald-500"
+                        : "bg-gray-100 text-gray-400"
+                  )}>
+                    <StepIcon className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className={cn(
+                      "text-sm font-medium",
+                      isActive ? "text-emerald-600" : isCompleted ? "text-emerald-500" : "text-gray-500"
+                    )}>
+                      {step.label.split(" ")[0]}
+                    </p>
+                    <p className={cn(
+                      "text-xs",
+                      isActive ? "text-emerald-600" : "text-gray-400"
+                    )}>
+                      {step.label.split(" ").slice(1).join(" ") || "Profile"}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
 
           {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-            <section className="space-y-4 rounded-2xl border border-merchant-gray bg-merchant-dark p-5 shadow-xl">
-              {currentStep === "Business Profile" && (
-                <BusinessProfileStep form={form} onChange={handleChange} />
-              )}
-              {currentStep === "Processing Info" && (
-                <ProcessingStep form={form} onChange={handleChange} />
-              )}
-              {currentStep === "Review & Submit" && (
-                <ReviewStep form={form} missingBySection={missingBySection} />
-              )}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-6">
+                {/* Step Header */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                    <span className="font-medium">Step {stepIndex + 1}: {currentStep.label}</span>
+                    <span className="text-gray-300">•</span>
+                    <span>{stepIndex + 1} of {STEPS.length}</span>
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">{currentStep.label}</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Please complete all required fields marked with <span className="text-red-500">*</span>
+                  </p>
+                </div>
 
-              {/* Navigation */}
-              <div className="mt-6 flex items-center justify-between border-t border-merchant-gray/60 pt-4">
-                <button
-                  type="button"
-                  className="rounded-xl border border-merchant-gray px-4 py-2 text-sm font-medium text-gray-200 hover:bg-merchant-gray/40 disabled:opacity-40"
-                  onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
-                  disabled={stepIndex === 0}
-                >
-                  ← Back
-                </button>
-
-                {stepIndex < STEPS.length - 1 ? (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight"
-                    onClick={() => setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1))}
-                  >
-                    Next →
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight disabled:bg-merchant-gray disabled:text-gray-500 flex items-center gap-2"
-                    onClick={handleSubmit}
-                    disabled={progress < 100 || isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Submit Application
-                      </>
-                    )}
-                  </button>
+                {/* Step Content */}
+                {stepIndex === 0 && (
+                  <BusinessProfileStep form={form} onChange={handleChange} />
+                )}
+                {stepIndex === 1 && (
+                  <LegalInfoStep form={form} onChange={handleChange} />
+                )}
+                {stepIndex === 2 && (
+                  <ProcessingStep form={form} onChange={handleChange} />
+                )}
+                {stepIndex === 3 && (
+                  <ReviewStep form={form} missingBySection={missingBySection} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />
                 )}
               </div>
+
+              {/* Navigation */}
+              {stepIndex < 3 && (
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                    onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
+                    disabled={stepIndex === 0}
+                  >
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                    onClick={() => setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1))}
+                  >
+                    Next Step
+                  </button>
+                </div>
+              )}
             </section>
 
             {/* Sidebar */}
             <aside className="space-y-4">
-              <div className="rounded-2xl border border-merchant-gray bg-merchant-dark p-4 shadow-xl">
-                <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <ShieldCheck className="w-4 h-4 text-merchant-redLight" />
-                  Application Status
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
+                  <AlertCircle className="w-4 h-4 text-emerald-600" />
+                  Status Snapshot
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
-                  Complete all required fields to submit your application.
-                </p>
 
-                <div className="mt-3 space-y-3 text-xs">
+                <div className="space-y-4">
                   <SectionStatus
-                    label="Business profile"
-                    done={missingBySection.business.length === 0}
+                    label="Business Profile"
                     count={REQUIRED_FIELDS.business.length - missingBySection.business.length}
                     total={REQUIRED_FIELDS.business.length}
                   />
                   <SectionStatus
-                    label="Processing info"
-                    done={missingBySection.processing.length === 0}
+                    label="Legal Info"
+                    count={REQUIRED_FIELDS.legal.length - missingBySection.legal.length}
+                    total={REQUIRED_FIELDS.legal.length}
+                  />
+                  <SectionStatus
+                    label="Processing"
                     count={REQUIRED_FIELDS.processing.length - missingBySection.processing.length}
                     total={REQUIRED_FIELDS.processing.length}
                   />
                 </div>
 
-                <OutstandingSummary progress={progress} missingBySection={missingBySection} />
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Missing Items</p>
+                  <ul className="space-y-1 text-sm">
+                    {missingBySection.business.length > 0 && (
+                      <li className="text-red-500">
+                        <span className="font-medium">Business:</span> {missingBySection.business.length} fields remaining
+                      </li>
+                    )}
+                    {missingBySection.legal.length > 0 && (
+                      <li className="text-red-500">
+                        <span className="font-medium">Legal:</span> {missingBySection.legal.length} fields remaining
+                      </li>
+                    )}
+                    {missingBySection.processing.length > 0 && (
+                      <li className="text-red-500">
+                        <span className="font-medium">Processing:</span> {missingBySection.processing.length} fields remaining
+                      </li>
+                    )}
+                    {progress === 100 && (
+                      <li className="text-emerald-600 font-medium">All fields complete! ✓</li>
+                    )}
+                  </ul>
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-merchant-gray bg-merchant-dark p-4 shadow-xl text-xs text-gray-300 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <BadgeCheck className="w-4 h-4 text-merchant-redLight" />
-                  Why Apply?
+              <div className="bg-blue-50 rounded-2xl border border-blue-100 p-5">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Tip</p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      If your business does not currently have a processor, we will ask for additional documentation readiness checks after you click "Complete".
+                    </p>
+                  </div>
                 </div>
-                <ul className="list-disc space-y-1 pl-4">
-                  <li>Competitive processing rates</li>
-                  <li>Fast approval turnaround</li>
-                  <li>Dedicated support team</li>
-                  <li>Next-day funding available</li>
-                </ul>
               </div>
             </aside>
           </div>
@@ -307,10 +453,10 @@ export default function MerchantApply() {
 
 function Field({ label, required, children, hint }: { label: string; required?: boolean; children: ReactNode; hint?: string }) {
   return (
-    <label className="space-y-1 text-sm text-gray-200">
-      <span className="flex items-center gap-1 font-medium text-white">
+    <label className="space-y-1.5 text-sm">
+      <span className="flex items-center gap-1 font-medium text-gray-700">
         {label}
-        {required && <span className="text-merchant-redLight">*</span>}
+        {required && <span className="text-red-500">*</span>}
       </span>
       {children}
       {hint && <p className="text-xs text-gray-400">{hint}</p>}
@@ -323,7 +469,7 @@ function Input(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white shadow-sm focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40",
+        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
         props.className
       )}
     />
@@ -339,53 +485,53 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white shadow-sm focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40 min-h-[80px]",
+        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[80px]",
         props.className
       )}
     />
   );
 }
 
-function SectionStatus({ label, done, count, total }: { label: string; done: boolean; count: number; total: number }) {
-  const pct = Math.round((count / total) * 100);
+function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-gray-200">{label}</span>
-        <span className="text-[11px] text-gray-400">
-          {count}/{total} · {pct}% {done ? "✓" : ""}
-        </span>
+    <select
+      {...props}
+      className={cn(
+        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
+        props.className
+      )}
+    >
+      {children}
+    </select>
+  );
+}
+
+function SectionStatus({ label, count, total }: { label: string; count: number; total: number }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium text-gray-700">{label}</span>
+        <span className="text-gray-500">{count}/{total}</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-merchant-gray/60">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
         <div
-          className={cn("h-full", done ? "bg-merchant-redLight" : "bg-merchant-red/70")}
-          style={{ width: `${pct}%` }}
+          className={cn("h-full transition-all", count === total ? "bg-emerald-500" : "bg-emerald-400")}
+          style={{ width: `${(count / total) * 100}%` }}
         />
       </div>
     </div>
   );
 }
 
-function OutstandingSummary({ progress, missingBySection }: { progress: number; missingBySection: Record<SectionKey, string[]> }) {
+function Divider({ label }: { label: string }) {
   return (
-    <div className="mt-4 rounded-2xl border border-merchant-gray bg-merchant-black p-4 text-sm">
-      <div className="mb-2 flex items-center gap-2 font-semibold text-white">
-        <BadgeCheck className="w-4 h-4 text-merchant-redLight" />
-        Outstanding items
+    <div className="relative my-6">
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-gray-200" />
       </div>
-      {progress === 100 ? (
-        <p className="text-emerald-400">All required items are captured. 🎉</p>
-      ) : (
-        <ul className="list-disc space-y-1 pl-5 text-gray-300">
-          {Object.entries(missingBySection).map(([section, fields]) =>
-            fields.length ? (
-              <li key={section}>
-                <span className="font-medium capitalize text-white">{section}:</span> {fields.length} field{fields.length > 1 ? "s" : ""} remaining
-              </li>
-            ) : null
-          )}
-        </ul>
-      )}
+      <div className="relative flex justify-start">
+        <span className="bg-white pr-3 text-sm font-medium text-gray-500">{label}</span>
+      </div>
     </div>
   );
 }
@@ -397,72 +543,73 @@ function OutstandingSummary({ progress, missingBySection }: { progress: number; 
 function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Users className="w-4 h-4 text-merchant-redLight" />
-        Business Profile
-      </div>
+      <Field label="DBA Name" required hint="Doing Business As...">
+        <Input
+          value={form.dbaName}
+          onChange={e => onChange("dbaName", e.target.value)}
+          placeholder="Doing Business As..."
+        />
+      </Field>
+
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="DBA name (doing business as)" required>
-          <Input
-            value={form.dbaName}
-            onChange={e => onChange("dbaName", e.target.value)}
-            placeholder="Your business name"
-          />
-        </Field>
-        <Field label="Describe products / services" required>
+        <Field label="Products / Services" required>
           <Input
             value={form.products}
             onChange={e => onChange("products", e.target.value)}
-            placeholder="What do you sell?"
+            placeholder="e.g. Shoes, Consulting"
           />
         </Field>
-        <Field label="Nature of business" required>
+        <Field label="Nature of Business" required>
           <Input
             value={form.natureOfBusiness}
             onChange={e => onChange("natureOfBusiness", e.target.value)}
-            placeholder="e.g. Retail, eCommerce, Restaurant"
+            placeholder="e.g. Retail, eCommerce"
           />
         </Field>
       </div>
 
+      <Divider label="Contact Information" />
+
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Contact first name" required>
+        <Field label="First Name" required>
           <Input
             value={form.contactFirst}
             onChange={e => onChange("contactFirst", e.target.value)}
           />
         </Field>
-        <Field label="Contact last name" required>
+        <Field label="Last Name" required>
           <Input
             value={form.contactLast}
             onChange={e => onChange("contactLast", e.target.value)}
           />
         </Field>
-        <Field label="Phone" required>
+        <Field label="Phone Number" required>
           <Input
             value={form.phone}
             onChange={e => onChange("phone", e.target.value)}
-            placeholder="+1 (555) 555-5555"
+            placeholder="+1 (555) 000-0000"
           />
         </Field>
-        <Field label="Email" required>
+        <Field label="Email Address" required>
           <Input
             type="email"
             value={form.email}
             onChange={e => onChange("email", e.target.value)}
-            placeholder="you@company.com"
+            placeholder="name@business.com"
           />
         </Field>
       </div>
 
+      <Divider label="Location" />
+
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Address" required>
+        <Field label="Address Line 1" required>
           <Input
             value={form.address}
             onChange={e => onChange("address", e.target.value)}
           />
         </Field>
-        <Field label="Address line 2">
+        <Field label="Address Line 2">
           <Input
             value={form.address2}
             onChange={e => onChange("address2", e.target.value)}
@@ -475,13 +622,13 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
             onChange={e => onChange("city", e.target.value)}
           />
         </Field>
-        <Field label="State / Province" required>
+        <Field label="State" required>
           <Input
             value={form.state}
             onChange={e => onChange("state", e.target.value)}
           />
         </Field>
-        <Field label="ZIP / Postal" required>
+        <Field label="ZIP Code" required>
           <Input
             value={form.zip}
             onChange={e => onChange("zip", e.target.value)}
@@ -492,29 +639,135 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
   );
 }
 
+function LegalInfoStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+  return (
+    <div className="space-y-4">
+      <Field label="Legal Business Name" required>
+        <Input
+          value={form.legalName}
+          onChange={e => onChange("legalName", e.target.value)}
+          placeholder="As registered with state/IRS"
+        />
+      </Field>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Federal Tax ID (EIN)" required>
+          <Input
+            value={form.federalTaxId}
+            onChange={e => onChange("federalTaxId", e.target.value)}
+            placeholder="XX-XXXXXXX"
+          />
+        </Field>
+        <Field label="State of Incorporation" required>
+          <Input
+            value={form.stateOfIncorporation}
+            onChange={e => onChange("stateOfIncorporation", e.target.value)}
+          />
+        </Field>
+        <Field label="Business Structure" required>
+          <Select
+            value={form.businessStructure}
+            onChange={e => onChange("businessStructure", e.target.value)}
+          >
+            <option value="">Select structure...</option>
+            <option value="sole_proprietor">Sole Proprietor</option>
+            <option value="llc">LLC</option>
+            <option value="corporation">Corporation</option>
+            <option value="partnership">Partnership</option>
+            <option value="nonprofit">Non-Profit</option>
+          </Select>
+        </Field>
+        <Field label="Date Established" required>
+          <Input
+            type="date"
+            value={form.dateEstablished}
+            onChange={e => onChange("dateEstablished", e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <Divider label="Principal Owner Information" />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Owner Full Name" required>
+          <Input
+            value={form.ownerName}
+            onChange={e => onChange("ownerName", e.target.value)}
+          />
+        </Field>
+        <Field label="Title" required>
+          <Input
+            value={form.ownerTitle}
+            onChange={e => onChange("ownerTitle", e.target.value)}
+            placeholder="e.g. CEO, Owner, President"
+          />
+        </Field>
+        <Field label="Date of Birth" required>
+          <Input
+            type="date"
+            value={form.ownerDob}
+            onChange={e => onChange("ownerDob", e.target.value)}
+          />
+        </Field>
+        <Field label="SSN (last 4 digits)" required hint="Used for verification only">
+          <Input
+            value={form.ownerSsn}
+            onChange={e => onChange("ownerSsn", e.target.value)}
+            placeholder="XXXX"
+            maxLength={4}
+          />
+        </Field>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Owner Home Address" required>
+          <Input
+            value={form.ownerAddress}
+            onChange={e => onChange("ownerAddress", e.target.value)}
+          />
+        </Field>
+        <Field label="City" required>
+          <Input
+            value={form.ownerCity}
+            onChange={e => onChange("ownerCity", e.target.value)}
+          />
+        </Field>
+        <Field label="State">
+          <Input
+            value={form.ownerState}
+            onChange={e => onChange("ownerState", e.target.value)}
+          />
+        </Field>
+        <Field label="ZIP">
+          <Input
+            value={form.ownerZip}
+            onChange={e => onChange("ownerZip", e.target.value)}
+          />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
 function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <CheckCircle2 className="w-4 h-4 text-merchant-redLight" />
-        Processing Information
-      </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Field label="Monthly volume ($)" required hint="Estimated monthly credit card sales">
+        <Field label="Monthly Volume ($)" required hint="Estimated monthly credit card sales">
           <NumberInput
             value={form.monthlyVolume}
             onChange={e => onChange("monthlyVolume", e.target.value)}
             placeholder="50000"
           />
         </Field>
-        <Field label="Average ticket ($)" required hint="Average transaction amount">
+        <Field label="Average Ticket ($)" required hint="Average transaction amount">
           <NumberInput
             value={form.avgTicket}
             onChange={e => onChange("avgTicket", e.target.value)}
             placeholder="75"
           />
         </Field>
-        <Field label="High ticket ($)" required hint="Largest expected transaction">
+        <Field label="High Ticket ($)" required hint="Largest expected transaction">
           <NumberInput
             value={form.highTicket}
             onChange={e => onChange("highTicket", e.target.value)}
@@ -524,13 +777,49 @@ function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K e
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Business type" hint="e.g. LLC, Corporation, Sole Proprietor">
+        <Field label="Current Processor" required hint="If none, enter 'None'">
           <Input
-            value={form.businessType}
-            onChange={e => onChange("businessType", e.target.value)}
-            placeholder="LLC"
+            value={form.currentProcessor}
+            onChange={e => onChange("currentProcessor", e.target.value)}
+            placeholder="e.g. Square, Stripe, None"
           />
         </Field>
+        <Field label="Accepted Card Types" required>
+          <Input
+            value={form.acceptedCards}
+            onChange={e => onChange("acceptedCards", e.target.value)}
+            placeholder="Visa, Mastercard, Amex, Discover"
+          />
+        </Field>
+      </div>
+
+      <Divider label="Transaction Mix" />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Field label="eCommerce %" required hint="Online transactions">
+          <NumberInput
+            value={form.ecommercePercent}
+            onChange={e => onChange("ecommercePercent", e.target.value)}
+            placeholder="30"
+          />
+        </Field>
+        <Field label="In-Person %" required hint="Card-present transactions">
+          <NumberInput
+            value={form.inPersonPercent}
+            onChange={e => onChange("inPersonPercent", e.target.value)}
+            placeholder="60"
+          />
+        </Field>
+        <Field label="Keyed %" required hint="Manually entered">
+          <NumberInput
+            value={form.keyed}
+            onChange={e => onChange("keyed", e.target.value)}
+            placeholder="10"
+          />
+        </Field>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
         <Field label="Website" hint="Optional - your business website">
           <Input
             value={form.website}
@@ -540,7 +829,7 @@ function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K e
         </Field>
       </div>
 
-      <Field label="Additional notes" hint="Any other information you'd like us to know">
+      <Field label="Additional Notes" hint="Any other information you'd like us to know">
         <Textarea
           value={form.notes}
           onChange={e => onChange("notes", e.target.value)}
@@ -551,25 +840,55 @@ function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K e
   );
 }
 
-function ReviewStep({ form, missingBySection }: { form: MerchantForm; missingBySection: Record<SectionKey, string[]> }) {
-  const allComplete = missingBySection.business.length === 0 && missingBySection.processing.length === 0;
+function ReviewStep({ 
+  form, 
+  missingBySection, 
+  onSubmit, 
+  isSubmitting, 
+  progress 
+}: { 
+  form: MerchantForm; 
+  missingBySection: Record<SectionKey, string[]>; 
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  progress: number;
+}) {
+  const allComplete = progress === 100;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Send className="w-4 h-4 text-merchant-redLight" />
-        Review & Submit
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+        Application Readiness
       </div>
 
       {!allComplete && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-300">
-          Please complete all required fields before submitting.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Missing Required Information</p>
+              <p className="mt-1">Please complete all required fields before submitting your application.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {allComplete && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          <div className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Ready to Submit!</p>
+              <p className="mt-1">All required fields are complete. Review your information below and click Submit.</p>
+            </div>
+          </div>
         </div>
       )}
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-merchant-gray bg-merchant-black p-4">
-          <h3 className="text-sm font-semibold text-white mb-3">Business Information</h3>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Business Information</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-2">
             <DataItem label="DBA Name" value={form.dbaName} />
             <DataItem label="Products/Services" value={form.products} />
@@ -581,22 +900,45 @@ function ReviewStep({ form, missingBySection }: { form: MerchantForm; missingByS
           </dl>
         </div>
 
-        <div className="rounded-xl border border-merchant-gray bg-merchant-black p-4">
-          <h3 className="text-sm font-semibold text-white mb-3">Processing Information</h3>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Legal Information</h3>
+          <dl className="grid gap-2 text-sm md:grid-cols-2">
+            <DataItem label="Legal Name" value={form.legalName} />
+            <DataItem label="Federal Tax ID" value={form.federalTaxId} />
+            <DataItem label="State of Inc." value={form.stateOfIncorporation} />
+            <DataItem label="Structure" value={form.businessStructure} />
+            <DataItem label="Date Established" value={form.dateEstablished} />
+            <DataItem label="Owner" value={`${form.ownerName} (${form.ownerTitle})`} />
+          </dl>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Processing Information</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-3">
             <DataItem label="Monthly Volume" value={form.monthlyVolume ? `$${form.monthlyVolume}` : ""} />
             <DataItem label="Average Ticket" value={form.avgTicket ? `$${form.avgTicket}` : ""} />
             <DataItem label="High Ticket" value={form.highTicket ? `$${form.highTicket}` : ""} />
-            <DataItem label="Business Type" value={form.businessType} />
-            <DataItem label="Website" value={form.website} />
+            <DataItem label="Current Processor" value={form.currentProcessor} />
+            <DataItem label="eCommerce" value={form.ecommercePercent ? `${form.ecommercePercent}%` : ""} />
+            <DataItem label="In-Person" value={form.inPersonPercent ? `${form.inPersonPercent}%` : ""} />
           </dl>
-          {form.notes && (
-            <div className="mt-3 pt-3 border-t border-merchant-gray/50">
-              <span className="text-xs text-gray-400">Additional Notes:</span>
-              <p className="text-gray-200 mt-1">{form.notes}</p>
-            </div>
-          )}
         </div>
+      </div>
+
+      <div className="pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          className="w-full rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          onClick={onSubmit}
+          disabled={!allComplete || isSubmitting}
+        >
+          {isSubmitting ? "Submitting..." : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              Complete Application
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -605,8 +947,8 @@ function ReviewStep({ form, missingBySection }: { form: MerchantForm; missingByS
 function DataItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-gray-400">{label}</dt>
-      <dd className="text-gray-200">{value || <span className="text-gray-500 italic">Not provided</span>}</dd>
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal italic">Not provided</span>}</dd>
     </div>
   );
 }
