@@ -60,6 +60,39 @@ const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
   ]
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  dbaName: "DBA Name",
+  products: "Products / Services",
+  natureOfBusiness: "Nature of Business",
+  contactFirst: "First Name",
+  contactLast: "Last Name",
+  phone: "Phone Number",
+  email: "Email Address",
+  address: "Address",
+  city: "City",
+  state: "State",
+  zip: "ZIP Code",
+  legalName: "Legal Business Name",
+  federalTaxId: "Federal Tax ID",
+  stateOfIncorporation: "State of Incorporation",
+  businessStructure: "Business Structure",
+  dateEstablished: "Date Established",
+  ownerName: "Owner Full Name",
+  ownerTitle: "Title",
+  ownerDob: "Date of Birth",
+  ownerSsn: "SSN (last 4)",
+  ownerAddress: "Owner Home Address",
+  ownerCity: "Owner City",
+  monthlyVolume: "Monthly Volume",
+  avgTicket: "Average Ticket",
+  highTicket: "High Ticket",
+  currentProcessor: "Current Processor",
+  acceptedCards: "Accepted Card Types",
+  ecommercePercent: "eCommerce %",
+  inPersonPercent: "In-Person %",
+  keyed: "Keyed %"
+};
+
 interface MerchantForm {
   // business
   dbaName: string;
@@ -141,9 +174,70 @@ const initialState: MerchantForm = {
   notes: ""
 };
 
+type TouchedFields = Partial<Record<keyof MerchantForm, boolean>>;
+
+// Validation functions
+function validateEmail(email: string): string | null {
+  if (!email.trim()) return "Email is required";
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return "Please enter a valid email address";
+  return null;
+}
+
+function validatePhone(phone: string): string | null {
+  if (!phone.trim()) return "Phone number is required";
+  const digitsOnly = phone.replace(/\D/g, "");
+  if (digitsOnly.length < 10) return "Please enter a valid phone number";
+  return null;
+}
+
+function validateSsn(ssn: string): string | null {
+  if (!ssn.trim()) return "Last 4 digits of SSN is required";
+  if (ssn.length !== 4 || !/^\d{4}$/.test(ssn)) return "Please enter exactly 4 digits";
+  return null;
+}
+
+function validatePercentage(value: string, fieldName: string): string | null {
+  if (!value.trim()) return `${fieldName} is required`;
+  const num = parseFloat(value);
+  if (isNaN(num) || num < 0 || num > 100) return "Must be between 0 and 100";
+  return null;
+}
+
+function validateRequired(value: string, fieldName: string): string | null {
+  if (!value.trim()) return `${fieldName} is required`;
+  return null;
+}
+
+function getFieldError(field: keyof MerchantForm, value: string): string | null {
+  const label = FIELD_LABELS[field] || field;
+  
+  switch (field) {
+    case "email":
+      return validateEmail(value);
+    case "phone":
+      return validatePhone(value);
+    case "ownerSsn":
+      return validateSsn(value);
+    case "ecommercePercent":
+    case "inPersonPercent":
+    case "keyed":
+      return validatePercentage(value, label);
+    default:
+      // Check if it's a required field
+      const allRequired = [...REQUIRED_FIELDS.business, ...REQUIRED_FIELDS.legal, ...REQUIRED_FIELDS.processing];
+      if (allRequired.includes(field)) {
+        return validateRequired(value, label);
+      }
+      return null;
+  }
+}
+
 export default function MerchantApply() {
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [form, setForm] = useState<MerchantForm>(initialState);
+  const [touched, setTouched] = useState<TouchedFields>({});
+  const [showAllErrors, setShowAllErrors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
@@ -152,9 +246,25 @@ export default function MerchantApply() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleBlur = (field: keyof MerchantForm) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const getError = (field: keyof MerchantForm): string | null => {
+    if (!touched[field] && !showAllErrors) return null;
+    return getFieldError(field, form[field]);
+  };
+
   const getMissingFieldsForSection = (sectionKey: SectionKey) => {
     const required = REQUIRED_FIELDS[sectionKey] ?? [];
     return required.filter(field => !String(form[field as keyof MerchantForm] ?? "").trim());
+  };
+
+  const getErrorsForSection = (sectionKey: SectionKey): string[] => {
+    const required = REQUIRED_FIELDS[sectionKey] ?? [];
+    return required
+      .map(field => getFieldError(field as keyof MerchantForm, form[field as keyof MerchantForm]))
+      .filter((error): error is string => error !== null);
   };
 
   const missingBySection = useMemo(() => ({
@@ -171,7 +281,62 @@ export default function MerchantApply() {
 
   const progress = Math.round((completedRequiredFields / totalRequiredFields) * 100);
 
+  const validateCurrentStep = (): boolean => {
+    const sectionMap: Record<number, SectionKey | null> = {
+      0: "business",
+      1: "legal",
+      2: "processing",
+      3: null
+    };
+    
+    const section = sectionMap[stepIndex];
+    if (!section) return true;
+    
+    const errors = getErrorsForSection(section);
+    if (errors.length > 0) {
+      // Mark all fields in this section as touched
+      const fields = REQUIRED_FIELDS[section];
+      const newTouched: TouchedFields = {};
+      fields.forEach(field => {
+        newTouched[field as keyof MerchantForm] = true;
+      });
+      setTouched(prev => ({ ...prev, ...newTouched }));
+      
+      toast({
+        variant: "destructive",
+        title: "Please fix the errors",
+        description: `${errors.length} field(s) need attention before continuing.`
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateCurrentStep()) {
+      setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1));
+    }
+  };
+
   const handleSubmit = async () => {
+    setShowAllErrors(true);
+    
+    // Validate all sections
+    const allErrors = [
+      ...getErrorsForSection("business"),
+      ...getErrorsForSection("legal"),
+      ...getErrorsForSection("processing")
+    ];
+    
+    if (allErrors.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Please complete all required fields",
+        description: `${allErrors.length} field(s) need attention.`
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const messageContent = `
@@ -341,13 +506,13 @@ Notes: ${form.notes}
 
                 {/* Step Content */}
                 {stepIndex === 0 && (
-                  <BusinessProfileStep form={form} onChange={handleChange} />
+                  <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />
                 )}
                 {stepIndex === 1 && (
-                  <LegalInfoStep form={form} onChange={handleChange} />
+                  <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />
                 )}
                 {stepIndex === 2 && (
-                  <ProcessingStep form={form} onChange={handleChange} />
+                  <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />
                 )}
                 {stepIndex === 3 && (
                   <ReviewStep form={form} missingBySection={missingBySection} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />
@@ -369,7 +534,7 @@ Notes: ${form.notes}
                   <button
                     type="button"
                     className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
-                    onClick={() => setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1))}
+                    onClick={handleNextStep}
                   >
                     Next Step
                   </button>
@@ -451,7 +616,15 @@ Notes: ${form.notes}
 // Helper Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Field({ label, required, children, hint }: { label: string; required?: boolean; children: ReactNode; hint?: string }) {
+interface FieldProps {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+  hint?: string;
+  error?: string | null;
+}
+
+function Field({ label, required, children, hint, error }: FieldProps) {
   return (
     <label className="space-y-1.5 text-sm">
       <span className="flex items-center gap-1 font-medium text-gray-700">
@@ -459,45 +632,73 @@ function Field({ label, required, children, hint }: { label: string; required?: 
         {required && <span className="text-red-500">*</span>}
       </span>
       {children}
-      {hint && <p className="text-xs text-gray-400">{hint}</p>}
+      {error && (
+        <p className="text-xs text-red-500 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          {error}
+        </p>
+      )}
+      {!error && hint && <p className="text-xs text-gray-400">{hint}</p>}
     </label>
   );
 }
 
-function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  hasError?: boolean;
+}
+
+function Input({ hasError, ...props }: InputProps) {
   return (
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
+        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2",
+        hasError
+          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
         props.className
       )}
     />
   );
 }
 
-function NumberInput(props: InputHTMLAttributes<HTMLInputElement>) {
+function NumberInput(props: InputProps) {
   return <Input type="number" step="any" min="0" {...props} />;
 }
 
-function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  hasError?: boolean;
+}
+
+function Textarea({ hasError, ...props }: TextareaProps) {
   return (
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[80px]",
+        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 min-h-[80px]",
+        hasError
+          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
         props.className
       )}
     />
   );
 }
 
-function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  children: ReactNode;
+  hasError?: boolean;
+}
+
+function Select({ children, hasError, ...props }: SelectProps) {
   return (
     <select
       {...props}
       className={cn(
-        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
+        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2",
+        hasError
+          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
         props.className
       )}
     >
@@ -540,30 +741,43 @@ function Divider({ label }: { label: string }) {
 // Step Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+interface StepProps {
+  form: MerchantForm;
+  onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
+  onBlur: (field: keyof MerchantForm) => void;
+  getError: (field: keyof MerchantForm) => string | null;
+}
+
+function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
     <div className="space-y-4">
-      <Field label="DBA Name" required hint="Doing Business As...">
+      <Field label="DBA Name" required hint="Doing Business As..." error={getError("dbaName")}>
         <Input
           value={form.dbaName}
           onChange={e => onChange("dbaName", e.target.value)}
+          onBlur={() => onBlur("dbaName")}
           placeholder="Doing Business As..."
+          hasError={!!getError("dbaName")}
         />
       </Field>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Products / Services" required>
+        <Field label="Products / Services" required error={getError("products")}>
           <Input
             value={form.products}
             onChange={e => onChange("products", e.target.value)}
+            onBlur={() => onBlur("products")}
             placeholder="e.g. Shoes, Consulting"
+            hasError={!!getError("products")}
           />
         </Field>
-        <Field label="Nature of Business" required>
+        <Field label="Nature of Business" required error={getError("natureOfBusiness")}>
           <Input
             value={form.natureOfBusiness}
             onChange={e => onChange("natureOfBusiness", e.target.value)}
+            onBlur={() => onBlur("natureOfBusiness")}
             placeholder="e.g. Retail, eCommerce"
+            hasError={!!getError("natureOfBusiness")}
           />
         </Field>
       </div>
@@ -571,31 +785,39 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
       <Divider label="Contact Information" />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="First Name" required>
+        <Field label="First Name" required error={getError("contactFirst")}>
           <Input
             value={form.contactFirst}
             onChange={e => onChange("contactFirst", e.target.value)}
+            onBlur={() => onBlur("contactFirst")}
+            hasError={!!getError("contactFirst")}
           />
         </Field>
-        <Field label="Last Name" required>
+        <Field label="Last Name" required error={getError("contactLast")}>
           <Input
             value={form.contactLast}
             onChange={e => onChange("contactLast", e.target.value)}
+            onBlur={() => onBlur("contactLast")}
+            hasError={!!getError("contactLast")}
           />
         </Field>
-        <Field label="Phone Number" required>
+        <Field label="Phone Number" required error={getError("phone")}>
           <Input
             value={form.phone}
             onChange={e => onChange("phone", e.target.value)}
+            onBlur={() => onBlur("phone")}
             placeholder="+1 (555) 000-0000"
+            hasError={!!getError("phone")}
           />
         </Field>
-        <Field label="Email Address" required>
+        <Field label="Email Address" required error={getError("email")}>
           <Input
             type="email"
             value={form.email}
             onChange={e => onChange("email", e.target.value)}
+            onBlur={() => onBlur("email")}
             placeholder="name@business.com"
+            hasError={!!getError("email")}
           />
         </Field>
       </div>
@@ -603,10 +825,12 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
       <Divider label="Location" />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Address Line 1" required>
+        <Field label="Address Line 1" required error={getError("address")}>
           <Input
             value={form.address}
             onChange={e => onChange("address", e.target.value)}
+            onBlur={() => onBlur("address")}
+            hasError={!!getError("address")}
           />
         </Field>
         <Field label="Address Line 2">
@@ -616,22 +840,28 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
             placeholder="Suite, Unit, etc."
           />
         </Field>
-        <Field label="City" required>
+        <Field label="City" required error={getError("city")}>
           <Input
             value={form.city}
             onChange={e => onChange("city", e.target.value)}
+            onBlur={() => onBlur("city")}
+            hasError={!!getError("city")}
           />
         </Field>
-        <Field label="State" required>
+        <Field label="State" required error={getError("state")}>
           <Input
             value={form.state}
             onChange={e => onChange("state", e.target.value)}
+            onBlur={() => onBlur("state")}
+            hasError={!!getError("state")}
           />
         </Field>
-        <Field label="ZIP Code" required>
+        <Field label="ZIP Code" required error={getError("zip")}>
           <Input
             value={form.zip}
             onChange={e => onChange("zip", e.target.value)}
+            onBlur={() => onBlur("zip")}
+            hasError={!!getError("zip")}
           />
         </Field>
       </div>
@@ -639,35 +869,43 @@ function BusinessProfileStep({ form, onChange }: { form: MerchantForm; onChange:
   );
 }
 
-function LegalInfoStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
     <div className="space-y-4">
-      <Field label="Legal Business Name" required>
+      <Field label="Legal Business Name" required error={getError("legalName")}>
         <Input
           value={form.legalName}
           onChange={e => onChange("legalName", e.target.value)}
+          onBlur={() => onBlur("legalName")}
           placeholder="As registered with state/IRS"
+          hasError={!!getError("legalName")}
         />
       </Field>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Federal Tax ID (EIN)" required>
+        <Field label="Federal Tax ID (EIN)" required error={getError("federalTaxId")}>
           <Input
             value={form.federalTaxId}
             onChange={e => onChange("federalTaxId", e.target.value)}
+            onBlur={() => onBlur("federalTaxId")}
             placeholder="XX-XXXXXXX"
+            hasError={!!getError("federalTaxId")}
           />
         </Field>
-        <Field label="State of Incorporation" required>
+        <Field label="State of Incorporation" required error={getError("stateOfIncorporation")}>
           <Input
             value={form.stateOfIncorporation}
             onChange={e => onChange("stateOfIncorporation", e.target.value)}
+            onBlur={() => onBlur("stateOfIncorporation")}
+            hasError={!!getError("stateOfIncorporation")}
           />
         </Field>
-        <Field label="Business Structure" required>
+        <Field label="Business Structure" required error={getError("businessStructure")}>
           <Select
             value={form.businessStructure}
             onChange={e => onChange("businessStructure", e.target.value)}
+            onBlur={() => onBlur("businessStructure")}
+            hasError={!!getError("businessStructure")}
           >
             <option value="">Select structure...</option>
             <option value="sole_proprietor">Sole Proprietor</option>
@@ -677,11 +915,13 @@ function LegalInfoStep({ form, onChange }: { form: MerchantForm; onChange: <K ex
             <option value="nonprofit">Non-Profit</option>
           </Select>
         </Field>
-        <Field label="Date Established" required>
+        <Field label="Date Established" required error={getError("dateEstablished")}>
           <Input
             type="date"
             value={form.dateEstablished}
             onChange={e => onChange("dateEstablished", e.target.value)}
+            onBlur={() => onBlur("dateEstablished")}
+            hasError={!!getError("dateEstablished")}
           />
         </Field>
       </div>
@@ -689,47 +929,59 @@ function LegalInfoStep({ form, onChange }: { form: MerchantForm; onChange: <K ex
       <Divider label="Principal Owner Information" />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Owner Full Name" required>
+        <Field label="Owner Full Name" required error={getError("ownerName")}>
           <Input
             value={form.ownerName}
             onChange={e => onChange("ownerName", e.target.value)}
+            onBlur={() => onBlur("ownerName")}
+            hasError={!!getError("ownerName")}
           />
         </Field>
-        <Field label="Title" required>
+        <Field label="Title" required error={getError("ownerTitle")}>
           <Input
             value={form.ownerTitle}
             onChange={e => onChange("ownerTitle", e.target.value)}
+            onBlur={() => onBlur("ownerTitle")}
             placeholder="e.g. CEO, Owner, President"
+            hasError={!!getError("ownerTitle")}
           />
         </Field>
-        <Field label="Date of Birth" required>
+        <Field label="Date of Birth" required error={getError("ownerDob")}>
           <Input
             type="date"
             value={form.ownerDob}
             onChange={e => onChange("ownerDob", e.target.value)}
+            onBlur={() => onBlur("ownerDob")}
+            hasError={!!getError("ownerDob")}
           />
         </Field>
-        <Field label="SSN (last 4 digits)" required hint="Used for verification only">
+        <Field label="SSN (last 4 digits)" required hint="Used for verification only" error={getError("ownerSsn")}>
           <Input
             value={form.ownerSsn}
             onChange={e => onChange("ownerSsn", e.target.value)}
+            onBlur={() => onBlur("ownerSsn")}
             placeholder="XXXX"
             maxLength={4}
+            hasError={!!getError("ownerSsn")}
           />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Owner Home Address" required>
+        <Field label="Owner Home Address" required error={getError("ownerAddress")}>
           <Input
             value={form.ownerAddress}
             onChange={e => onChange("ownerAddress", e.target.value)}
+            onBlur={() => onBlur("ownerAddress")}
+            hasError={!!getError("ownerAddress")}
           />
         </Field>
-        <Field label="City" required>
+        <Field label="City" required error={getError("ownerCity")}>
           <Input
             value={form.ownerCity}
             onChange={e => onChange("ownerCity", e.target.value)}
+            onBlur={() => onBlur("ownerCity")}
+            hasError={!!getError("ownerCity")}
           />
         </Field>
         <Field label="State">
@@ -749,46 +1001,56 @@ function LegalInfoStep({ form, onChange }: { form: MerchantForm; onChange: <K ex
   );
 }
 
-function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <Field label="Monthly Volume ($)" required hint="Estimated monthly credit card sales">
+        <Field label="Monthly Volume ($)" required hint="Estimated monthly credit card sales" error={getError("monthlyVolume")}>
           <NumberInput
             value={form.monthlyVolume}
             onChange={e => onChange("monthlyVolume", e.target.value)}
+            onBlur={() => onBlur("monthlyVolume")}
             placeholder="50000"
+            hasError={!!getError("monthlyVolume")}
           />
         </Field>
-        <Field label="Average Ticket ($)" required hint="Average transaction amount">
+        <Field label="Average Ticket ($)" required hint="Average transaction amount" error={getError("avgTicket")}>
           <NumberInput
             value={form.avgTicket}
             onChange={e => onChange("avgTicket", e.target.value)}
+            onBlur={() => onBlur("avgTicket")}
             placeholder="75"
+            hasError={!!getError("avgTicket")}
           />
         </Field>
-        <Field label="High Ticket ($)" required hint="Largest expected transaction">
+        <Field label="High Ticket ($)" required hint="Largest expected transaction" error={getError("highTicket")}>
           <NumberInput
             value={form.highTicket}
             onChange={e => onChange("highTicket", e.target.value)}
+            onBlur={() => onBlur("highTicket")}
             placeholder="500"
+            hasError={!!getError("highTicket")}
           />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Current Processor" required hint="If none, enter 'None'">
+        <Field label="Current Processor" required hint="If none, enter 'None'" error={getError("currentProcessor")}>
           <Input
             value={form.currentProcessor}
             onChange={e => onChange("currentProcessor", e.target.value)}
+            onBlur={() => onBlur("currentProcessor")}
             placeholder="e.g. Square, Stripe, None"
+            hasError={!!getError("currentProcessor")}
           />
         </Field>
-        <Field label="Accepted Card Types" required>
+        <Field label="Accepted Card Types" required error={getError("acceptedCards")}>
           <Input
             value={form.acceptedCards}
             onChange={e => onChange("acceptedCards", e.target.value)}
+            onBlur={() => onBlur("acceptedCards")}
             placeholder="Visa, Mastercard, Amex, Discover"
+            hasError={!!getError("acceptedCards")}
           />
         </Field>
       </div>
@@ -796,25 +1058,31 @@ function ProcessingStep({ form, onChange }: { form: MerchantForm; onChange: <K e
       <Divider label="Transaction Mix" />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Field label="eCommerce %" required hint="Online transactions">
+        <Field label="eCommerce %" required hint="Online transactions" error={getError("ecommercePercent")}>
           <NumberInput
             value={form.ecommercePercent}
             onChange={e => onChange("ecommercePercent", e.target.value)}
+            onBlur={() => onBlur("ecommercePercent")}
             placeholder="30"
+            hasError={!!getError("ecommercePercent")}
           />
         </Field>
-        <Field label="In-Person %" required hint="Card-present transactions">
+        <Field label="In-Person %" required hint="Card-present transactions" error={getError("inPersonPercent")}>
           <NumberInput
             value={form.inPersonPercent}
             onChange={e => onChange("inPersonPercent", e.target.value)}
+            onBlur={() => onBlur("inPersonPercent")}
             placeholder="60"
+            hasError={!!getError("inPersonPercent")}
           />
         </Field>
-        <Field label="Keyed %" required hint="Manually entered">
+        <Field label="Keyed %" required hint="Manually entered" error={getError("keyed")}>
           <NumberInput
             value={form.keyed}
             onChange={e => onChange("keyed", e.target.value)}
+            onBlur={() => onBlur("keyed")}
             placeholder="10"
+            hasError={!!getError("keyed")}
           />
         </Field>
       </div>
