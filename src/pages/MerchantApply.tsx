@@ -364,7 +364,7 @@ Address: ${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zi
 Notes: ${form.notes}
     `.trim();
 
-    const { error } = await supabase.from("applications").insert({
+    const { data: createdItem, error } = await supabase.from("applications").insert({
       full_name: `${form.contactFirst} ${form.contactLast}`.trim(),
       email: form.email,
       phone: form.phone,
@@ -373,7 +373,7 @@ Notes: ${form.notes}
       monthly_volume: form.monthlyVolume,
       message: messageContent,
       status: "pending"
-    });
+    }).select().single();
 
     setIsSubmitting(false);
 
@@ -386,7 +386,8 @@ Notes: ${form.notes}
       return;
     }
 
-    setIsSubmitted(true);
+    // Redirect back to MerchantHaus website
+    window.location.href = "https://merchanthaus.io";
   };
 
   const currentStep = STEPS[stepIndex];
@@ -414,7 +415,7 @@ Notes: ${form.notes}
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 overflow-y-auto">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
