@@ -38,8 +38,8 @@ const PipelineColumn = ({
   onTouchDragMove,
   onTouchDragEnd,
 }: PipelineColumnProps) => {
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
-  const [allCollapsed, setAllCollapsed] = useState(false);
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set(opportunities.map((o) => o.id)));
+  const [allCollapsed, setAllCollapsed] = useState(true);
   const config = STAGE_CONFIG[stage];
   const count = opportunities.length;
 
