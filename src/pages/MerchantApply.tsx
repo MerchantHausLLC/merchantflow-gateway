@@ -416,29 +416,29 @@ Notes: ${form.notes}
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-4">
+      <header className="bg-white border-b border-gray-200 px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <img 
               src={merchanthausLogo} 
               alt="MerchantHaus" 
-              className="h-10 w-auto"
+              className="h-7 md:h-10 w-auto"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-gray-200 overflow-hidden">
               <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
             </div>
-            <span className="text-sm font-medium text-gray-700">{progress}% Complete</span>
+            <span className="text-xs md:text-sm font-medium text-gray-700">{progress}%</span>
           </div>
         </div>
       </header>
 
-      <div className="p-4 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="p-3 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
           {/* Step Navigation */}
-          <nav className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
+          <nav className="flex items-center justify-between gap-1 md:gap-2 overflow-x-auto pb-1 md:pb-2">
             {STEPS.map((step, index) => {
               const StepIcon = step.icon;
               const isActive = index === stepIndex;
@@ -449,7 +449,7 @@ Notes: ${form.notes}
                   key={step.label}
                   onClick={() => setStepIndex(index)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg flex-1 min-w-[180px] transition-all border-b-2",
+                    "flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg flex-1 min-w-0 transition-all border-b-2",
                     isActive
                       ? "bg-white border-emerald-500 shadow-sm"
                       : isCompleted
@@ -458,24 +458,24 @@ Notes: ${form.notes}
                   )}
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    "w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0",
                     isActive
                       ? "bg-emerald-100 text-emerald-600"
                       : isCompleted
                         ? "bg-emerald-50 text-emerald-500"
                         : "bg-gray-100 text-gray-400"
                   )}>
-                    <StepIcon className="w-5 h-5" />
+                    <StepIcon className="w-3 h-3 md:w-5 md:h-5" />
                   </div>
-                  <div className="text-left">
+                  <div className="text-left min-w-0 hidden sm:block">
                     <p className={cn(
-                      "text-sm font-medium",
+                      "text-xs md:text-sm font-medium truncate",
                       isActive ? "text-emerald-600" : isCompleted ? "text-emerald-500" : "text-gray-500"
                     )}>
                       {step.label.split(" ")[0]}
                     </p>
                     <p className={cn(
-                      "text-xs",
+                      "text-[10px] md:text-xs truncate",
                       isActive ? "text-emerald-600" : "text-gray-400"
                     )}>
                       {step.label.split(" ").slice(1).join(" ") || "Profile"}
@@ -488,17 +488,17 @@ Notes: ${form.notes}
 
           {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-6">
+            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 md:p-6">
                 {/* Step Header */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                <div className="mb-4 md:mb-6">
+                  <div className="flex items-center gap-2 text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">
                     <span className="font-medium">Step {stepIndex + 1}: {currentStep.label}</span>
                     <span className="text-gray-300">•</span>
                     <span>{stepIndex + 1} of {STEPS.length}</span>
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-900">{currentStep.label}</h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h2 className="text-base md:text-xl font-semibold text-gray-900">{currentStep.label}</h2>
+                  <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">
                     Please complete all required fields marked with <span className="text-red-500">*</span>
                   </p>
                 </div>
@@ -520,10 +520,10 @@ Notes: ${form.notes}
 
               {/* Navigation */}
               {stepIndex < 3 && (
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div className="px-4 py-3 md:px-6 md:py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                   <button
                     type="button"
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
                     onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
                     disabled={stepIndex === 0}
                   >
@@ -532,7 +532,7 @@ Notes: ${form.notes}
 
                   <button
                     type="button"
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                     onClick={handleNextStep}
                   >
                     Next Step
@@ -542,8 +542,8 @@ Notes: ${form.notes}
             </section>
 
             {/* Sidebar */}
-            <aside className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <aside className="space-y-3 md:space-y-4">
+              <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm p-3 md:p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
                   <AlertCircle className="w-4 h-4 text-emerald-600" />
                   Status Snapshot
@@ -592,7 +592,7 @@ Notes: ${form.notes}
                 </div>
               </div>
 
-              <div className="bg-blue-50 rounded-2xl border border-blue-100 p-5">
+              <div className="bg-blue-50 rounded-xl md:rounded-2xl border border-blue-100 p-3 md:p-5">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
@@ -625,7 +625,7 @@ interface FieldProps {
 
 function Field({ label, required, children, hint, error }: FieldProps) {
   return (
-    <label className="space-y-1.5 text-sm">
+    <label className="space-y-1 md:space-y-1.5 text-xs md:text-sm">
       <span className="flex items-center gap-1 font-medium text-gray-700">
         {label}
         {required && <span className="text-red-500">*</span>}
@@ -651,7 +651,7 @@ function Input({ hasError, ...props }: InputProps) {
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2",
+        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2",
         hasError
           ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
           : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
@@ -674,7 +674,7 @@ function Textarea({ hasError, ...props }: TextareaProps) {
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 min-h-[80px]",
+        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 min-h-[60px] md:min-h-[80px]",
         hasError
           ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
           : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
@@ -694,7 +694,7 @@ function Select({ children, hasError, ...props }: SelectProps) {
     <select
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2",
+        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2",
         hasError
           ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
           : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
@@ -749,7 +749,7 @@ interface StepProps {
 
 function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <Field label="DBA Name" required hint="Doing Business As..." error={getError("dbaName")}>
         <Input
           value={form.dbaName}
@@ -760,7 +760,7 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
         />
       </Field>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Products / Services" required error={getError("products")}>
           <Input
             value={form.products}
@@ -783,7 +783,7 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
 
       <Divider label="Contact Information" />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="First Name" required error={getError("contactFirst")}>
           <Input
             value={form.contactFirst}
@@ -823,7 +823,7 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
 
       <Divider label="Location" />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Address Line 1" required error={getError("address")}>
           <Input
             value={form.address}
@@ -870,7 +870,7 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
 
 function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <Field label="Legal Business Name" required error={getError("legalName")}>
         <Input
           value={form.legalName}
@@ -881,7 +881,7 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
         />
       </Field>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Federal Tax ID (EIN)" required error={getError("federalTaxId")}>
           <Input
             value={form.federalTaxId}
@@ -927,7 +927,7 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
 
       <Divider label="Principal Owner Information" />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Owner Full Name" required error={getError("ownerName")}>
           <Input
             value={form.ownerName}
@@ -966,7 +966,7 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
         </Field>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Owner Home Address" required error={getError("ownerAddress")}>
           <Input
             value={form.ownerAddress}
@@ -1002,9 +1002,9 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
 
 function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Field label="Monthly Volume ($)" required hint="Estimated monthly credit card sales" error={getError("monthlyVolume")}>
+    <div className="space-y-3 md:space-y-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-3">
+        <Field label="Monthly Vol ($)" required hint="Est. monthly CC sales" error={getError("monthlyVolume")}>
           <NumberInput
             value={form.monthlyVolume}
             onChange={e => onChange("monthlyVolume", e.target.value)}
@@ -1013,7 +1013,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
             hasError={!!getError("monthlyVolume")}
           />
         </Field>
-        <Field label="Average Ticket ($)" required hint="Average transaction amount" error={getError("avgTicket")}>
+        <Field label="Avg Ticket ($)" required hint="Avg transaction" error={getError("avgTicket")}>
           <NumberInput
             value={form.avgTicket}
             onChange={e => onChange("avgTicket", e.target.value)}
@@ -1022,7 +1022,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
             hasError={!!getError("avgTicket")}
           />
         </Field>
-        <Field label="High Ticket ($)" required hint="Largest expected transaction" error={getError("highTicket")}>
+        <Field label="High Ticket ($)" required hint="Largest transaction" error={getError("highTicket")}>
           <NumberInput
             value={form.highTicket}
             onChange={e => onChange("highTicket", e.target.value)}
@@ -1033,7 +1033,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
         </Field>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Current Processor" required hint="If none, enter 'None'" error={getError("currentProcessor")}>
           <Input
             value={form.currentProcessor}
@@ -1056,7 +1056,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
 
       <Divider label="Transaction Mix" />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-3">
         <Field label="eCommerce %" required hint="Online transactions" error={getError("ecommercePercent")}>
           <NumberInput
             value={form.ecommercePercent}
@@ -1086,7 +1086,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
         </Field>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Field label="Website" hint="Optional - your business website">
           <Input
             value={form.website}
