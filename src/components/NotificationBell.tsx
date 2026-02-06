@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, GitCommitVertical, UserPlus } from 'lucide-react';
+import { Bell, GitCommitVertical, UserPlus, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +22,7 @@ interface Notification {
   link: string | null;
   created_at: string;
   notification_category?: 'stage_change' | 'task_assignment' | 'general';
+  _isProfileSetup?: boolean;
 }
 
 export const NotificationBell = () => {
@@ -29,12 +30,61 @@ export const NotificationBell = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [hasAvatar, setHasAvatar] = useState(true);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Check if user has uploaded a profile picture
+  useEffect(() => {
+    if (!user) return;
+    const checkAvatar = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+      setHasAvatar(!!data?.avatar_url);
+    };
+    checkAvatar();
+
+    // Listen for profile updates
+    const channel = supabase
+      .channel('bell-profile-avatar')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${user.id}`,
+      }, (payload) => {
+        const updated = payload.new as { avatar_url: string | null };
+        setHasAvatar(!!updated.avatar_url);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Build combined notifications list with persistent profile setup prompt
+  const allNotifications: Notification[] = [
+    ...(!hasAvatar ? [{
+      id: 'profile-setup',
+      title: 'Finish setting up your profile',
+      message: 'Upload a profile picture to complete your profile setup.',
+      type: 'warning',
+      read: false,
+      link: '/settings',
+      created_at: new Date().toISOString(),
+      _isProfileSetup: true,
+    }] : []),
+    ...notifications,
+  ];
+
+  const unreadCount = allNotifications.filter(n => !n.read).length;
   const stageChangeCount = notifications.filter(n => !n.read && (n.notification_category === 'stage_change' || n.title?.toLowerCase().includes('stage'))).length;
   const taskAssignmentCount = notifications.filter(n => !n.read && (n.notification_category === 'task_assignment' || n.title?.toLowerCase().includes('task') || n.title?.toLowerCase().includes('assigned'))).length;
 
   const getNotificationIcon = (notification: Notification) => {
+    if (notification._isProfileSetup) {
+      return <Camera className="h-4 w-4 text-amber-500" />;
+    }
     const category = notification.notification_category;
     const titleLower = notification.title?.toLowerCase() || '';
 
@@ -163,17 +213,24 @@ export const NotificationBell = () => {
           )}
         </div>
         <ScrollArea className="h-[300px]">
-          {notifications.length === 0 ? (
+          {allNotifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications
             </div>
           ) : (
-            notifications.map((notification) => {
+            allNotifications.map((notification) => {
               const notificationIcon = getNotificationIcon(notification);
               return (
               <div
                 key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
+                onClick={() => {
+                  if (notification._isProfileSetup) {
+                    setOpen(false);
+                    navigate('/settings');
+                    return;
+                  }
+                  handleNotificationClick(notification);
+                }}
                 className={cn(
                   'p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors',
                   !notification.read && 'bg-primary/5'
@@ -200,9 +257,11 @@ export const NotificationBell = () => {
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                    </p>
+                    {!notification._isProfileSetup && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
