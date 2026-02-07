@@ -390,7 +390,7 @@ export default function MerchantApply() {
 
   if (isSubmitted) {
     return (
-      <div className="merchant-form min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="merchant-form fixed inset-0 z-50 bg-background flex items-center justify-center p-4 overflow-y-auto">
         <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
             <CheckCircle className="w-8 h-8 text-success" />
@@ -411,7 +411,7 @@ export default function MerchantApply() {
   }
 
   return (
-    <div className="merchant-form min-h-screen min-h-dvh bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
