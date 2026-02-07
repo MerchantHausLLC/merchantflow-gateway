@@ -99,43 +99,133 @@ export type Database = {
       }
       applications: {
         Row: {
+          accepted_cards: string | null
+          address: string | null
+          address2: string | null
+          avg_ticket: string | null
+          business_structure: string | null
           business_type: string | null
+          city: string | null
           company_name: string | null
           created_at: string
+          current_processor: string | null
+          date_established: string | null
+          dba_name: string | null
+          ecommerce_percent: string | null
           email: string
+          federal_tax_id: string | null
           full_name: string
+          high_ticket: string | null
           id: string
+          in_person_percent: string | null
+          keyed_percent: string | null
+          legal_name: string | null
           message: string | null
           monthly_volume: string | null
+          nature_of_business: string | null
+          notes: string | null
+          owner_address: string | null
+          owner_city: string | null
+          owner_dob: string | null
+          owner_name: string | null
+          owner_ssn_last4: string | null
+          owner_state: string | null
+          owner_title: string | null
+          owner_zip: string | null
           phone: string | null
+          products: string | null
+          state: string | null
+          state_of_incorporation: string | null
           status: string | null
           updated_at: string
+          website: string | null
+          zip: string | null
         }
         Insert: {
+          accepted_cards?: string | null
+          address?: string | null
+          address2?: string | null
+          avg_ticket?: string | null
+          business_structure?: string | null
           business_type?: string | null
+          city?: string | null
           company_name?: string | null
           created_at?: string
+          current_processor?: string | null
+          date_established?: string | null
+          dba_name?: string | null
+          ecommerce_percent?: string | null
           email: string
+          federal_tax_id?: string | null
           full_name: string
+          high_ticket?: string | null
           id?: string
+          in_person_percent?: string | null
+          keyed_percent?: string | null
+          legal_name?: string | null
           message?: string | null
           monthly_volume?: string | null
+          nature_of_business?: string | null
+          notes?: string | null
+          owner_address?: string | null
+          owner_city?: string | null
+          owner_dob?: string | null
+          owner_name?: string | null
+          owner_ssn_last4?: string | null
+          owner_state?: string | null
+          owner_title?: string | null
+          owner_zip?: string | null
           phone?: string | null
+          products?: string | null
+          state?: string | null
+          state_of_incorporation?: string | null
           status?: string | null
           updated_at?: string
+          website?: string | null
+          zip?: string | null
         }
         Update: {
+          accepted_cards?: string | null
+          address?: string | null
+          address2?: string | null
+          avg_ticket?: string | null
+          business_structure?: string | null
           business_type?: string | null
+          city?: string | null
           company_name?: string | null
           created_at?: string
+          current_processor?: string | null
+          date_established?: string | null
+          dba_name?: string | null
+          ecommerce_percent?: string | null
           email?: string
+          federal_tax_id?: string | null
           full_name?: string
+          high_ticket?: string | null
           id?: string
+          in_person_percent?: string | null
+          keyed_percent?: string | null
+          legal_name?: string | null
           message?: string | null
           monthly_volume?: string | null
+          nature_of_business?: string | null
+          notes?: string | null
+          owner_address?: string | null
+          owner_city?: string | null
+          owner_dob?: string | null
+          owner_name?: string | null
+          owner_ssn_last4?: string | null
+          owner_state?: string | null
+          owner_title?: string | null
+          owner_zip?: string | null
           phone?: string | null
+          products?: string | null
+          state?: string | null
+          state_of_incorporation?: string | null
           status?: string | null
           updated_at?: string
+          website?: string | null
+          zip?: string | null
         }
         Relationships: []
       }
