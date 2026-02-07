@@ -421,7 +421,7 @@ export default function MerchantApply() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 overflow-y-auto">
+    <div className="min-h-screen min-h-dvh bg-gray-100 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -495,7 +495,7 @@ export default function MerchantApply() {
 
           {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm overflow-visible">
               <div className="p-4 md:p-6">
                 {/* Step Header */}
                 <div className="mb-4 md:mb-6">
