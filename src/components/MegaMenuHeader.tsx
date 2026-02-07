@@ -28,6 +28,7 @@ import {
   MessageCircle,
   Bell,
   ExternalLink,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ const navMain: NavGroup[] = [
     icon: LayoutDashboard,
     items: [
       { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
+      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
       { title: "Team Chat", url: "/chat", icon: MessageCircle, description: "Chat with team members" },
     ],
