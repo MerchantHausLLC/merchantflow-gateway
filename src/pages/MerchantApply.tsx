@@ -95,7 +95,6 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 interface MerchantForm {
-  // business
   dbaName: string;
   products: string;
   natureOfBusiness: string;
@@ -108,8 +107,6 @@ interface MerchantForm {
   city: string;
   state: string;
   zip: string;
-
-  // legal
   legalName: string;
   federalTaxId: string;
   stateOfIncorporation: string;
@@ -123,8 +120,6 @@ interface MerchantForm {
   ownerCity: string;
   ownerState: string;
   ownerZip: string;
-
-  // processing
   monthlyVolume: string;
   avgTicket: string;
   highTicket: string;
@@ -177,7 +172,6 @@ const initialState: MerchantForm = {
 
 type TouchedFields = Partial<Record<keyof MerchantForm, boolean>>;
 
-// Validation functions
 function validateEmail(email: string): string | null {
   if (!email.trim()) return "Email is required";
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -225,7 +219,6 @@ function getFieldError(field: keyof MerchantForm, value: string): string | null 
     case "keyed":
       return validatePercentage(value, label);
     default:
-      // Check if it's a required field
       const allRequired = [...REQUIRED_FIELDS.business, ...REQUIRED_FIELDS.legal, ...REQUIRED_FIELDS.processing];
       if (allRequired.includes(field)) {
         return validateRequired(value, label);
@@ -295,7 +288,6 @@ export default function MerchantApply() {
     
     const errors = getErrorsForSection(section);
     if (errors.length > 0) {
-      // Mark all fields in this section as touched
       const fields = REQUIRED_FIELDS[section];
       const newTouched: TouchedFields = {};
       fields.forEach(field => {
@@ -322,7 +314,6 @@ export default function MerchantApply() {
   const handleSubmit = async () => {
     setShowAllErrors(true);
     
-    // Validate all sections
     const allErrors = [
       ...getErrorsForSection("business"),
       ...getErrorsForSection("legal"),
@@ -392,7 +383,6 @@ export default function MerchantApply() {
       return;
     }
 
-    // Redirect back to MerchantHaus website
     window.location.href = "https://merchanthaus.io";
   };
 
@@ -400,18 +390,18 @@ export default function MerchantApply() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-8 shadow-lg text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
+      <div className="merchant-form min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Application Received!</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Application Received!</h1>
+          <p className="text-muted-foreground">
             Thank you for your interest. Our team will review your application and contact you within 1-2 business days.
           </p>
           <a
             href="https://merchanthaus.io"
-            className="inline-block mt-4 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+            className="inline-block mt-4 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             Return to Website
           </a>
@@ -421,9 +411,9 @@ export default function MerchantApply() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gray-100 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="merchant-form min-h-screen min-h-dvh bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-3 py-2.5 md:px-4 md:py-4">
+      <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
@@ -434,10 +424,10 @@ export default function MerchantApply() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-gray-200 overflow-hidden">
-              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-secondary overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
-            <span className="text-xs md:text-sm font-medium text-gray-700">{progress}%</span>
+            <span className="text-xs md:text-sm font-medium text-foreground">{progress}%</span>
           </div>
         </div>
       </header>
@@ -458,32 +448,32 @@ export default function MerchantApply() {
                   className={cn(
                     "flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg flex-1 min-w-0 transition-all border-b-2",
                     isActive
-                      ? "bg-white border-emerald-500 shadow-sm"
+                      ? "bg-card border-primary shadow-sm"
                       : isCompleted
-                        ? "bg-white/50 border-emerald-300"
-                        : "bg-transparent border-transparent hover:bg-white/50"
+                        ? "bg-card/50 border-primary/50"
+                        : "bg-transparent border-transparent hover:bg-card/50"
                   )}
                 >
                   <div className={cn(
                     "w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0",
                     isActive
-                      ? "bg-emerald-100 text-emerald-600"
+                      ? "bg-primary/10 text-primary"
                       : isCompleted
-                        ? "bg-emerald-50 text-emerald-500"
-                        : "bg-gray-100 text-gray-400"
+                        ? "bg-primary/5 text-primary/70"
+                        : "bg-secondary text-muted-foreground"
                   )}>
                     <StepIcon className="w-3 h-3 md:w-5 md:h-5" />
                   </div>
                   <div className="text-left min-w-0 hidden sm:block">
                     <p className={cn(
                       "text-xs md:text-sm font-medium truncate",
-                      isActive ? "text-emerald-600" : isCompleted ? "text-emerald-500" : "text-gray-500"
+                      isActive ? "text-primary" : isCompleted ? "text-primary/70" : "text-muted-foreground"
                     )}>
                       {step.label.split(" ")[0]}
                     </p>
                     <p className={cn(
                       "text-[10px] md:text-xs truncate",
-                      isActive ? "text-emerald-600" : "text-gray-400"
+                      isActive ? "text-primary" : "text-muted-foreground"
                     )}>
                       {step.label.split(" ").slice(1).join(" ") || "Profile"}
                     </p>
@@ -495,18 +485,18 @@ export default function MerchantApply() {
 
           {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-            <section className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm overflow-visible">
+            <section className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm overflow-visible">
               <div className="p-4 md:p-6">
                 {/* Step Header */}
                 <div className="mb-4 md:mb-6">
-                  <div className="flex items-center gap-2 text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">
+                  <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground mb-1 md:mb-2">
                     <span className="font-medium">Step {stepIndex + 1}: {currentStep.label}</span>
-                    <span className="text-gray-300">•</span>
+                    <span className="text-border">•</span>
                     <span>{stepIndex + 1} of {STEPS.length}</span>
                   </div>
-                  <h2 className="text-base md:text-xl font-semibold text-gray-900">{currentStep.label}</h2>
-                  <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">
-                    Please complete all required fields marked with <span className="text-red-500">*</span>
+                  <h2 className="text-base md:text-xl font-semibold text-foreground">{currentStep.label}</h2>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">
+                    Please complete all required fields marked with <span className="text-destructive">*</span>
                   </p>
                 </div>
 
@@ -527,10 +517,10 @@ export default function MerchantApply() {
 
               {/* Navigation */}
               {stepIndex < 3 && (
-                <div className="px-4 py-3 md:px-6 md:py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
                   <button
                     type="button"
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                    className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 transition-colors"
                     onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
                     disabled={stepIndex === 0}
                   >
@@ -539,7 +529,7 @@ export default function MerchantApply() {
 
                   <button
                     type="button"
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                    className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
                     onClick={handleNextStep}
                   >
                     Next Step
@@ -550,9 +540,9 @@ export default function MerchantApply() {
 
             {/* Sidebar */}
             <aside className="space-y-3 md:space-y-4">
-              <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm p-3 md:p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-                  <AlertCircle className="w-4 h-4 text-emerald-600" />
+              <div className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm p-3 md:p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+                  <AlertCircle className="w-4 h-4 text-primary" />
                   Status Snapshot
                 </div>
 
@@ -574,37 +564,37 @@ export default function MerchantApply() {
                   />
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Missing Items</p>
+                <div className="mt-6 pt-4 border-t border-border">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Missing Items</p>
                   <ul className="space-y-1 text-sm">
                     {missingBySection.business.length > 0 && (
-                      <li className="text-red-500">
+                      <li className="text-destructive">
                         <span className="font-medium">Business:</span> {missingBySection.business.length} fields remaining
                       </li>
                     )}
                     {missingBySection.legal.length > 0 && (
-                      <li className="text-red-500">
+                      <li className="text-destructive">
                         <span className="font-medium">Legal:</span> {missingBySection.legal.length} fields remaining
                       </li>
                     )}
                     {missingBySection.processing.length > 0 && (
-                      <li className="text-red-500">
+                      <li className="text-destructive">
                         <span className="font-medium">Processing:</span> {missingBySection.processing.length} fields remaining
                       </li>
                     )}
                     {progress === 100 && (
-                      <li className="text-emerald-600 font-medium">All fields complete! ✓</li>
+                      <li className="text-success font-medium">All fields complete! ✓</li>
                     )}
                   </ul>
                 </div>
               </div>
 
-              <div className="bg-blue-50 rounded-xl md:rounded-2xl border border-blue-100 p-3 md:p-5">
+              <div className="bg-info/10 rounded-xl md:rounded-2xl border border-info/20 p-3 md:p-5">
                 <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Tip</p>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-sm font-medium text-info-foreground">Tip</p>
+                    <p className="text-xs text-info/80 mt-1">
                       If your business does not currently have a processor, we will ask for additional documentation readiness checks after you click "Complete".
                     </p>
                   </div>
@@ -633,18 +623,18 @@ interface FieldProps {
 function Field({ label, required, children, hint, error }: FieldProps) {
   return (
     <label className="space-y-1 md:space-y-1.5 text-xs md:text-sm">
-      <span className="flex items-center gap-1 font-medium text-gray-700">
+      <span className="flex items-center gap-1 font-medium text-foreground">
         {label}
-        {required && <span className="text-red-500">*</span>}
+        {required && <span className="text-destructive">*</span>}
       </span>
       {children}
       {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>
       )}
-      {!error && hint && <p className="text-xs text-gray-400">{hint}</p>}
+      {!error && hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </label>
   );
 }
@@ -658,10 +648,10 @@ function Input({ hasError, ...props }: InputProps) {
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2",
+        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2",
         hasError
-          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
+          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+          : "border-input focus:border-primary focus:ring-primary/20",
         props.className
       )}
     />
@@ -681,10 +671,10 @@ function Textarea({ hasError, ...props }: TextareaProps) {
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 min-h-[60px] md:min-h-[80px]",
+        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 min-h-[60px] md:min-h-[80px]",
         hasError
-          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
+          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+          : "border-input focus:border-primary focus:ring-primary/20",
         props.className
       )}
     />
@@ -701,10 +691,10 @@ function Select({ children, hasError, ...props }: SelectProps) {
     <select
       {...props}
       className={cn(
-        "w-full rounded-lg border bg-white px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2",
+        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground shadow-sm focus:outline-none focus:ring-2",
         hasError
-          ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-          : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500/20",
+          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+          : "border-input focus:border-primary focus:ring-primary/20",
         props.className
       )}
     >
@@ -717,12 +707,12 @@ function SectionStatus({ label, count, total }: { label: string; count: number; 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
-        <span className="text-gray-500">{count}/{total}</span>
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="text-muted-foreground">{count}/{total}</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
         <div
-          className={cn("h-full transition-all", count === total ? "bg-emerald-500" : "bg-emerald-400")}
+          className={cn("h-full transition-all", count === total ? "bg-primary" : "bg-primary/70")}
           style={{ width: `${(count / total) * 100}%` }}
         />
       </div>
@@ -734,10 +724,10 @@ function Divider({ label }: { label: string }) {
   return (
     <div className="relative my-6">
       <div className="absolute inset-0 flex items-center">
-        <div className="w-full border-t border-gray-200" />
+        <div className="w-full border-t border-border" />
       </div>
       <div className="relative flex justify-start">
-        <span className="bg-white pr-3 text-sm font-medium text-gray-500">{label}</span>
+        <span className="bg-card pr-3 text-sm font-medium text-muted-foreground">{label}</span>
       </div>
     </div>
   );
@@ -1131,13 +1121,13 @@ function ReviewStep({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <CheckCircle2 className="w-5 h-5 text-primary" />
         Application Readiness
       </div>
 
       {!allComplete && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <div>
@@ -1149,7 +1139,7 @@ function ReviewStep({
       )}
 
       {allComplete && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-success">
           <div className="flex items-start gap-2">
             <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <div>
@@ -1161,8 +1151,8 @@ function ReviewStep({
       )}
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Business Information</h3>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Business Information</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-2">
             <DataItem label="DBA Name" value={form.dbaName} />
             <DataItem label="Products/Services" value={form.products} />
@@ -1174,8 +1164,8 @@ function ReviewStep({
           </dl>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Legal Information</h3>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Legal Information</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-2">
             <DataItem label="Legal Name" value={form.legalName} />
             <DataItem label="Federal Tax ID" value={form.federalTaxId} />
@@ -1186,8 +1176,8 @@ function ReviewStep({
           </dl>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Processing Information</h3>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Processing Information</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-3">
             <DataItem label="Monthly Volume" value={form.monthlyVolume ? `$${form.monthlyVolume}` : ""} />
             <DataItem label="Average Ticket" value={form.avgTicket ? `$${form.avgTicket}` : ""} />
@@ -1199,10 +1189,10 @@ function ReviewStep({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-200">
+      <div className="pt-4 border-t border-border">
         <button
           type="button"
-          className="w-full rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:bg-secondary disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center justify-center gap-2"
           onClick={onSubmit}
           disabled={!allComplete || isSubmitting}
         >
@@ -1221,8 +1211,8 @@ function ReviewStep({
 function DataItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal italic">Not provided</span>}</dd>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-foreground font-medium">{value || <span className="text-muted-foreground font-normal italic">Not provided</span>}</dd>
     </div>
   );
 }

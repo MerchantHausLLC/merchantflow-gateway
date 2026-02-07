@@ -128,7 +128,14 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))'
         },
+        info: {
+          DEFAULT: 'hsl(var(--info, 213 94% 56%))',
+          foreground: 'hsl(var(--info-foreground, 213 94% 15%))'
+        },
         popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))'
+        },
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))'
         },
