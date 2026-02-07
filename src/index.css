@@ -577,7 +577,6 @@ All colors MUST be HSL.
     --sidebar-border: 0 0% 82%;
     --sidebar-ring: 0 0% 50%;
   }
-  }
 
   /* Merchant Application Form - Light emerald-branded theme (MerchantHaus) */
   .merchant-form {
@@ -618,6 +617,7 @@ All colors MUST be HSL.
     --input: 220 13% 84%;
     --ring: 152 69% 31%;
   }
+}
 
 @layer base {
   * {
