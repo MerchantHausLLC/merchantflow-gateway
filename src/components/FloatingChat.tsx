@@ -436,11 +436,27 @@ const FloatingChat: React.FC = () => {
     }
   }, [user, fetchProfiles, fetchChannels, fetchUnreadCounts]);
 
-  // Refresh profiles periodically for online status
-  useEffect(() => {
+   // Refresh profiles periodically and via realtime for online status
+    useEffect(() => {
     if (!user) return;
     const interval = setInterval(fetchProfiles, 30000);
-    return () => clearInterval(interval);
+
+    // Subscribe to profile changes (last_seen updates) for realtime status
+    const profileChannel = supabase
+      .channel('profiles-last-seen')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+      }, () => {
+        fetchProfiles();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(profileChannel);
+    };
   }, [user, fetchProfiles]);
 
   // Fetch messages when channel changes

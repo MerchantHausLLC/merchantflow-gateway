@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard, Globe } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -298,6 +298,26 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
 
       <SidebarFooter>
         <SidebarMenu>
+          {/* Admin: Web Submissions */}
+          {isAdmin && (
+            <SidebarMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/admin/web-submissions"
+                      className="hover:bg-sidebar-accent"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <Globe className="h-4 w-4" />
+                      {!isCollapsed && <span>Web Submissions</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                {isCollapsed && <TooltipContent side="right">Web Submissions</TooltipContent>}
+              </Tooltip>
+            </SidebarMenuItem>
+          )}
           {/* Admin: Deletion Requests */}
           {isAdmin && (
             <SidebarMenuItem>
