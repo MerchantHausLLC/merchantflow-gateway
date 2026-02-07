@@ -144,7 +144,7 @@ const PipelineSection = ({
         }}>
             {title}
           </span>
-          <span className={cn("text-white font-semibold bg-white/20 border border-white/40 rounded-full", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
+          <span className={cn("text-black font-semibold bg-white/20 border border-white/40 rounded-full", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
             {totalCount}
           </span>
         </div>
