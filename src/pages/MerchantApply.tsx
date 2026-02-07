@@ -340,30 +340,6 @@ export default function MerchantApply() {
 
     setIsSubmitting(true);
 
-    const messageContent = `
-Products: ${form.products}
-Nature: ${form.natureOfBusiness}
-Legal Name: ${form.legalName}
-Federal Tax ID: ${form.federalTaxId}
-State of Inc: ${form.stateOfIncorporation}
-Business Structure: ${form.businessStructure}
-Date Established: ${form.dateEstablished}
-Owner: ${form.ownerName} (${form.ownerTitle})
-Owner DOB: ${form.ownerDob}
-Owner Address: ${form.ownerAddress}, ${form.ownerCity}, ${form.ownerState} ${form.ownerZip}
-Avg Ticket: $${form.avgTicket}
-High Ticket: $${form.highTicket}
-Current Processor: ${form.currentProcessor}
-Accepted Cards: ${form.acceptedCards}
-eCommerce: ${form.ecommercePercent}%
-In-Person: ${form.inPersonPercent}%
-Keyed: ${form.keyed}%
-Website: ${form.website}
-Address: ${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zip}
-
-Notes: ${form.notes}
-    `.trim();
-
     const { data: createdItem, error } = await supabase.from("applications").insert({
       full_name: `${form.contactFirst} ${form.contactLast}`.trim(),
       email: form.email,
@@ -371,8 +347,38 @@ Notes: ${form.notes}
       company_name: form.dbaName,
       business_type: form.businessStructure || form.natureOfBusiness,
       monthly_volume: form.monthlyVolume,
-      message: messageContent,
-      status: "pending"
+      message: form.notes || null,
+      status: "pending",
+      dba_name: form.dbaName || null,
+      products: form.products || null,
+      nature_of_business: form.natureOfBusiness || null,
+      address: form.address || null,
+      address2: form.address2 || null,
+      city: form.city || null,
+      state: form.state || null,
+      zip: form.zip || null,
+      legal_name: form.legalName || null,
+      federal_tax_id: form.federalTaxId || null,
+      state_of_incorporation: form.stateOfIncorporation || null,
+      business_structure: form.businessStructure || null,
+      date_established: form.dateEstablished || null,
+      owner_name: form.ownerName || null,
+      owner_title: form.ownerTitle || null,
+      owner_dob: form.ownerDob || null,
+      owner_ssn_last4: form.ownerSsn || null,
+      owner_address: form.ownerAddress || null,
+      owner_city: form.ownerCity || null,
+      owner_state: form.ownerState || null,
+      owner_zip: form.ownerZip || null,
+      avg_ticket: form.avgTicket || null,
+      high_ticket: form.highTicket || null,
+      current_processor: form.currentProcessor || null,
+      accepted_cards: form.acceptedCards || null,
+      ecommerce_percent: form.ecommercePercent || null,
+      in_person_percent: form.inPersonPercent || null,
+      keyed_percent: form.keyed || null,
+      website: form.website || null,
+      notes: form.notes || null,
     }).select().single();
 
     setIsSubmitting(false);
