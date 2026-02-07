@@ -96,7 +96,7 @@ export default function WebSubmissions() {
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
-          name: app.company_name || app.full_name,
+          name: app.company_name || app.dba_name || app.full_name,
           status: "active",
           address1: app.address,
           address2: app.address2,
@@ -128,16 +128,77 @@ export default function WebSubmissions() {
 
       if (contactError) throw contactError;
 
-      const { error: opportunityError } = await supabase
+      const { data: opportunity, error: opportunityError } = await supabase
         .from("opportunities")
         .insert({
           account_id: account.id,
           contact_id: contact.id,
           stage: "application_started",
           status: "active",
-        });
+        })
+        .select()
+        .single();
 
       if (opportunityError) throw opportunityError;
+
+      // Pre-populate the onboarding wizard with all application data
+      const wizardFormState = {
+        dbaName: app.dba_name || app.company_name || "",
+        products: app.products || "",
+        natureOfBusiness: app.nature_of_business || "",
+        dbaContactFirst: firstName,
+        dbaContactLast: lastName,
+        dbaPhone: app.phone || "",
+        dbaEmail: app.email || "",
+        dbaAddress: app.address || "",
+        dbaAddress2: app.address2 || "",
+        dbaCity: app.city || "",
+        dbaState: app.state || "",
+        dbaZip: app.zip || "",
+        legalEntityName: app.legal_name || app.company_name || "",
+        legalPhone: app.phone || "",
+        legalEmail: app.email || "",
+        tin: app.federal_tax_id || "",
+        ownershipType: app.business_structure || "",
+        formationDate: app.date_established || "",
+        stateIncorporated: app.state_of_incorporation || "",
+        legalAddress: app.address || "",
+        legalAddress2: app.address2 || "",
+        legalCity: app.city || "",
+        legalState: app.state || "",
+        legalZip: app.zip || "",
+        monthlyVolume: app.monthly_volume || "",
+        avgTicket: app.avg_ticket || "",
+        highTicket: app.high_ticket || "",
+        swipedPct: app.in_person_percent || "",
+        keyedPct: app.keyed_percent || "",
+        ecomPct: app.ecommerce_percent || "",
+        website: app.website || "",
+        documents: [],
+        notes: app.notes || app.message || "",
+      };
+
+      // Calculate initial progress
+      const requiredFields = [
+        "dbaName", "products", "natureOfBusiness", "dbaContactFirst", "dbaContactLast",
+        "dbaPhone", "dbaEmail", "dbaAddress", "dbaCity", "dbaState", "dbaZip",
+        "legalEntityName", "legalPhone", "legalEmail", "tin", "ownershipType",
+        "formationDate", "stateIncorporated", "legalAddress", "legalCity", "legalState", "legalZip",
+        "monthlyVolume", "avgTicket", "highTicket", "swipedPct", "keyedPct", "motoPct", "ecomPct",
+        "b2cPct", "b2bPct"
+      ];
+      const filled = requiredFields.filter(f => !!(wizardFormState as any)[f]?.toString().trim()).length;
+      const totalRequired = requiredFields.length + 1; // +1 for documents
+      const progress = Math.round((filled / totalRequired) * 100);
+
+      await supabase
+        .from("onboarding_wizard_states")
+        .upsert({
+          opportunity_id: opportunity.id,
+          progress,
+          step_index: 0,
+          form_state: wizardFormState,
+        } as never, { onConflict: "opportunity_id" });
 
       await supabase
         .from("applications")
@@ -146,7 +207,7 @@ export default function WebSubmissions() {
 
       toast({
         title: "Converted to Pipeline",
-        description: `Created account, contact, and opportunity for ${app.company_name || app.full_name}`,
+        description: `Created account, contact, opportunity, and pre-filled onboarding wizard for ${app.company_name || app.full_name}`,
       });
 
       fetchApplications();
