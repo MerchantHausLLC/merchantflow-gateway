@@ -151,17 +151,7 @@ const PipelineSection = ({
       </div>
 
       {/* Pipeline Content Area */}
-      <div className={cn("flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative", pipelineType === 'processing' ? "bg-gradient-to-br from-rose-500/5 via-background to-amber-500/5 dark:from-rose-500/10 dark:via-background dark:to-amber-500/10" : "bg-gradient-to-br from-teal-500/5 via-background to-cyan-500/5 dark:from-teal-500/10 dark:via-background dark:to-cyan-500/10")} data-pipeline={pipelineType}>
-        {/* Decorative gradient orbs */}
-        <div className={cn("absolute inset-0 overflow-hidden pointer-events-none")}>
-          {pipelineType === 'processing' ? <>
-              <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-rose-500/10 to-transparent rounded-full blur-3xl dark:from-rose-500/20" />
-              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-3xl dark:from-amber-500/20" />
-            </> : <>
-              <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-teal-500/10 to-transparent rounded-full blur-3xl dark:from-teal-500/20" />
-              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full blur-3xl dark:from-cyan-500/20" />
-            </>}
-        </div>
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative" data-pipeline={pipelineType}>
         {/* Sticky Column Headers Row */}
         <div ref={headerScrollRef} className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/20 backdrop-blur-sm relative z-10" style={{
         scrollbarWidth: 'none',
