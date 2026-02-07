@@ -132,11 +132,11 @@ const PipelineSection = ({
   return <div className={cn("flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg overflow-hidden bg-card/50 shadow-sm", "mobile-landscape:rounded-md mobile-landscape:min-h-[120px]")}>
       {/* Vertical Title Sidebar */}
       <div className={cn("flex flex-col items-center justify-center flex-shrink-0",
-    // Dark grey background with white border for mono theme support
-    "bg-zinc-800 border-r border-white/20", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
+    // Inverted: light background with dark border
+    "bg-white border-r border-zinc-300", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
         <div className={cn("flex flex-col items-center py-2 sm:py-4 mobile-landscape:py-1", isCompact ? "gap-1" : "gap-1.5", "mobile-landscape:gap-0.5")}>
-          <span className="hidden sm:block mobile-landscape:hidden text-white">{icon}</span>
-          <span className={cn("font-bold whitespace-nowrap tracking-wide mobile-landscape:text-[10px] text-card",
+          <span className="hidden sm:block mobile-landscape:hidden text-zinc-800">{icon}</span>
+          <span className={cn("font-bold whitespace-nowrap tracking-wide mobile-landscape:text-[10px] text-zinc-800",
         // Increased font sizes for better mobile readability
         isCompact ? "text-[11px] sm:text-[13px]" : "text-[13px] sm:text-base")} style={{
           writingMode: 'vertical-rl',
@@ -144,7 +144,7 @@ const PipelineSection = ({
         }}>
             {title}
           </span>
-          <span className={cn("text-black font-semibold bg-white/20 border border-white/40 rounded-full", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
+          <span className={cn("text-white font-semibold bg-zinc-800 border border-zinc-600 rounded-full", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
             {totalCount}
           </span>
         </div>
