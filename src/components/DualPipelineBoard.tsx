@@ -132,7 +132,7 @@ const PipelineSection = ({
   return <div className={cn("flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg overflow-hidden bg-card/50 shadow-sm", "mobile-landscape:rounded-md mobile-landscape:min-h-[120px]")}>
       {/* Vertical Title Sidebar */}
       <div className={cn("flex flex-col items-center justify-center flex-shrink-0",
-    "bg-black border-r border-white", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
+    "bg-zinc-900 border-r border-white", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
         <div className={cn("flex flex-col items-center py-2 sm:py-4 mobile-landscape:py-1", isCompact ? "gap-1" : "gap-1.5", "mobile-landscape:gap-0.5")}>
           <span className="hidden sm:block mobile-landscape:hidden text-white">{icon}</span>
           <span className={cn("font-bold whitespace-nowrap tracking-wide mobile-landscape:text-[10px] text-white",
