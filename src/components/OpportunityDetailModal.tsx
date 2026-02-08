@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1307,7 +1307,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     }
   };
 
-  const handleDownload = async (doc: Document) => {
+  const handlePreview = async (doc: Document) => {
     try {
       const { data, error } = await supabase.storage
         .from('opportunity-documents')
@@ -1324,6 +1324,30 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
       window.open(url, '_blank');
     } catch {
       toast.error('Unable to open file');
+    }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('opportunity-documents')
+        .download(doc.file_path);
+
+      if (error || !data) {
+        toast.error('Unable to download file');
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Unable to download file');
     }
   };
 
@@ -1437,7 +1461,10 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} title="Preview">
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download">
                   <Download className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
