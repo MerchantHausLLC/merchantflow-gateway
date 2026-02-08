@@ -331,7 +331,7 @@ export default function MerchantApply() {
 
     setIsSubmitting(true);
 
-    const { data: createdItem, error } = await supabase.from("applications").insert({
+    const { error } = await supabase.from("applications").insert({
       full_name: `${form.contactFirst} ${form.contactLast}`.trim(),
       email: form.email,
       phone: form.phone,
@@ -370,7 +370,7 @@ export default function MerchantApply() {
       keyed_percent: form.keyed || null,
       website: form.website || null,
       notes: form.notes || null,
-    }).select().single();
+    });
 
     setIsSubmitting(false);
 
