@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Download, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Download, FileText, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,7 @@ const DocumentsPage = () => {
   /**
    * Opens a document in a new tab for preview/review.
    */
-  const handleDownload = async (doc: Document) => {
+  const handlePreview = async (doc: Document) => {
     try {
       const { data, error } = await supabase.storage
         .from("opportunity-documents")
@@ -131,6 +131,33 @@ const DocumentsPage = () => {
       window.open(url, "_blank");
     } catch {
       toast.error("Failed to open file");
+    }
+  };
+
+  /**
+   * Downloads a document as a file attachment.
+   */
+  const handleDownload = async (doc: Document) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("opportunity-documents")
+        .download(doc.file_path);
+
+      if (error || !data) {
+        toast.error("Failed to download file");
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download file");
     }
   };
 
@@ -469,7 +496,17 @@ const DocumentsPage = () => {
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8"
+                                              onClick={() => handlePreview(doc)}
+                                              title="Preview"
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8"
                                               onClick={() => handleDownload(doc)}
+                                              title="Download"
                                             >
                                               <Download className="h-4 w-4" />
                                             </Button>
