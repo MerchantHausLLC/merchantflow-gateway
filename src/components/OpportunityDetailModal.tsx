@@ -1314,20 +1314,16 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         .download(doc.file_path);
 
       if (error || !data) {
-        toast.error('Unable to download file');
+        toast.error('Unable to open file');
         return;
       }
 
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = doc.file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const contentType = doc.content_type || 'application/octet-stream';
+      const blob = new Blob([data], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
     } catch {
-      toast.error('Unable to download file');
+      toast.error('Unable to open file');
     }
   };
 
