@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -22,18 +23,19 @@ export function AppLayout({
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
           <div className="border-b border-border bg-background/50 px-4 lg:px-6 py-3">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               {pageTitle && (
                 <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
               )}
-              {headerActions && <div className="flex items-center gap-2 ml-auto">{headerActions}</div>}
+              {headerActions && <div className="flex items-center gap-2 ml-auto flex-wrap">{headerActions}</div>}
             </div>
           </div>
         )}
-        <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
+        <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0">
           {children}
         </div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }
