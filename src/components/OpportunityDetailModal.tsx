@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { IconRail, IconRailItem } from "./opportunity-detail/IconRail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -172,8 +173,8 @@ interface OpportunityDetailModalProps {
   hasGatewayOpportunity?: boolean;
 }
 
-const MODAL_TABS = ['overview', 'tasks', 'notes', 'documents', 'details'] as const;
-type ModalTab = typeof MODAL_TABS[number];
+const MODAL_SECTIONS = ['overview', 'tasks', 'notes', 'documents', 'details', 'activity'] as const;
+type ModalSection = typeof MODAL_SECTIONS[number];
 
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
@@ -188,11 +189,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<ModalTab>('overview');
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskAssignee, setTaskAssignee] = useState("Unassigned");
-  const [taskComments, setTaskComments] = useState("");
-  // Keyboard shortcuts for tab navigation
+  const [activeSection, setActiveSection] = useState<ModalSection>('overview');
+  const isMobile = useIsMobile();
+  // Keyboard shortcuts for section navigation
   useEffect(() => {
     if (!opportunity) return;
 
@@ -200,32 +199,32 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       // Don't trigger if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      const currentIndex = MODAL_TABS.indexOf(activeTab);
+      const currentIndex = MODAL_SECTIONS.indexOf(activeSection);
       
-      // Arrow keys or [ ] for tab navigation
+      // Arrow keys or [ ] for section navigation
       if (e.key === 'ArrowLeft' || e.key === '[') {
         e.preventDefault();
-        const newIndex = currentIndex > 0 ? currentIndex - 1 : MODAL_TABS.length - 1;
-        setActiveTab(MODAL_TABS[newIndex]);
+        const newIndex = currentIndex > 0 ? currentIndex - 1 : MODAL_SECTIONS.length - 1;
+        setActiveSection(MODAL_SECTIONS[newIndex]);
       } else if (e.key === 'ArrowRight' || e.key === ']') {
         e.preventDefault();
-        const newIndex = currentIndex < MODAL_TABS.length - 1 ? currentIndex + 1 : 0;
-        setActiveTab(MODAL_TABS[newIndex]);
+        const newIndex = currentIndex < MODAL_SECTIONS.length - 1 ? currentIndex + 1 : 0;
+        setActiveSection(MODAL_SECTIONS[newIndex]);
       }
       
-      // Number keys 1-5 for direct tab access
-      if (e.key >= '1' && e.key <= '5') {
+      // Number keys 1-6 for direct section access
+      if (e.key >= '1' && e.key <= '6') {
         e.preventDefault();
-        const tabIndex = parseInt(e.key) - 1;
-        if (tabIndex < MODAL_TABS.length) {
-          setActiveTab(MODAL_TABS[tabIndex]);
+        const idx = parseInt(e.key) - 1;
+        if (idx < MODAL_SECTIONS.length) {
+          setActiveSection(MODAL_SECTIONS[idx]);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [opportunity, activeTab]);
+  }, [opportunity, activeSection]);
   
   // Account fields
   const [accountName, setAccountName] = useState("");
@@ -282,27 +281,22 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     [opportunity?.assigned_to, user?.email],
   );
 
-  useEffect(() => {
-    if (!opportunity) return;
-    setTaskAssignee(opportunity.assigned_to || user?.email || "Unassigned");
-    setTaskTitle(`Follow up on ${opportunity.account?.name || "this application"}`);
-    setTaskComments("");
-  }, [opportunity, user?.email]);
+  // Icon rail items for section navigation
+  const iconRailItems: IconRailItem[] = useMemo(() => {
+    const openTaskCount = relatedTasks.filter(t => t.status !== 'done').length;
+    return [
+      { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
+      { id: 'tasks', icon: <ListChecks className="h-4 w-4" />, label: 'Tasks', badge: openTaskCount || undefined, badgeVariant: openTaskCount > 0 ? 'default' as const : undefined },
+      { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
+      { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
+      { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
+      { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
+    ];
+  }, [relatedTasks]);
 
-  const handleTaskSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!opportunity) return;
-    addTask({
-      title: taskTitle || "Application follow-up",
-      assignee: taskAssignee,
-      comments: taskComments,
-      description: taskComments,
-      relatedOpportunityId: opportunity.id,
-      createdBy: user?.email || "System",
-      source: "manual",
-    });
-    setTaskComments("");
-  };
+  const handleSectionSelect = useCallback((id: string) => {
+    setActiveSection(id as ModalSection);
+  }, []);
 
   const startEditing = () => {
     // Populate form with current values
@@ -852,69 +846,33 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             </div>
           </DialogHeader>
 
-          {/* MVP: Status & Blockers Panel - Always visible at top */}
-          <div className="mt-4 space-y-4">
+          {/* Compact status strip */}
+          <div className="mt-2 space-y-2 flex-shrink-0">
             <StatusBlockerPanel 
               opportunity={opportunity} 
               wizardProgress={wizardState?.progress ?? 0}
               onUpdate={onUpdate}
             />
-            
-            {/* Stage Path */}
             <StagePath opportunity={opportunity} />
           </div>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ModalTab)} className="mt-4 flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="overview" className="flex items-center gap-1">
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Overview</span>
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Press 1</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="tasks" className="flex items-center gap-1">
-                    <ListChecks className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Tasks</span>
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Press 2</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="notes" className="flex items-center gap-1">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Notes</span>
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Press 3</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="documents" className="flex items-center gap-1">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Docs</span>
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Press 4</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="details" className="flex items-center gap-1">
-                    <Building2 className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Details</span>
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Press 5</TooltipContent>
-              </Tooltip>
-            </TabsList>
+          {/* Icon Rail + Dynamic Panel Layout */}
+          <div className={cn(
+            "flex-1 min-h-0 flex mt-2",
+            isMobile ? "flex-col" : "flex-row"
+          )}>
+            {/* Desktop: vertical icon rail on left */}
+            {!isMobile && (
+              <IconRail
+                items={iconRailItems}
+                activeId={activeSection}
+                onSelect={handleSectionSelect}
+              />
+            )}
 
-              {/* Overview Tab - Application Progress */}
-              <TabsContent value="overview" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2 space-y-4">
+            {/* Primary Panel - takes full remaining space */}
+            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-3 py-2">
+              {activeSection === 'overview' && (
                 <ApplicationProgress 
                   opportunity={opportunity} 
                   wizardState={wizardState ? {
@@ -924,118 +882,126 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     updated_at: wizardState.updated_at
                   } : null}
                 />
-              </TabsContent>
+              )}
 
-              {/* Tasks Tab */}
-              <TabsContent value="tasks" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
+              {activeSection === 'tasks' && (
                 <OpportunityTasks 
                   opportunityId={opportunity.id} 
                   tasks={relatedTasks}
                 />
-              </TabsContent>
+              )}
 
-              {/* Notes Tab */}
-              <TabsContent value="notes" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
+              {activeSection === 'notes' && (
                 <NotesSection opportunityId={opportunity.id} />
-              </TabsContent>
+              )}
 
-              <TabsContent value="documents" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
+              {activeSection === 'documents' && (
                 <DocumentsTab opportunityId={opportunity.id} />
-              </TabsContent>
+              )}
 
-              {/* Details Tab - Account, Contact, Opportunity info */}
-              <TabsContent value="details" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2 space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Account
-                  </h3>
-                  {isEditing ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <EditField label="Company Name" value={accountName} onChange={setAccountName} />
-                      <EditField label="Website" value={website} onChange={setWebsite} />
-                      <EditField label="Address" value={address1} onChange={setAddress1} />
-                      <EditField label="Address 2" value={address2} onChange={setAddress2} />
-                      <EditField label="City" value={city} onChange={setCity} />
-                      <EditField label="State" value={state} onChange={setState} />
-                      <EditField label="Zip" value={zip} onChange={setZip} />
-                      <EditField label="Country" value={country} onChange={setCountry} />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem label="Company Name" value={account?.name} />
-                      <InfoItem label="Website" value={account?.website} />
-                      <InfoItem label="Address" value={account?.address1} />
-                      <InfoItem label="Address 2" value={account?.address2} />
-                      <InfoItem label="City" value={account?.city} />
-                      <InfoItem label="State" value={account?.state} />
-                      <InfoItem label="Zip" value={account?.zip} />
-                      <InfoItem label="Country" value={account?.country} />
-                    </div>
-                  )}
+              {activeSection === 'details' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Account
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <EditField label="Company Name" value={accountName} onChange={setAccountName} />
+                        <EditField label="Website" value={website} onChange={setWebsite} />
+                        <EditField label="Address" value={address1} onChange={setAddress1} />
+                        <EditField label="Address 2" value={address2} onChange={setAddress2} />
+                        <EditField label="City" value={city} onChange={setCity} />
+                        <EditField label="State" value={state} onChange={setState} />
+                        <EditField label="Zip" value={zip} onChange={setZip} />
+                        <EditField label="Country" value={country} onChange={setCountry} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="Company Name" value={account?.name} />
+                        <InfoItem label="Website" value={account?.website} />
+                        <InfoItem label="Address" value={account?.address1} />
+                        <InfoItem label="Address 2" value={account?.address2} />
+                        <InfoItem label="City" value={account?.city} />
+                        <InfoItem label="State" value={account?.state} />
+                        <InfoItem label="Zip" value={account?.zip} />
+                        <InfoItem label="Country" value={account?.country} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Contact
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <EditField label="First Name" value={firstName} onChange={setFirstName} />
+                        <EditField label="Last Name" value={lastName} onChange={setLastName} />
+                        <EditField label="Email" value={email} onChange={setEmail} type="email" />
+                        <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
+                        <EditField label="Fax" value={fax} onChange={setFax} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="First Name" value={contact?.first_name} />
+                        <InfoItem label="Last Name" value={contact?.last_name} />
+                        <InfoItem label="Email" value={contact?.email} />
+                        <InfoItem label="Phone" value={contact?.phone} />
+                        <InfoItem label="Fax" value={contact?.fax} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Opportunity
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="Stage" value={stageConfig.label} />
+                        <EditField label="Username" value={username} onChange={setUsername} />
+                        <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
+                        <EditField label="Timezone" value={timezone} onChange={setTimezone} />
+                        <EditField label="Language" value={language} onChange={setLanguage} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="Stage" value={stageConfig.label} />
+                        <InfoItem label="Username" value={opportunity.username} />
+                        <InfoItem label="Referral Source" value={opportunity.referral_source} />
+                        <InfoItem label="Timezone" value={opportunity.timezone} />
+                        <InfoItem label="Language" value={opportunity.language} />
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Contact
-                  </h3>
-                  {isEditing ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <EditField label="First Name" value={firstName} onChange={setFirstName} />
-                      <EditField label="Last Name" value={lastName} onChange={setLastName} />
-                      <EditField label="Email" value={email} onChange={setEmail} type="email" />
-                      <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
-                      <EditField label="Fax" value={fax} onChange={setFax} />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem label="First Name" value={contact?.first_name} />
-                      <InfoItem label="Last Name" value={contact?.last_name} />
-                      <InfoItem label="Email" value={contact?.email} />
-                      <InfoItem label="Phone" value={contact?.phone} />
-                      <InfoItem label="Fax" value={contact?.fax} />
-                    </div>
-                  )}
+              {activeSection === 'activity' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Activity Feed
+                    </h3>
+                  </div>
+                  <ActivitiesTab opportunityId={opportunity.id} />
                 </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    Opportunity
-                  </h3>
-                  {isEditing ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem label="Stage" value={stageConfig.label} />
-                      <EditField label="Username" value={username} onChange={setUsername} />
-                      <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
-                      <EditField label="Timezone" value={timezone} onChange={setTimezone} />
-                      <EditField label="Language" value={language} onChange={setLanguage} />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem label="Stage" value={stageConfig.label} />
-                      <InfoItem label="Username" value={opportunity.username} />
-                      <InfoItem label="Referral Source" value={opportunity.referral_source} />
-                      <InfoItem label="Timezone" value={opportunity.timezone} />
-                      <InfoItem label="Language" value={opportunity.language} />
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-          </Tabs>
-
-          {/* Activity Section - Always visible below tabs */}
-          <div className="mt-4 border-t pt-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Activity Feed
-              </h3>
+              )}
             </div>
-            <div className="max-h-[150px] overflow-y-auto pr-2">
-              <ActivitiesTab opportunityId={opportunity.id} compact />
-            </div>
+
+            {/* Mobile: horizontal icon rail at bottom */}
+            {isMobile && (
+              <IconRail
+                items={iconRailItems}
+                activeId={activeSection}
+                onSelect={handleSectionSelect}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
