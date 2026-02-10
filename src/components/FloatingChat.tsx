@@ -22,6 +22,7 @@ import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage, formatMessageTime } from "@/hooks/useChatUtils";
 import { useChatSounds } from "@/hooks/useChatSounds";
+import { isEmailAllowed } from "@/types/opportunity";
 
 type DirectMessage = {
   id: string;
@@ -286,6 +287,8 @@ const FloatingChat: React.FC = () => {
       .filter(p => {
         // Exclude current user
         if (p.id === user?.id) return false;
+        // Only show allowed team members
+        if (!isEmailAllowed(p.email)) return false;
         // Deduplicate by email
         const email = p.email?.toLowerCase() || '';
         if (seenEmails.has(email)) return false;

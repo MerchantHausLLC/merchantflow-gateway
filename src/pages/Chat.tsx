@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search, PanelLeftOpen, ArrowLeft, Clock } from "lucide-react";
-import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
+import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS, isEmailAllowed } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
 import { Badge } from "@/components/ui/badge";
@@ -758,7 +758,7 @@ const Chat: React.FC = () => {
 
     if (profilesData) {
       const profileMap: Record<string, Profile> = {};
-      profilesData.forEach(p => {
+      profilesData.filter(p => isEmailAllowed(p.email)).forEach(p => {
         profileMap[p.id] = p;
       });
       setProfiles(profileMap);
