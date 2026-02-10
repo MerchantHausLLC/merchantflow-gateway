@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard, Globe } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon, CreditCard, Globe, BadgeDollarSign } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,11 @@ const navMain: NavItem[] = [
     title: "Documents",
     url: "/documents",
     icon: FileText,
+  },
+  {
+    title: "Live & Billing",
+    url: "/live-billing",
+    icon: BadgeDollarSign,
   },
   {
     title: "Reports",

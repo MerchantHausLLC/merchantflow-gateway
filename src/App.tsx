@@ -34,6 +34,7 @@ import Chat from "./pages/Chat";
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
+import LiveBilling from "./pages/LiveBilling";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
