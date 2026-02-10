@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { 
   MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, 
   Smile, Search, Edit2, Bell, BellOff, Paperclip, Image, FileText, Download,
-  MoreHorizontal, Pin, Trash2, ArrowDown, Wifi, WifiOff, RefreshCw, Volume2, VolumeX
+  MoreHorizontal, Pin, Trash2, ArrowDown, Wifi, WifiOff, RefreshCw, Volume2, VolumeX,
+  Minus
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -149,6 +151,7 @@ const FloatingChat: React.FC = () => {
   const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const isMobile = useIsMobile();
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
   // Connection status tracking
@@ -1134,33 +1137,58 @@ const FloatingChat: React.FC = () => {
 
   return (
     <TooltipProvider>
-      {/* Floating Button - Professional style */}
-      <button
-        onClick={handleOpenChat}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-          "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
-          "hover:scale-105 transition-all duration-200 ease-out",
-          "border border-slate-600",
-          isOpen && "hidden"
-        )}
-      >
-        <MessageCircle className="h-6 w-6" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
+      {/* Mobile: Floating circle button / Desktop: Messenger-style bar */}
+      {!isOpen && (
+        isMobile ? (
+          <button
+            onClick={handleOpenChat}
+            className={cn(
+              "fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center",
+              "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
+              "hover:scale-105 transition-all duration-200 ease-out",
+              "border border-slate-600"
+            )}
+          >
+            <MessageCircle className="h-6 w-6" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={handleOpenChat}
+            className={cn(
+              "fixed bottom-0 right-6 z-50 w-[328px] h-12 rounded-t-xl flex items-center gap-3 px-4",
+              "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
+              "text-white shadow-xl hover:shadow-2xl",
+              "transition-all duration-200 ease-out",
+              "border border-b-0 border-slate-600"
+            )}
+          >
+            <MessageCircle className="h-5 w-5 shrink-0" />
+            <span className="font-semibold text-sm">Messaging</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+        )
+      )}
 
-      {/* Chat Panel - Professional design */}
+      {/* Chat Panel */}
       {isOpen && (
         <div
           className={cn(
-            "fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-xl flex flex-col overflow-hidden",
+            "fixed z-50 flex flex-col overflow-hidden",
             "shadow-2xl border border-slate-200 dark:border-slate-700",
             "bg-white dark:bg-slate-900 transition-all duration-300 ease-out",
-            "animate-in slide-in-from-bottom-4 fade-in-0"
+            "animate-in slide-in-from-bottom-4 fade-in-0",
+            isMobile
+              ? "bottom-16 right-2 left-2 top-16 rounded-xl"
+              : "bottom-0 right-6 w-[328px] h-[480px] rounded-t-xl border-b-0"
           )}
         >
           {/* Header - Traditional professional style */}
@@ -1308,9 +1336,19 @@ const FloatingChat: React.FC = () => {
                   <Users className="h-4 w-4" />
                 </button>
               )}
+              {!isMobile && (
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="hover:bg-white/10 p-2 rounded-lg transition-colors"
+                  title="Minimize"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-white/10 p-2 rounded-lg transition-colors"
+                title="Close"
               >
                 <X className="h-4 w-4" />
               </button>
