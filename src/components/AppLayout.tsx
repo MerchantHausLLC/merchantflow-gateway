@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
+import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface AppLayoutProps {
@@ -36,6 +37,7 @@ export function AppLayout({
         </div>
       </main>
       <MobileBottomNav />
+      <FloatingChat />
     </div>
   );
 }
