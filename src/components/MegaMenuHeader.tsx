@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -12,7 +12,7 @@ import {
   Wrench,
   Calculator,
   Activity,
-  User,
+  
   LogOut,
   ClipboardList,
   ListChecks,
@@ -23,11 +23,6 @@ import {
   Sun,
   Moon,
   ChevronDown,
-  Menu,
-  X,
-  MessageCircle,
-  Bell,
-  ExternalLink,
   Globe,
   BadgeDollarSign,
   type LucideIcon,
@@ -85,7 +80,6 @@ const navMain: NavGroup[] = [
       { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
-      { title: "Team Chat", url: "/chat", icon: MessageCircle, description: "Chat with team members" },
     ],
   },
   {
@@ -126,9 +120,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
-  const [unreadDMCount, setUnreadDMCount] = useState(0);
-  const [unreadChannelCount, setUnreadChannelCount] = useState(0);
-
   // Fetch profile from profiles table
   useEffect(() => {
     if (!user) return;
@@ -172,134 +163,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     };
   }, [user]);
 
-  // Load last read timestamps from localStorage for channel messages
-  const getLastReadTimestamps = useCallback((): Record<string, string> => {
-    if (!user) return {};
-    const stored = localStorage.getItem(`chat_last_read_${user.id}`);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  }, [user]);
 
-  // Fetch unread DM count
-  const fetchUnreadDMCount = useCallback(async () => {
-    if (!user) return;
-
-    const { count, error } = await supabase
-      .from("direct_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("receiver_id", user.id)
-      .is("read_at", null);
-
-    if (!error && count !== null) {
-      setUnreadDMCount(count);
-    }
-  }, [user]);
-
-  // Fetch unread channel message count
-  const fetchUnreadChannelCount = useCallback(async () => {
-    if (!user) return;
-
-    const lastReadTimestamps = getLastReadTimestamps();
-
-    // Get all channels
-    const { data: channels } = await supabase
-      .from("chat_channels")
-      .select("id");
-
-    if (!channels) return;
-
-    let total = 0;
-
-    // For each channel, count messages after last read timestamp
-    for (const channel of channels) {
-      const lastRead = lastReadTimestamps[channel.id];
-
-      let query = supabase
-        .from("chat_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("channel_id", channel.id)
-        .neq("user_id", user.id);
-
-      if (lastRead) {
-        query = query.gt("created_at", lastRead);
-      }
-
-      const { count } = await query;
-      total += count || 0;
-    }
-
-    setUnreadChannelCount(total);
-  }, [user, getLastReadTimestamps]);
-
-  // Subscribe to new messages for unread count
-  useEffect(() => {
-    if (!user) return;
-
-    fetchUnreadDMCount();
-    fetchUnreadChannelCount();
-
-    const channel = supabase
-      .channel("header-chat-unread")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "direct_messages",
-          filter: `receiver_id=eq.${user.id}`,
-        },
-        () => {
-          setUnreadDMCount((prev) => prev + 1);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "direct_messages",
-        },
-        () => {
-          fetchUnreadDMCount();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-        },
-        (payload) => {
-          const newMsg = payload.new as { user_id: string };
-          if (newMsg.user_id !== user.id) {
-            setUnreadChannelCount((prev) => prev + 1);
-          }
-        }
-      )
-      .subscribe();
-
-    // Also listen for localStorage changes (when user marks as read in Chat page)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `chat_last_read_${user.id}`) {
-        fetchUnreadChannelCount();
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, [user, fetchUnreadDMCount, fetchUnreadChannelCount]);
-
-  const totalUnreadCount = unreadDMCount + unreadChannelCount;
 
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
@@ -450,26 +314,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Chat Button with Unread Count */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/chat")}
-                className="h-9 w-9 relative"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {totalUnreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
-                    {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
-                  </span>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Team Chat</TooltipContent>
-          </Tooltip>
 
           <NotificationBell />
 
