@@ -23,6 +23,7 @@ import {
   Activity,
   ExternalLink,
   Briefcase,
+  Archive,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { getServiceType, STAGE_CONFIG, migrateStage } from "@/types/opportunity";
@@ -240,6 +241,29 @@ const LiveAccountDetail = () => {
                 </div>
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={async () => {
+                if (!opportunities) return;
+                for (const opp of opportunities) {
+                  await supabase
+                    .from("opportunities")
+                    .update({ status: "archived" })
+                    .eq("id", opp.id);
+                  await supabase.from("activities").insert({
+                    opportunity_id: opp.id,
+                    type: "archived",
+                    description: "Archived from Live & Billing",
+                  });
+                }
+                navigate("/live-billing");
+              }}
+            >
+              <Archive className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Archive</span>
+            </Button>
           </div>
         </div>
 
