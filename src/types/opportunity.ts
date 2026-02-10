@@ -265,10 +265,10 @@ export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
   'discovery',
   'qualified',
   'gateway_submitted',
-  'live_activated',
   'integration_setup',
   'closed_won',
   'closed_lost',
+  'live_activated',
 ];
 
 // Legacy: All stages for backwards compatibility
