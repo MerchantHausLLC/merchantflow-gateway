@@ -89,6 +89,14 @@ type ChatView = "contacts" | "channels" | "chat" | "dm";
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
 
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  { label: "Smileys", emojis: ['😀', '😃', '😄', '😁', '😆', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😋', '😛', '😜', '🤪', '😝', '🤗', '🤔', '🫣', '🤭', '😐', '😑', '😶', '🙄', '😏', '😬', '😮‍💨', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕'] },
+  { label: "Gestures", emojis: ['👍', '👎', '👌', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤝', '🙏', '💪', '🫶', '👏', '🫡'] },
+  { label: "Hearts", emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗', '💖', '💘', '💝'] },
+  { label: "Objects", emojis: ['🎉', '🎊', '🎈', '🔥', '⭐', '🌟', '✨', '💫', '🏆', '🥇', '🎯', '💡', '📌', '📎', '📊', '📈', '💰', '💎', '🔑', '🛠️', '⚡', '🚀', '💼', '📱', '💻'] },
+  { label: "Faces", emojis: ['😎', '🤓', '🧐', '😤', '😠', '🤬', '😈', '👿', '💀', '☠️', '🤡', '👻', '👽', '🤖', '💩', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'] },
+];
+
 // Professional traditional color scheme
 const CHAT_COLORS = {
   header: "bg-slate-800 dark:bg-slate-900",
@@ -2095,6 +2103,33 @@ const FloatingChat: React.FC = () => {
                 {/* Input area */}
                 <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                   <div className="flex gap-2 items-end">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors shrink-0" title="Emoji">
+                          <Smile className="h-5 w-5 text-slate-500" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-0" align="start" side="top">
+                        <div className="max-h-64 overflow-y-auto">
+                          {EMOJI_CATEGORIES.map(cat => (
+                            <div key={cat.label} className="p-2">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 px-1">{cat.label}</p>
+                              <div className="flex flex-wrap gap-0.5">
+                                {cat.emojis.map(emoji => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => setInput(prev => prev + emoji)}
+                                    className="text-lg hover:scale-125 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all p-1 rounded"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <div className="flex-1 relative">
                       <Input
                         placeholder="Type a message..."
@@ -2104,7 +2139,7 @@ const FloatingChat: React.FC = () => {
                           handleTyping();
                         }}
                         onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                        className="pr-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500"
+                        className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500"
                       />
                     </div>
                     <Button 
