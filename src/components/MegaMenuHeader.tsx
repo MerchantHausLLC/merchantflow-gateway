@@ -339,9 +339,8 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4 lg:px-6 gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <img src={sidebarIcon} alt="Ops Terminal" className="h-8 w-8 object-contain" />
-          <span className="font-display font-semibold text-foreground hidden sm:inline">Ops Terminal</span>
+        <Link to="/" className="flex items-center shrink-0">
+          <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
 
         {/* Desktop Navigation */}
