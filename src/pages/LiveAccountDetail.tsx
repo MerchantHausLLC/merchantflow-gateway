@@ -29,6 +29,9 @@ import { format, formatDistanceToNow } from "date-fns";
 import { getServiceType, STAGE_CONFIG, migrateStage } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'dylan@merchanthaus.io',
@@ -62,6 +65,7 @@ const LiveAccountDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
 
   const { data: opportunity, isLoading } = useQuery({
     queryKey: ["live-account-detail", id],
@@ -425,6 +429,20 @@ const LiveAccountDetail = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Footer */}
+          <footer className="border-t border-border/50 mt-8 py-6 px-4 lg:px-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                © {new Date().getFullYear()} · {format(new Date(), "MMMM dd, yyyy")}
+              </p>
+              <img
+                src={theme === 'dark' ? logoDark : logoLight}
+                alt="Ops Terminal"
+                className="h-6 w-auto opacity-60"
+              />
+            </div>
+          </footer>
         </div>
       </div>
     </AppLayout>
