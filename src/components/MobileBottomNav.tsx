@@ -23,6 +23,7 @@ import {
   LogOut,
   ExternalLink,
   X,
+  BadgeDollarSign,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet";
@@ -58,6 +59,7 @@ const moreItems: MoreItem[] = [
   { title: "Contacts", url: "/contacts", icon: Users },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Reports", url: "/reports", icon: BarChart3 },
+  { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

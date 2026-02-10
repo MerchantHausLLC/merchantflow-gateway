@@ -29,6 +29,7 @@ import {
   Bell,
   ExternalLink,
   Globe,
+  BadgeDollarSign,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ const navMain: NavGroup[] = [
     ],
   },
   { title: "Reports", url: "/reports", icon: BarChart3 },
+  { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
 ];
 
 const toolsItems: NavItem[] = [
