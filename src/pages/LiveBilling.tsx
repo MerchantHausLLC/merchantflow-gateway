@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ const LiveBilling = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: liveOpportunities, isLoading } = useQuery({
     queryKey: ["live-billing-opportunities"],
@@ -201,7 +203,8 @@ const LiveBilling = () => {
               return (
                 <Card
                   key={opp.id}
-                  className="border-amber-400/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-950/20 dark:to-background"
+                  onClick={() => navigate(`/live-billing/${opp.id}`)}
+                  className="border-amber-400/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-950/20 dark:to-background cursor-pointer hover:shadow-md transition-all"
                 >
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -272,7 +275,7 @@ const LiveBilling = () => {
                   const avatarUrl = assignedEmail && avatars ? avatars[assignedEmail] : null;
 
                   return (
-                    <TableRow key={opp.id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10">
+                    <TableRow key={opp.id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${opp.id}`)}>
                       <TableCell className="font-medium">{account?.name || "Unknown"}</TableCell>
                       <TableCell>
                         <div>
