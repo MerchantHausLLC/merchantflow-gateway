@@ -456,10 +456,16 @@ const Opportunities = () => {
                         const taskCount = getTaskCount(opp.id);
                         const progress = opp.wizard_state?.progress || 0;
                         
+                          const progressBg = progress >= 75 
+                            ? 'bg-green-500/8 hover:bg-green-500/15 dark:bg-green-500/10 dark:hover:bg-green-500/20' 
+                            : progress >= 40 
+                              ? 'bg-amber-500/8 hover:bg-amber-500/15 dark:bg-amber-500/10 dark:hover:bg-amber-500/20' 
+                              : 'bg-red-500/8 hover:bg-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-500/20';
+                        
                         return (
                           <TableRow 
                             key={opp.id} 
-                            className="cursor-pointer hover:bg-muted/50"
+                            className={cn("cursor-pointer", progressBg)}
                             onClick={() => navigateToOpportunity(opp)}
                           >
                             <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>

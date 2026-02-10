@@ -62,6 +62,14 @@ const OpportunityCard = ({
     ? TEAM_COLORS[opportunity.assigned_to] || { border: 'border-l-primary/50', bg: 'bg-muted', text: 'text-muted-foreground' }
     : { border: 'border-l-muted-foreground/30', bg: 'bg-muted', text: 'text-muted-foreground' };
 
+  // Wizard completion progress background color
+  const wizardProgress = opportunity.wizard_state?.progress ?? 0;
+  const progressBg = useMemo(() => {
+    if (wizardProgress >= 75) return 'bg-green-500/10 dark:bg-green-500/15';
+    if (wizardProgress >= 40) return 'bg-amber-500/10 dark:bg-amber-500/15';
+    return 'bg-red-500/10 dark:bg-red-500/15';
+  }, [wizardProgress]);
+
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -212,9 +220,10 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
-        'bg-card hover:shadow-lg border border-border/50 rounded-md overflow-hidden',
+        'hover:shadow-lg border border-border/50 rounded-md overflow-hidden',
         'border-l-2',
-        teamColors.border
+        teamColors.border,
+        progressBg
       )}
     >
       <CardContent className={cn(
