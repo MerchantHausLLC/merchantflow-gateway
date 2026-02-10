@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,13 +61,14 @@ const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string;
 };
 
 const LiveAccountDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: accountId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
 
-  const { data: opportunity, isLoading } = useQuery({
-    queryKey: ["live-account-detail", id],
+  // Fetch ALL live opportunities for this account
+  const { data: opportunities, isLoading } = useQuery({
+    queryKey: ["live-account-detail", accountId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("opportunities")
@@ -78,51 +78,65 @@ const LiveAccountDetail = () => {
           contact:contacts(*),
           wizard_state:onboarding_wizard_states(*)
         `)
-        .eq("id", id!)
-        .maybeSingle();
+        .eq("account_id", accountId!)
+        .eq("stage", "live_activated")
+        .eq("status", "active")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      if (!data) return null;
-      return {
-        ...data,
-        stage: migrateStage(data.stage),
-        wizard_state: Array.isArray(data.wizard_state) ? data.wizard_state[0] : data.wizard_state,
-      };
+      if (!data || data.length === 0) return null;
+      return data.map((d) => ({
+        ...d,
+        stage: migrateStage(d.stage),
+        wizard_state: Array.isArray(d.wizard_state) ? d.wizard_state[0] : d.wizard_state,
+      }));
     },
-    enabled: !!id,
+    enabled: !!accountId,
   });
 
+  // Use first opportunity for shared account/contact data
+  const primaryOpp = opportunities?.[0];
+  const account = primaryOpp?.account as any;
+  const contact = primaryOpp?.contact as any;
+
+  const pipelines = opportunities
+    ? [...new Set(opportunities.map((o) => getServiceType(o as any)))]
+    : [];
+
+  // Fetch documents for ALL opportunities of this account
+  const oppIds = opportunities?.map((o) => o.id) || [];
   const { data: documents } = useQuery({
-    queryKey: ["live-account-documents", id],
+    queryKey: ["live-account-documents", accountId, oppIds],
     queryFn: async () => {
       const { data } = await supabase
         .from("documents")
         .select("*")
-        .eq("opportunity_id", id!)
+        .in("opportunity_id", oppIds)
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!id,
+    enabled: oppIds.length > 0,
   });
 
+  // Fetch activities for ALL opportunities
   const { data: activities } = useQuery({
-    queryKey: ["live-account-activities", id],
+    queryKey: ["live-account-activities", accountId, oppIds],
     queryFn: async () => {
       const { data } = await supabase
         .from("activities")
         .select("*")
-        .eq("opportunity_id", id!)
+        .in("opportunity_id", oppIds)
         .order("created_at", { ascending: false })
         .limit(20);
       return data || [];
     },
-    enabled: !!id,
+    enabled: oppIds.length > 0,
   });
 
   const { data: ownerAvatar } = useQuery({
-    queryKey: ["owner-avatar", opportunity?.assigned_to],
+    queryKey: ["owner-avatar", primaryOpp?.assigned_to],
     queryFn: async () => {
-      const email = TEAM_EMAIL_MAP[opportunity!.assigned_to!];
+      const email = TEAM_EMAIL_MAP[primaryOpp!.assigned_to!];
       if (!email) return null;
       const { data } = await supabase
         .from("profiles")
@@ -131,12 +145,8 @@ const LiveAccountDetail = () => {
         .maybeSingle();
       return data;
     },
-    enabled: !!opportunity?.assigned_to,
+    enabled: !!primaryOpp?.assigned_to,
   });
-
-  const account = opportunity?.account as any;
-  const contact = opportunity?.contact as any;
-  const svcType = opportunity ? getServiceType(opportunity as any) : "processing";
 
   const getInitials = (name: string) =>
     name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -144,6 +154,12 @@ const LiveAccountDetail = () => {
   const address = [account?.address1, account?.address2, account?.city, account?.state, account?.zip, account?.country]
     .filter(Boolean)
     .join(", ");
+
+  // Earliest go-live date
+  const goLiveDate = opportunities
+    ?.map((o) => o.stage_entered_at)
+    .filter(Boolean)
+    .sort()[0];
 
   if (isLoading) {
     return (
@@ -160,7 +176,7 @@ const LiveAccountDetail = () => {
     );
   }
 
-  if (!opportunity) {
+  if (!primaryOpp) {
     return (
       <AppLayout>
         <div className="p-4 lg:p-6">
@@ -194,51 +210,36 @@ const LiveAccountDetail = () => {
                   <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 text-xs">
                     ✦ Live
                   </Badge>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs",
-                      svcType === "gateway_only"
-                        ? "border-teal-500/50 text-teal-600 dark:text-teal-400"
-                        : "border-primary/50 text-primary"
-                    )}
-                  >
-                    {svcType === "gateway_only" ? (
-                      <><Zap className="h-3 w-3 mr-1" />Gateway</>
-                    ) : (
-                      <><CreditCard className="h-3 w-3 mr-1" />Processing</>
-                    )}
-                  </Badge>
+                  {pipelines.includes("processing") && (
+                    <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                      <CreditCard className="h-3 w-3 mr-1" />Processing
+                    </Badge>
+                  )}
+                  {pipelines.includes("gateway_only") && (
+                    <Badge variant="outline" className="text-xs border-teal-500/50 text-teal-600 dark:text-teal-400">
+                      <Zap className="h-3 w-3 mr-1" />Gateway
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
-                  {opportunity.stage_entered_at && (
+                  {goLiveDate && (
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      Live since {format(new Date(opportunity.stage_entered_at), "MMM dd, yyyy")}
+                      Live since {format(new Date(goLiveDate), "MMM dd, yyyy")}
                     </span>
                   )}
-                  {opportunity.assigned_to && (
+                  {primaryOpp.assigned_to && (
                     <span className="flex items-center gap-1.5">
                       <Avatar className="h-5 w-5 border border-background">
                         {ownerAvatar?.avatar_url && <AvatarImage src={ownerAvatar.avatar_url} />}
-                        <AvatarFallback className="text-[8px] bg-muted">{getInitials(opportunity.assigned_to)}</AvatarFallback>
+                        <AvatarFallback className="text-[8px] bg-muted">{getInitials(primaryOpp.assigned_to)}</AvatarFallback>
                       </Avatar>
-                      {opportunity.assigned_to}
+                      {primaryOpp.assigned_to}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-              className="shrink-0"
-            >
-              <Briefcase className="h-4 w-4 mr-1.5" />
-              <span className="hidden sm:inline">View Opportunity</span>
-              <span className="sm:hidden">Details</span>
-            </Button>
           </div>
         </div>
 
@@ -288,72 +289,95 @@ const LiveAccountDetail = () => {
                 <InfoRow icon={Phone} label="Phone" value={contact?.phone} href={contact?.phone ? `tel:${contact.phone}` : undefined} />
                 {contact?.fax && <InfoRow icon={Phone} label="Fax" value={contact.fax} />}
                 <Separator className="my-2" />
-                {opportunity.referral_source && (
+                {primaryOpp.referral_source && (
                   <div className="py-1">
                     <p className="text-xs text-muted-foreground">Referral Source</p>
-                    <p className="text-sm font-medium">{opportunity.referral_source}</p>
+                    <p className="text-sm font-medium">{primaryOpp.referral_source}</p>
                   </div>
                 )}
-                {opportunity.username && (
+                {primaryOpp.username && (
                   <div className="py-1">
                     <p className="text-xs text-muted-foreground">Username</p>
-                    <p className="text-sm font-medium">{opportunity.username}</p>
+                    <p className="text-sm font-medium">{primaryOpp.username}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Opportunity Info */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  Opportunity Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                <div className="py-1">
-                  <p className="text-xs text-muted-foreground">Pipeline</p>
-                  <p className="text-sm font-medium">{svcType === "gateway_only" ? "NMI Gateway" : "NMI Payments"}</p>
-                </div>
-                <div className="py-1">
-                  <p className="text-xs text-muted-foreground">Stage</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-base">{STAGE_CONFIG[opportunity.stage as keyof typeof STAGE_CONFIG]?.icon || "📋"}</span>
-                    <p className="text-sm font-medium">{STAGE_CONFIG[opportunity.stage as keyof typeof STAGE_CONFIG]?.label || opportunity.stage}</p>
-                  </div>
-                </div>
-                {opportunity.processing_services && opportunity.processing_services.length > 0 && (
-                  <div className="py-1">
-                    <p className="text-xs text-muted-foreground mb-1">Processing Services</p>
-                    <div className="flex flex-wrap gap-1">
-                      {opportunity.processing_services.map((s: string) => (
-                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                      ))}
+            {/* Opportunities (show each one) */}
+            {opportunities?.map((opp) => {
+              const svcType = getServiceType(opp as any);
+              return (
+                <Card key={opp.id}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      {svcType === "gateway_only" ? "NMI Gateway" : "NMI Payments"}
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] ml-auto",
+                          svcType === "gateway_only"
+                            ? "border-teal-500/50 text-teal-600 dark:text-teal-400"
+                            : "border-primary/50 text-primary"
+                        )}
+                      >
+                        {svcType === "gateway_only" ? <><Zap className="h-3 w-3 mr-1" />Gateway</> : <><CreditCard className="h-3 w-3 mr-1" />Processing</>}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    <div className="py-1">
+                      <p className="text-xs text-muted-foreground">Stage</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-base">{STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG]?.icon || "📋"}</span>
+                        <p className="text-sm font-medium">{STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG]?.label || opp.stage}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {opportunity.value_services && opportunity.value_services.length > 0 && (
-                  <div className="py-1">
-                    <p className="text-xs text-muted-foreground mb-1">Value Services</p>
-                    <div className="flex flex-wrap gap-1">
-                      {opportunity.value_services.map((s: string) => (
-                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                      ))}
+                    {opp.processing_services && opp.processing_services.length > 0 && (
+                      <div className="py-1">
+                        <p className="text-xs text-muted-foreground mb-1">Processing Services</p>
+                        <div className="flex flex-wrap gap-1">
+                          {opp.processing_services.map((s: string) => (
+                            <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {opp.value_services && opp.value_services.length > 0 && (
+                      <div className="py-1">
+                        <p className="text-xs text-muted-foreground mb-1">Value Services</p>
+                        <div className="flex flex-wrap gap-1">
+                          {opp.value_services.map((s: string) => (
+                            <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {opp.stage_entered_at && (
+                      <div className="py-1">
+                        <p className="text-xs text-muted-foreground">Went Live</p>
+                        <p className="text-sm font-medium">{format(new Date(opp.stage_entered_at), "MMM dd, yyyy")}</p>
+                      </div>
+                    )}
+                    <Separator className="my-1" />
+                    <div className="py-1">
+                      <p className="text-xs text-muted-foreground">Last Updated</p>
+                      <p className="text-sm font-medium">{formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true })}</p>
                     </div>
-                  </div>
-                )}
-                <Separator className="my-1" />
-                <div className="py-1">
-                  <p className="text-xs text-muted-foreground">Created</p>
-                  <p className="text-sm font-medium">{format(new Date(opportunity.created_at), "MMM dd, yyyy")}</p>
-                </div>
-                <div className="py-1">
-                  <p className="text-xs text-muted-foreground">Last Updated</p>
-                  <p className="text-sm font-medium">{formatDistanceToNow(new Date(opportunity.updated_at), { addSuffix: true })}</p>
-                </div>
-              </CardContent>
-            </Card>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => navigate(`/opportunities/${opp.id}`)}
+                    >
+                      <Briefcase className="h-4 w-4 mr-1.5" />
+                      View Opportunity
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {/* Documents */}
             <Card className={isMobile ? "" : "lg:col-span-2"}>

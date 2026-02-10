@@ -25,6 +25,16 @@ const TEAM_EMAIL_MAP: Record<string, string> = {
   'Sales': 'sales@merchanthaus.io',
 };
 
+interface GroupedAccount {
+  account_id: string;
+  account: any;
+  contact: any;
+  assigned_to: string | null;
+  stage_entered_at: string | null;
+  pipelines: ('processing' | 'gateway_only')[];
+  opportunities: any[];
+}
+
 const LiveBilling = () => {
   const [search, setSearch] = useState("");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
@@ -67,30 +77,78 @@ const LiveBilling = () => {
     },
   });
 
-  const filtered = useMemo(() => {
+  // Group opportunities by account_id
+  const grouped = useMemo(() => {
     if (!liveOpportunities) return [];
-    return liveOpportunities.filter((opp) => {
-      const name = (opp.account as any)?.name?.toLowerCase() || "";
-      const contactName = `${(opp.contact as any)?.first_name || ""} ${(opp.contact as any)?.last_name || ""}`.toLowerCase();
+    const map = new Map<string, GroupedAccount>();
+
+    for (const opp of liveOpportunities) {
+      const accountId = opp.account_id;
+      const svcType = getServiceType(opp as any);
+
+      if (map.has(accountId)) {
+        const group = map.get(accountId)!;
+        group.opportunities.push(opp);
+        if (!group.pipelines.includes(svcType)) {
+          group.pipelines.push(svcType);
+        }
+        // Use the earliest go-live date
+        if (opp.stage_entered_at && (!group.stage_entered_at || opp.stage_entered_at < group.stage_entered_at)) {
+          group.stage_entered_at = opp.stage_entered_at;
+        }
+      } else {
+        map.set(accountId, {
+          account_id: accountId,
+          account: opp.account,
+          contact: opp.contact,
+          assigned_to: opp.assigned_to,
+          stage_entered_at: opp.stage_entered_at,
+          pipelines: [svcType],
+          opportunities: [opp],
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  }, [liveOpportunities]);
+
+  const filtered = useMemo(() => {
+    return grouped.filter((g) => {
+      const name = g.account?.name?.toLowerCase() || "";
+      const contactName = `${g.contact?.first_name || ""} ${g.contact?.last_name || ""}`.toLowerCase();
       const q = search.toLowerCase();
       const matchSearch = !q || name.includes(q) || contactName.includes(q);
-      const matchAssignee = filterAssignee === "all" || opp.assigned_to === filterAssignee;
-      const svcType = getServiceType(opp as any);
-      const matchPipeline = filterPipeline === "all" || svcType === filterPipeline;
+      const matchAssignee = filterAssignee === "all" || g.assigned_to === filterAssignee;
+      const matchPipeline = filterPipeline === "all" || g.pipelines.includes(filterPipeline as any);
       return matchSearch && matchAssignee && matchPipeline;
     });
-  }, [liveOpportunities, search, filterAssignee, filterPipeline]);
+  }, [grouped, search, filterAssignee, filterPipeline]);
 
   const stats = useMemo(() => {
-    const total = liveOpportunities?.length || 0;
-    const processing = liveOpportunities?.filter((o) => getServiceType(o as any) === "processing").length || 0;
-    const gateway = total - processing;
-    const assignees = new Set(liveOpportunities?.map((o) => o.assigned_to).filter(Boolean));
+    const total = grouped.length;
+    const processing = grouped.filter((g) => g.pipelines.includes("processing")).length;
+    const gateway = grouped.filter((g) => g.pipelines.includes("gateway_only")).length;
+    const assignees = new Set(grouped.map((g) => g.assigned_to).filter(Boolean));
     return { total, processing, gateway, teamMembers: assignees.size };
-  }, [liveOpportunities]);
+  }, [grouped]);
 
   const getInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const PipelineBadges = ({ pipelines }: { pipelines: ('processing' | 'gateway_only')[] }) => (
+    <div className="flex flex-wrap gap-1">
+      {pipelines.includes("processing") && (
+        <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+          <CreditCard className="h-3 w-3 mr-1" />Processing
+        </Badge>
+      )}
+      {pipelines.includes("gateway_only") && (
+        <Badge variant="outline" className="text-xs border-teal-500/50 text-teal-600 dark:text-teal-400">
+          <Zap className="h-3 w-3 mr-1" />Gateway
+        </Badge>
+      )}
+    </div>
+  );
 
   return (
     <AppLayout pageTitle="Live & Billing">
@@ -193,57 +251,44 @@ const LiveBilling = () => {
         ) : isMobile ? (
           /* Mobile Card View */
           <div className="space-y-3">
-            {filtered.map((opp) => {
-              const account = opp.account as any;
-              const contact = opp.contact as any;
-              const svcType = getServiceType(opp as any);
-              const assignedEmail = opp.assigned_to ? TEAM_EMAIL_MAP[opp.assigned_to] : null;
+            {filtered.map((g) => {
+              const assignedEmail = g.assigned_to ? TEAM_EMAIL_MAP[g.assigned_to] : null;
               const avatarUrl = assignedEmail && avatars ? avatars[assignedEmail] : null;
 
               return (
                 <Card
-                  key={opp.id}
-                  onClick={() => navigate(`/live-billing/${opp.id}`)}
+                  key={g.account_id}
+                  onClick={() => navigate(`/live-billing/${g.account_id}`)}
                   className="border-amber-400/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-950/20 dark:to-background cursor-pointer hover:shadow-md transition-all"
                 >
                   <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <h3 className="font-semibold text-sm text-foreground truncate">
-                        {account?.name || "Unknown"}
+                        {g.account?.name || "Unknown"}
                       </h3>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px]",
-                          svcType === "gateway_only"
-                            ? "border-teal-500/50 text-teal-600 dark:text-teal-400"
-                            : "border-primary/50 text-primary"
-                        )}
-                      >
-                        {svcType === "gateway_only" ? "Gateway" : "Processing"}
-                      </Badge>
+                      <PipelineBadges pipelines={g.pipelines} />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {contact?.first_name} {contact?.last_name}
-                      {contact?.email && ` · ${contact.email}`}
+                      {g.contact?.first_name} {g.contact?.last_name}
+                      {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
                     <div className="flex items-center justify-between pt-1 border-t border-border/30">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {opp.stage_entered_at
-                          ? format(new Date(opp.stage_entered_at), "MMM dd, yyyy")
+                        {g.stage_entered_at
+                          ? format(new Date(g.stage_entered_at), "MMM dd, yyyy")
                           : "—"}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {opp.assigned_to && (
+                        {g.assigned_to && (
                           <>
                             <Avatar className="h-5 w-5 border border-background">
                               {avatarUrl && <AvatarImage src={avatarUrl} />}
                               <AvatarFallback className="text-[8px] bg-muted">
-                                {getInitials(opp.assigned_to)}
+                                {getInitials(g.assigned_to)}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs text-muted-foreground">{opp.assigned_to}</span>
+                            <span className="text-xs text-muted-foreground">{g.assigned_to}</span>
                           </>
                         )}
                       </div>
@@ -267,59 +312,42 @@ const LiveBilling = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((opp) => {
-                  const account = opp.account as any;
-                  const contact = opp.contact as any;
-                  const svcType = getServiceType(opp as any);
-                  const assignedEmail = opp.assigned_to ? TEAM_EMAIL_MAP[opp.assigned_to] : null;
+                {filtered.map((g) => {
+                  const assignedEmail = g.assigned_to ? TEAM_EMAIL_MAP[g.assigned_to] : null;
                   const avatarUrl = assignedEmail && avatars ? avatars[assignedEmail] : null;
 
                   return (
-                    <TableRow key={opp.id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${opp.id}`)}>
-                      <TableCell className="font-medium">{account?.name || "Unknown"}</TableCell>
+                    <TableRow key={g.account_id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${g.account_id}`)}>
+                      <TableCell className="font-medium">{g.account?.name || "Unknown"}</TableCell>
                       <TableCell>
                         <div>
-                          <span className="text-sm">{contact?.first_name} {contact?.last_name}</span>
-                          {contact?.email && (
-                            <p className="text-xs text-muted-foreground">{contact.email}</p>
+                          <span className="text-sm">{g.contact?.first_name} {g.contact?.last_name}</span>
+                          {g.contact?.email && (
+                            <p className="text-xs text-muted-foreground">{g.contact.email}</p>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-xs",
-                            svcType === "gateway_only"
-                              ? "border-teal-500/50 text-teal-600 dark:text-teal-400"
-                              : "border-primary/50 text-primary"
-                          )}
-                        >
-                          {svcType === "gateway_only" ? (
-                            <><Zap className="h-3 w-3 mr-1" />Gateway</>
-                          ) : (
-                            <><CreditCard className="h-3 w-3 mr-1" />Processing</>
-                          )}
-                        </Badge>
+                        <PipelineBadges pipelines={g.pipelines} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Calendar className="h-3.5 w-3.5" />
-                          {opp.stage_entered_at
-                            ? format(new Date(opp.stage_entered_at), "MMM dd, yyyy")
+                          {g.stage_entered_at
+                            ? format(new Date(g.stage_entered_at), "MMM dd, yyyy")
                             : "—"}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {opp.assigned_to ? (
+                        {g.assigned_to ? (
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6 border border-background">
                               {avatarUrl && <AvatarImage src={avatarUrl} />}
                               <AvatarFallback className="text-[9px] bg-muted">
-                                {getInitials(opp.assigned_to)}
+                                {getInitials(g.assigned_to)}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm">{opp.assigned_to}</span>
+                            <span className="text-sm">{g.assigned_to}</span>
                           </div>
                         ) : (
                           <span className="text-sm text-muted-foreground">Unassigned</span>
