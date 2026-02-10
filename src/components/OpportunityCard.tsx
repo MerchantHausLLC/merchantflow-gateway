@@ -62,27 +62,32 @@ const OpportunityCard = ({
     ? TEAM_COLORS[opportunity.assigned_to] || { border: 'border-l-primary/50', bg: 'bg-muted', text: 'text-muted-foreground' }
     : { border: 'border-l-muted-foreground/30', bg: 'bg-muted', text: 'text-muted-foreground' };
 
+  const isLive = opportunity.stage === 'live_activated';
+
   // Wizard completion progress background color
   const wizardProgress = opportunity.wizard_state?.progress ?? 0;
   const progressBg = useMemo(() => {
+    if (isLive) return ''; // Live cards use their own styling
     if (wizardProgress >= 75) return 'bg-green-500/10 dark:bg-green-500/15';
     if (wizardProgress >= 40) return 'bg-amber-500/10 dark:bg-amber-500/15';
     return 'bg-red-500/10 dark:bg-red-500/15';
-  }, [wizardProgress]);
+  }, [wizardProgress, isLive]);
 
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // Calculate SLA status based on time in stage
+  // Calculate SLA status based on time in stage (skip for live deals)
   const slaInfo = useMemo(() => {
+    if (isLive) {
+      return { status: 'green' as const, hours: 0, days: 0, label: 'Live', hidden: true };
+    }
     const stageEnteredAt = opportunity.stage_entered_at 
       ? new Date(opportunity.stage_entered_at) 
       : new Date(opportunity.created_at);
     const hoursInStage = differenceInHours(new Date(), stageEnteredAt);
     const daysInStage = differenceInDays(new Date(), stageEnteredAt);
     
-    // Use explicit sla_status if set, otherwise calculate
     if (opportunity.sla_status) {
       return {
         status: opportunity.sla_status as 'green' | 'amber' | 'red',
@@ -90,19 +95,18 @@ const OpportunityCard = ({
         days: daysInStage,
         label: opportunity.sla_status === 'red' ? 'Overdue' 
              : opportunity.sla_status === 'amber' ? 'At Risk' 
-             : 'On Track'
+             : 'On Track',
+        hidden: false
       };
     }
     
-    // Auto-calculate SLA based on hours in stage
-    // Green: < 24h, Amber: 24-48h, Red: > 48h
     if (hoursInStage >= 48) {
-      return { status: 'red' as const, hours: hoursInStage, days: daysInStage, label: 'Overdue' };
+      return { status: 'red' as const, hours: hoursInStage, days: daysInStage, label: 'Overdue', hidden: false };
     } else if (hoursInStage >= 24) {
-      return { status: 'amber' as const, hours: hoursInStage, days: daysInStage, label: 'At Risk' };
+      return { status: 'amber' as const, hours: hoursInStage, days: daysInStage, label: 'At Risk', hidden: false };
     }
-    return { status: 'green' as const, hours: hoursInStage, days: daysInStage, label: 'On Track' };
-  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status]);
+    return { status: 'green' as const, hours: hoursInStage, days: daysInStage, label: 'On Track', hidden: false };
+  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status, isLive]);
 
 
   // Fetch profile avatar for assigned team member
@@ -220,10 +224,10 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
-        'hover:shadow-lg border border-border/50 rounded-md overflow-hidden',
-        'border-l-2',
-        teamColors.border,
-        progressBg
+        'hover:shadow-lg rounded-md overflow-hidden',
+        isLive
+          ? 'border border-amber-400/60 dark:border-amber-500/50 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 shadow-[0_0_8px_rgba(217,170,0,0.12)]'
+          : cn('border border-border/50 border-l-2', teamColors.border, progressBg)
       )}
     >
       <CardContent className={cn(
@@ -278,19 +282,26 @@ const OpportunityCard = ({
                   <div className="flex items-center gap-1 text-[9px] landscape:text-[9px] text-muted-foreground">
                     <Calendar className="h-2 w-2 landscape:h-2 landscape:w-2" />
                     <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
-                    {/* Enhanced SLA Status Indicator */}
-                    <span 
-                      className={cn(
-                        "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] landscape:text-[8px] font-medium",
-                        slaInfo.status === 'red' && "bg-red-500/20 text-red-500",
-                        slaInfo.status === 'amber' && "bg-amber-500/20 text-amber-500",
-                        slaInfo.status === 'green' && "bg-green-500/20 text-green-500"
-                      )}
-                    >
-                      {slaInfo.status === 'red' && <AlertTriangle className="h-2 w-2" />}
-                      {slaInfo.status === 'amber' && <Clock className="h-2 w-2" />}
-                      {slaInfo.days > 0 ? `${slaInfo.days}d` : `${slaInfo.hours}h`}
-                    </span>
+                    {/* Enhanced SLA Status Indicator - hidden for live deals */}
+                    {!slaInfo.hidden && (
+                      <span 
+                        className={cn(
+                          "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] landscape:text-[8px] font-medium",
+                          slaInfo.status === 'red' && "bg-red-500/20 text-red-500",
+                          slaInfo.status === 'amber' && "bg-amber-500/20 text-amber-500",
+                          slaInfo.status === 'green' && "bg-green-500/20 text-green-500"
+                        )}
+                      >
+                        {slaInfo.status === 'red' && <AlertTriangle className="h-2 w-2" />}
+                        {slaInfo.status === 'amber' && <Clock className="h-2 w-2" />}
+                        {slaInfo.days > 0 ? `${slaInfo.days}d` : `${slaInfo.hours}h`}
+                      </span>
+                    )}
+                    {isLive && (
+                      <span className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-semibold bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                        ✦ Live
+                      </span>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
