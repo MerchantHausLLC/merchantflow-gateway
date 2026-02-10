@@ -265,8 +265,8 @@ export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
   'discovery',
   'qualified',
   'gateway_submitted',
-  'integration_setup',
   'closed_won',
+  'integration_setup',
   'closed_lost',
   'live_activated',
 ];
