@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Briefcase,
   ListChecks,
-  MessageCircle,
   MoreHorizontal,
   Building2,
   Users,
@@ -43,7 +42,6 @@ const primaryTabs: TabItem[] = [
   { title: "Pipeline", url: "/", icon: LayoutDashboard },
   { title: "Deals", url: "/opportunities", icon: Briefcase },
   { title: "Tasks", url: "/tasks", icon: ListChecks },
-  { title: "Chat", url: "/chat", icon: MessageCircle },
 ];
 
 interface MoreItem {
