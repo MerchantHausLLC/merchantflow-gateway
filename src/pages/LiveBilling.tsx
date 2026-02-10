@@ -136,14 +136,14 @@ const LiveBilling = () => {
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const PipelineBadges = ({ pipelines }: { pipelines: ('processing' | 'gateway_only')[] }) => (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-col gap-1">
       {pipelines.includes("processing") && (
-        <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+        <Badge variant="outline" className="text-xs border-primary/50 text-primary w-fit">
           <CreditCard className="h-3 w-3 mr-1" />Processing
         </Badge>
       )}
       {pipelines.includes("gateway_only") && (
-        <Badge variant="outline" className="text-xs border-teal-500/50 text-teal-600 dark:text-teal-400">
+        <Badge variant="outline" className="text-xs border-teal-500/50 text-teal-600 dark:text-teal-400 w-fit">
           <Zap className="h-3 w-3 mr-1" />Gateway
         </Badge>
       )}
