@@ -774,18 +774,76 @@ const Chat: React.FC = () => {
       .eq("id", user.id);
   }, [user]);
 
+  // Derive online status from profiles' last_seen
+  const profilesRef = useRef(profiles);
+  useEffect(() => { profilesRef.current = profiles; }, [profiles]);
+
   // Initial data load
   useEffect(() => {
     if (user) {
       Promise.all([fetchChannels(), fetchAllProfiles()])
         .finally(() => setLoadingData(false));
       
-      // Update last_seen on load and periodically
+      // Update last_seen on load and periodically (every 15s for responsive detection)
       updateLastSeen();
-      const interval = setInterval(updateLastSeen, 60000); // Every minute
+      const interval = setInterval(updateLastSeen, 15000);
       return () => clearInterval(interval);
     }
   }, [user, fetchChannels, fetchAllProfiles, updateLastSeen]);
+
+  // Refresh profiles periodically and via realtime for online status
+  useEffect(() => {
+    if (!user) return;
+    // Refresh profiles every 30s to keep last_seen current
+    const interval = setInterval(() => {
+      fetchAllProfiles();
+      // Also update onlineUsers based on latest profiles
+      const currentProfiles = profilesRef.current;
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        Object.entries(currentProfiles).forEach(([id, profile]) => {
+          if (profile.last_seen) {
+            const lastSeenRecent = (Date.now() - new Date(profile.last_seen).getTime()) < 120000;
+            if (lastSeenRecent) {
+              newSet.add(id);
+            } else {
+              newSet.delete(id);
+            }
+          }
+        });
+        return newSet;
+      });
+    }, 30000);
+
+    // Subscribe to profile changes (last_seen updates) for realtime status
+    const profileChannel = supabase
+      .channel('chat-profiles-last-seen')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+      }, (payload) => {
+        const updatedProfile = payload.new as Profile;
+        setProfiles(prev => ({ ...prev, [updatedProfile.id]: updatedProfile }));
+        // Update online status
+        if (updatedProfile.last_seen) {
+          const isRecent = (Date.now() - new Date(updatedProfile.last_seen).getTime()) < 120000;
+          setOnlineUsers(prev => {
+            const newSet = new Set(prev);
+            if (isRecent) {
+              newSet.add(updatedProfile.id);
+            }
+            return newSet;
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(profileChannel);
+    };
+  }, [user, fetchAllProfiles]);
 
   // Fetch messages when channel changes
   useEffect(() => {
@@ -904,6 +962,18 @@ const Chat: React.FC = () => {
       .on("presence", { event: "sync" }, () => {
         const state = globalChannel.presenceState();
         const onlineIds = new Set(Object.keys(state));
+        
+        // Also include users with recent last_seen (within 2 minutes)
+        const currentProfiles = profilesRef.current;
+        Object.entries(currentProfiles).forEach(([id, profile]) => {
+          if (profile.last_seen) {
+            const lastSeenRecent = (Date.now() - new Date(profile.last_seen).getTime()) < 120000;
+            if (lastSeenRecent) {
+              onlineIds.add(id);
+            }
+          }
+        });
+        
         setOnlineUsers(onlineIds);
       })
       .subscribe(async (status) => {

@@ -242,14 +242,16 @@ const FloatingChat: React.FC = () => {
     if (!user) return;
 
     const updateLastSeen = async () => {
+      const now = new Date().toISOString();
       await supabase
         .from("profiles")
-        .update({ last_seen: new Date().toISOString() })
+        .update({ last_seen: now })
         .eq("id", user.id);
     };
 
     updateLastSeen();
-    lastSeenIntervalRef.current = setInterval(updateLastSeen, 30000);
+    // Update every 15s for more responsive online detection
+    lastSeenIntervalRef.current = setInterval(updateLastSeen, 15000);
 
     return () => {
       if (lastSeenIntervalRef.current) clearInterval(lastSeenIntervalRef.current);
@@ -507,13 +509,22 @@ const FloatingChat: React.FC = () => {
     globalChannel
       .on("presence", { event: "sync" }, () => {
         const state = globalChannel.presenceState();
-        const onlineIds = new Set(Object.keys(state));
+        const presenceOnlineIds = new Set(Object.keys(state));
 
         setOnlineUsers(prev =>
-          prev.map(u => ({
-            ...u,
-            isOnline: onlineIds.has(u.id)
-          }))
+          prev.map(u => {
+            const isPresenceOnline = presenceOnlineIds.has(u.id);
+            // Also consider online if last_seen is within 2 minutes
+            const lastSeenRecent = u.lastSeen
+              ? (Date.now() - new Date(u.lastSeen).getTime()) < 120000
+              : false;
+            return {
+              ...u,
+              isOnline: isPresenceOnline || lastSeenRecent,
+              // Update lastSeen to now if presence says online (keeps it fresh)
+              lastSeen: isPresenceOnline ? new Date().toISOString() : u.lastSeen
+            };
+          })
         );
       })
       .subscribe(async (status) => {
@@ -587,6 +598,15 @@ const FloatingChat: React.FC = () => {
   }, [currentChannelId, view, fetchChannelMessages, user?.id, playMessageSound]);
 
   // Subscribe to realtime direct messages
+  // Use refs to avoid stale closures and prevent re-subscribing on every state change
+  const viewRef = useRef(view);
+  const currentDMUserIdRef = useRef(currentDMUserId);
+  const fetchDirectMessagesRef = useRef(fetchDirectMessages);
+  
+  useEffect(() => { viewRef.current = view; }, [view]);
+  useEffect(() => { currentDMUserIdRef.current = currentDMUserId; }, [currentDMUserId]);
+  useEffect(() => { fetchDirectMessagesRef.current = fetchDirectMessages; }, [fetchDirectMessages]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -602,10 +622,18 @@ const FloatingChat: React.FC = () => {
         (payload) => {
           const newMsg = payload.new as DirectMessage;
           
-          if (view === "dm" && currentDMUserId) {
+          // Only process messages that involve this user
+          if (newMsg.sender_id !== user.id && newMsg.receiver_id !== user.id) {
+            return;
+          }
+          
+          const currentView = viewRef.current;
+          const currentDM = currentDMUserIdRef.current;
+          
+          if (currentView === "dm" && currentDM) {
             const isPartOfConversation = 
-              (newMsg.sender_id === user.id && newMsg.receiver_id === currentDMUserId) ||
-              (newMsg.sender_id === currentDMUserId && newMsg.receiver_id === user.id);
+              (newMsg.sender_id === user.id && newMsg.receiver_id === currentDM) ||
+              (newMsg.sender_id === currentDM && newMsg.receiver_id === user.id);
             
             if (isPartOfConversation) {
               // Handle INSERT - new message
@@ -614,7 +642,15 @@ const FloatingChat: React.FC = () => {
                 if (newMsg.sender_id !== user.id) {
                   playMessageSound();
                 }
-                fetchDirectMessages();
+                // Deduplicate: add message only if not already present
+                setDirectMessages(prev => {
+                  if (prev.some(m => m.id === newMsg.id)) return prev;
+                  // Remove any optimistic message with temp ID for same content
+                  const filtered = prev.filter(m => 
+                    !(m.id.startsWith('temp-') && m.content === newMsg.content && m.sender_id === newMsg.sender_id)
+                  );
+                  return [...filtered, newMsg];
+                });
                 return;
               }
               
@@ -630,14 +666,17 @@ const FloatingChat: React.FC = () => {
           }
           
           if (payload.eventType === 'INSERT' && newMsg.receiver_id === user.id) {
-            // Play notification sound for messages when not in that conversation
-            playMessageSound();
-            setOnlineUsers(prev => prev.map(u => 
-              u.id === newMsg.sender_id 
-                ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
-                : u
-            ));
-            setUnreadCount(prev => prev + 1);
+            // Only increment unread if NOT currently viewing this conversation
+            const isViewingConversation = currentView === "dm" && currentDM === newMsg.sender_id;
+            if (!isViewingConversation) {
+              playMessageSound();
+              setOnlineUsers(prev => prev.map(u => 
+                u.id === newMsg.sender_id 
+                  ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
+                  : u
+              ));
+              setUnreadCount(prev => prev + 1);
+            }
           }
           
           // Handle UPDATE for messages we sent (read receipt notifications)
@@ -657,7 +696,7 @@ const FloatingChat: React.FC = () => {
       supabase.removeChannel(dmChannel);
       dmChannelRef.current = null;
     };
-  }, [user, view, currentDMUserId, fetchDirectMessages, playMessageSound]);
+  }, [user, playMessageSound]);
 
   // Subscribe to reactions
   useEffect(() => {
