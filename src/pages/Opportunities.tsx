@@ -42,7 +42,8 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  RotateCcw
+  RotateCcw,
+  Archive
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,7 @@ const Opportunities = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showNewModal, setShowNewModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewTab, setViewTab] = useState<'all' | 'archive'>('all');
   const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
 
   // Handle ?new=true query param from sidebar navigation
@@ -160,11 +162,17 @@ const Opportunities = () => {
   const filteredOpportunities = useMemo(() => {
     let filtered = [...opportunities];
 
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(opp => 
-        statusFilter === "active" ? opp.status !== 'dead' : opp.status === 'dead'
-      );
+    // Tab-level filter: archive tab shows only archived, all tab excludes archived
+    if (viewTab === 'archive') {
+      filtered = filtered.filter(opp => (opp.status as string) === 'archived');
+    } else {
+      filtered = filtered.filter(opp => (opp.status as string) !== 'archived');
+      // Status filter (within non-archived)
+      if (statusFilter !== "all") {
+        filtered = filtered.filter(opp => 
+          statusFilter === "active" ? opp.status !== 'dead' : opp.status === 'dead'
+        );
+      }
     }
 
     // Search filter
@@ -230,11 +238,12 @@ const Opportunities = () => {
     });
 
     return filtered;
-  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, sortField, sortDirection, tasks]);
+  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, viewTab, sortField, sortDirection, tasks]);
 
   // Stats
   const stats = useMemo(() => {
-    const active = opportunities.filter(o => o.status !== 'dead');
+    const nonArchived = opportunities.filter(o => (o.status as string) !== 'archived');
+    const active = nonArchived.filter(o => o.status !== 'dead');
     const byStage: Record<string, number> = {};
     active.forEach(o => {
       byStage[o.stage] = (byStage[o.stage] || 0) + 1;
@@ -245,7 +254,8 @@ const Opportunities = () => {
       new: byStage['application_started'] || 0,
       inProgress: active.filter(o => !['application_started', 'live_activated', 'closed_won', 'closed_lost'].includes(o.stage)).length,
       won: (byStage['live_activated'] || 0) + (byStage['closed_won'] || 0),
-      lost: opportunities.filter(o => o.status === 'dead').length,
+      lost: nonArchived.filter(o => o.status === 'dead').length,
+      archived: opportunities.filter(o => (o.status as string) === 'archived').length,
     };
   }, [opportunities]);
 
@@ -324,8 +334,34 @@ const Opportunities = () => {
       onNewApplication={() => setShowNewModal(true)}
     >
       <div className="p-4 lg:p-6 space-y-6">
-        {/* Page title */}
-        <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
+        {/* Page title with tabs */}
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setViewTab('all')}
+              className={cn(
+                "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setViewTab('archive')}
+              className={cn(
+                "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+                viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Archive className="h-3 w-3" />
+              Archive
+              {stats.archived > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
+              )}
+            </button>
+          </div>
+        </div>
         {/* Stats - Compact header-style badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
