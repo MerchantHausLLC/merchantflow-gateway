@@ -131,6 +131,7 @@ const FloatingChat: React.FC = () => {
   const [newChannelName, setNewChannelName] = useState("");
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [channelUnreadCounts, setChannelUnreadCounts] = useState<Record<string, number>>({});
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -335,6 +336,45 @@ const FloatingChat: React.FC = () => {
     setUnreadCount((data || []).length);
   }, [user]);
 
+  // Get last-read timestamps for channels from localStorage
+  const getChannelLastRead = useCallback((): Record<string, string> => {
+    if (!user) return {};
+    try {
+      const stored = localStorage.getItem(`chat_last_read_${user.id}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  }, [user]);
+
+  // Save last-read timestamp for a channel
+  const markChannelRead = useCallback((channelId: string) => {
+    if (!user) return;
+    const timestamps = getChannelLastRead();
+    timestamps[channelId] = new Date().toISOString();
+    localStorage.setItem(`chat_last_read_${user.id}`, JSON.stringify(timestamps));
+    setChannelUnreadCounts(prev => ({ ...prev, [channelId]: 0 }));
+  }, [user, getChannelLastRead]);
+
+  // Fetch unread channel message counts
+  const fetchChannelUnreadCounts = useCallback(async () => {
+    if (!user || channels.length === 0) return;
+    const lastReadTimestamps = getChannelLastRead();
+    const counts: Record<string, number> = {};
+
+    for (const ch of channels) {
+      const lastRead = lastReadTimestamps[ch.id];
+      let query = supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("channel_id", ch.id)
+        .neq("user_id", user.id);
+      if (lastRead) query = query.gt("created_at", lastRead);
+      const { count } = await query;
+      counts[ch.id] = count || 0;
+    }
+
+    setChannelUnreadCounts(counts);
+  }, [user, channels, getChannelLastRead]);
+
   // Fetch channels
   const fetchChannels = useCallback(async () => {
     const { data, error } = await supabase
@@ -440,6 +480,13 @@ const FloatingChat: React.FC = () => {
       fetchUnreadCounts();
     }
   }, [user, fetchProfiles, fetchChannels, fetchUnreadCounts]);
+
+  // Fetch channel unreads once channels are loaded
+  useEffect(() => {
+    if (channels.length > 0) {
+      fetchChannelUnreadCounts();
+    }
+  }, [channels, fetchChannelUnreadCounts]);
 
    // Refresh profiles periodically and via realtime for online status
     useEffect(() => {
@@ -566,11 +613,12 @@ const FloatingChat: React.FC = () => {
         },
         (payload) => {
           const newMsg = payload.new as ChannelMessage;
-          // Play sound if message is from another user
           if (newMsg.user_id !== user?.id) {
             playMessageSound();
           }
           fetchChannelMessages();
+          // Mark channel as read since user is actively viewing it
+          markChannelRead(currentChannelId);
         }
       )
       .on(
@@ -600,7 +648,32 @@ const FloatingChat: React.FC = () => {
     };
   }, [currentChannelId, view, fetchChannelMessages, user?.id, playMessageSound]);
 
-  // Subscribe to realtime direct messages
+  // Subscribe to all channel messages for unread badge updates
+  useEffect(() => {
+    if (!user) return;
+
+    const allChannelMsgs = supabase
+      .channel('all-channel-msgs-unread')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          const msg = payload.new as ChannelMessage;
+          if (msg.user_id === user.id) return;
+          // If user is currently viewing this channel, mark it read instead
+          if (viewRef.current === 'chat' && currentDMUserIdRef.current === '' && msg.channel_id === currentChannelId) return;
+          setChannelUnreadCounts(prev => ({
+            ...prev,
+            [msg.channel_id]: (prev[msg.channel_id] || 0) + 1
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(allChannelMsgs); };
+  }, [user, currentChannelId]);
+
+
   // Use refs to avoid stale closures and prevent re-subscribing on every state change
   const viewRef = useRef(view);
   const currentDMUserIdRef = useRef(currentDMUserId);
@@ -953,6 +1026,7 @@ const FloatingChat: React.FC = () => {
     setSearchQuery("");
     setShowSearch(false);
     setView("chat");
+    markChannelRead(channelId);
   };
 
   const handleSelectContact = (userId: string) => {
@@ -1113,6 +1187,10 @@ const FloatingChat: React.FC = () => {
     [directMessages, searchQuery]
   );
 
+  const totalChannelUnread = useMemo(() => 
+    Object.values(channelUnreadCounts).reduce((sum, c) => sum + c, 0), [channelUnreadCounts]);
+  const totalUnreadCount = unreadCount + totalChannelUnread;
+
   const filteredContacts = useMemo(() =>
     contactSearch
       ? onlineUsers.filter(u => 
@@ -1150,9 +1228,9 @@ const FloatingChat: React.FC = () => {
             )}
           >
             <MessageCircle className="h-6 w-6" />
-            {unreadCount > 0 && (
+            {totalUnreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                {unreadCount > 9 ? "9+" : unreadCount}
+                {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
               </span>
             )}
           </button>
@@ -1169,9 +1247,9 @@ const FloatingChat: React.FC = () => {
           >
             <MessageCircle className="h-5 w-5 shrink-0" />
             <span className="font-semibold text-sm">Messaging</span>
-            {unreadCount > 0 && (
+            {totalUnreadCount > 0 && (
               <span className="ml-auto bg-red-500 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-                {unreadCount > 9 ? "9+" : unreadCount}
+                {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
               </span>
             )}
           </button>
@@ -1463,7 +1541,12 @@ const FloatingChat: React.FC = () => {
                       )}>
                         <Hash className="h-4 w-4" />
                       </div>
-                      <span className="font-medium text-sm">{ch.name}</span>
+                      <span className="font-medium text-sm flex-1">{ch.name}</span>
+                      {(channelUnreadCounts[ch.id] || 0) > 0 && (
+                        <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
+                          {channelUnreadCounts[ch.id]}
+                        </Badge>
+                      )}
                     </button>
                   ))}
 
