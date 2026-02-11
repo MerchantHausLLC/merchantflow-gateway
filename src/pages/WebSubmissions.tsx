@@ -61,6 +61,7 @@ export default function WebSubmissions() {
     const { data, error } = await supabase
       .from("applications")
       .select("*")
+      .not("status", "in", '("approved","rejected")')
       .order("created_at", { ascending: false });
 
     if (error) {
