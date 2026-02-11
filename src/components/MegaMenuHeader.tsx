@@ -215,7 +215,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuTrigger className="bg-transparent">
-                      <item.icon className="h-4 w-4 mr-2" />
+                      <item.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                       {item.title}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
@@ -230,7 +230,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                 className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                               >
                                 <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                  <subItem.icon className="h-4 w-4" />
+                                  <subItem.icon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
                                   {subItem.title}
                                 </div>
                                 <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -244,7 +244,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                   className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                 >
                                   <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                    <subItem.icon className="h-4 w-4" />
+                                    <subItem.icon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
                                     {subItem.title}
                                   </div>
                                   <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -275,7 +275,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                         )
                       }
                     >
-                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
+                      <item.icon className="h-4 w-4 mr-2 shrink-0" fill="currentColor" strokeWidth={0} />
                       {item.title}
                     </RouterNavLink>
                   </NavigationMenuLink>
@@ -294,22 +294,22 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 size="sm"
                 className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 mr-1" fill="currentColor" strokeWidth={0} />
                 <span className="hidden sm:inline">New</span>
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleNewClick("opportunity")}>
-                <Briefcase className="h-4 w-4 mr-2" />
+                <Briefcase className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                 Create Opportunity
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("account")}>
-                <Building2 className="h-4 w-4 mr-2" />
+                <Building2 className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                 Create Account
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("contact")}>
-                <Users className="h-4 w-4 mr-2" />
+                <Users className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                 Create Contact
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -325,9 +325,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             className="h-9 w-9"
           >
             {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
+              <Sun className="h-4 w-4" fill="currentColor" strokeWidth={0} />
             ) : (
-              <Moon className="h-4 w-4" />
+              <Moon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
             )}
           </Button>
 
@@ -348,14 +348,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
                 <RouterNavLink to="/settings" className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                   Settings
                 </RouterNavLink>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
                   <RouterNavLink to="/admin/deletion-requests" className="cursor-pointer">
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                     Deletion Requests
                   </RouterNavLink>
                 </DropdownMenuItem>
@@ -365,7 +365,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm">
-                    <Wrench className="h-4 w-4" />
+                    <Wrench className="h-4 w-4" fill="currentColor" strokeWidth={0} />
                     Tools
                     <ChevronDown className="h-3 w-3 ml-auto" />
                   </div>
@@ -380,14 +380,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                           rel="noopener noreferrer"
                           className="cursor-pointer"
                         >
-                          <tool.icon className="h-4 w-4 mr-2" />
+                          <tool.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                           {tool.title}
                         </a>
                       </DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem key={tool.title} asChild>
                         <RouterNavLink to={tool.url} className="cursor-pointer">
-                          <tool.icon className="h-4 w-4 mr-2" />
+                          <tool.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                           {tool.title}
                         </RouterNavLink>
                       </DropdownMenuItem>
@@ -397,7 +397,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </DropdownMenu>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
