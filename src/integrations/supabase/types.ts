@@ -700,6 +700,7 @@ export type Database = {
           full_name: string | null
           id: string
           last_seen: string | null
+          phone: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -708,6 +709,7 @@ export type Database = {
           full_name?: string | null
           id: string
           last_seen?: string | null
+          phone?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -716,6 +718,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_seen?: string | null
+          phone?: string | null
         }
         Relationships: []
       }

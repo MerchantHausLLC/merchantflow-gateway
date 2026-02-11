@@ -41,6 +41,7 @@ const Settings = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -101,13 +102,14 @@ const Settings = () => {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("avatar_url, full_name")
+      .select("avatar_url, full_name, phone")
       .eq("id", user.id)
       .single();
     
     if (data) {
       setAvatarUrl(data.avatar_url);
       setFullName(data.full_name || "");
+      setPhone((data as any).phone || "");
     }
   };
 
@@ -182,7 +184,7 @@ const Settings = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName })
+        .update({ full_name: fullName, phone } as any)
         .eq("id", user.id);
 
       if (error) throw error;
@@ -352,26 +354,40 @@ const Settings = () => {
                   {/* Name Setting */}
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Display Name</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="fullName"
-                        placeholder="Enter your full name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                      />
-                      <Button onClick={handleSaveProfile} disabled={isSaving}>
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        <span className="ml-2 hidden sm:inline">Save</span>
-                      </Button>
-                    </div>
+                    <Input
+                      id="fullName"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
                     <p className="text-xs text-muted-foreground">
                       This name will be displayed in chat and throughout the app
                     </p>
                   </div>
+
+                  {/* Phone Setting */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Contact Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="Enter your contact number"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your phone number will be visible to other team members
+                    </p>
+                  </div>
+
+                  <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto">
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    <span className="ml-2">Save Profile</span>
+                  </Button>
                 </CardContent>
               </Card>
 
