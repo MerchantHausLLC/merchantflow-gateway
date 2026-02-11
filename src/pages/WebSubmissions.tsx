@@ -87,16 +87,16 @@ export default function WebSubmissions() {
     setIsLoading(false);
   };
 
-  const deleteApplication = async (id: string) => {
+  const rejectApplication = async (id: string) => {
     const { error } = await supabase
       .from("applications")
-      .delete()
+      .update({ status: "rejected" })
       .eq("id", id);
 
     if (error) {
-      toast({ variant: "destructive", title: "Delete failed", description: error.message });
+      toast({ variant: "destructive", title: "Reject failed", description: error.message });
     } else {
-      toast({ title: "Submission removed" });
+      toast({ title: "Submission rejected" });
       fetchApplications();
     }
   };
@@ -325,7 +325,7 @@ export default function WebSubmissions() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteApplication(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  <AlertDialogAction onClick={() => rejectApplication(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                     Reject
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -492,7 +492,7 @@ export default function WebSubmissions() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          deleteApplication(selectedApp.id);
+                          rejectApplication(selectedApp.id);
                           setSelectedApp(null);
                         }}
                       >
