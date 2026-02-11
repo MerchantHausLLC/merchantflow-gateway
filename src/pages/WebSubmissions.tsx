@@ -15,6 +15,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Archive, CheckCircle, ArrowRightCircle, Eye, X } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -297,26 +308,54 @@ export default function WebSubmissions() {
                         </Button>
                         {app.status === "pending" && (
                           <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateStatus(app.id, "rejected")}
-                            >
-                              <Archive className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => convertToPipeline(app)}
-                              disabled={isConverting === app.id}
-                            >
-                              {isConverting === app.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                              ) : (
-                                <ArrowRightCircle className="h-4 w-4 mr-1" />
-                              )}
-                              Convert to Pipeline
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Archive className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reject Application</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to reject the application from <strong>{app.company_name || app.full_name}</strong>? This will remove it from the submissions list.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => updateStatus(app.id, "rejected")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Reject
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" disabled={isConverting === app.id}>
+                                  {isConverting === app.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                  ) : (
+                                    <ArrowRightCircle className="h-4 w-4 mr-1" />
+                                  )}
+                                  Convert to Pipeline
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Convert to Pipeline</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will create an Account, Contact, and Opportunity for <strong>{app.company_name || app.full_name}</strong> and pre-fill the onboarding wizard. The submission will be removed from this list.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => convertToPipeline(app)}>
+                                    Convert
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </>
                         )}
                         {app.status === "approved" && (
