@@ -854,7 +854,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
           {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
           {opportunity.stage === 'live_activated' && (
-            <div className="relative flex justify-end -mt-14 mr-4 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
+            <div className="relative flex justify-center -mt-14 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
               <img 
                 src={liveBadge} 
                 alt="Live Account" 
