@@ -255,6 +255,10 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          attachment_url: string | null
           channel_id: string
           content: string
           created_at: string
@@ -266,6 +270,10 @@ export type Database = {
           user_name: string | null
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id: string
           content: string
           created_at?: string
@@ -277,6 +285,10 @@ export type Database = {
           user_name?: string | null
         }
         Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id?: string
           content?: string
           created_at?: string
@@ -430,6 +442,10 @@ export type Database = {
       }
       direct_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          attachment_url: string | null
           content: string
           created_at: string
           edited_at: string | null
@@ -440,6 +456,10 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content: string
           created_at?: string
           edited_at?: string | null
@@ -450,6 +470,10 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string
           created_at?: string
           edited_at?: string | null
