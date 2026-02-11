@@ -40,6 +40,7 @@ import { NotesSection } from "./opportunity-detail/NotesSection";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
 import { Task } from "@/types/task";
+import liveBadge from "@/assets/live-badge.webp";
 
 interface Document {
   id: string;
@@ -601,12 +602,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="bg-primary/10 text-primary p-2 rounded">
+                <div className={cn(
+                  "p-2 rounded",
+                  opportunity.stage === 'live_activated'
+                    ? "bg-amber-500/10 text-amber-600"
+                    : "bg-primary/10 text-primary"
+                )}>
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
+                    {opportunity.stage === 'live_activated' && (
+                      <img 
+                        src={liveBadge} 
+                        alt="Live Account Badge" 
+                        className="h-12 w-auto drop-shadow-md -rotate-6" 
+                      />
+                    )}
                     <span className={cn(
                       "flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
                       getServiceType(opportunity) === 'gateway_only' 
@@ -846,14 +859,29 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             </div>
           </DialogHeader>
 
-          {/* Compact status strip */}
+          {/* Compact status strip / Live Account banner */}
           <div className="mt-2 space-y-2 flex-shrink-0">
-            <StatusBlockerPanel 
-              opportunity={opportunity} 
-              wizardProgress={wizardState?.progress ?? 0}
-              onUpdate={onUpdate}
-            />
-            <StagePath opportunity={opportunity} />
+            {opportunity.stage === 'live_activated' ? (
+              <div className="flex flex-col items-center py-6 rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20">
+                <img 
+                  src={liveBadge} 
+                  alt="Live Account" 
+                  className="h-20 w-auto drop-shadow-lg mb-2" 
+                />
+                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm">
+                  Live Account
+                </h3>
+              </div>
+            ) : (
+              <>
+                <StatusBlockerPanel 
+                  opportunity={opportunity} 
+                  wizardProgress={wizardState?.progress ?? 0}
+                  onUpdate={onUpdate}
+                />
+                <StagePath opportunity={opportunity} />
+              </>
+            )}
           </div>
 
           {/* Icon Rail + Dynamic Panel Layout */}
