@@ -852,16 +852,23 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             </div>
           </DialogHeader>
 
-          {/* Compact status strip / Live Account banner */}
+          {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
+          {opportunity.stage === 'live_activated' && (
+            <div className="relative flex justify-end -mt-14 mr-4 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
+              <img 
+                src={liveBadge} 
+                alt="Live Account" 
+                className="h-40 w-auto drop-shadow-2xl" 
+                style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
+              />
+            </div>
+          )}
+
+          {/* Compact status strip */}
           <div className="mt-2 space-y-2 flex-shrink-0">
             {opportunity.stage === 'live_activated' ? (
-              <div className="flex flex-col items-center py-8 rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20">
-                <img 
-                  src={liveBadge} 
-                  alt="Live Account" 
-                  className="h-36 w-auto drop-shadow-xl mb-3" 
-                />
-                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm">
+              <div className="rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20 py-4 px-4">
+                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm text-center">
                   Live Account
                 </h3>
               </div>
