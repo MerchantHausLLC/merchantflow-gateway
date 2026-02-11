@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEME_OPTIONS, ThemeVariant } from "@/contexts/ThemeContext";
@@ -15,6 +15,7 @@ import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, 
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import AvatarCropDialog from "@/components/AvatarCropDialog";
 
 // Theme variant icons mapping
 const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
@@ -58,7 +59,8 @@ const Settings = () => {
     return true;
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string>("");
   const displayName = fullName || teamMemberName || user?.email?.split("@")[0] || "User";
 
   useEffect(() => {
@@ -127,27 +129,35 @@ const Settings = () => {
       return;
     }
 
+    // Show crop dialog instead of uploading directly
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleCroppedUpload = useCallback(async (blob: Blob) => {
+    if (!user) return;
+    setCropDialogOpen(false);
     setIsUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      const filePath = `${user.id}/avatar.png`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, blob, { upsert: true, contentType: "image/png" });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
 
-      // Add cache buster
       const urlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
 
-      // Update profile
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: urlWithCacheBuster })
@@ -162,9 +172,8 @@ const Settings = () => {
       toast.error("Failed to upload profile picture");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  };
+  }, [user]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -701,6 +710,12 @@ const Settings = () => {
               )}
           </div>
         </div>
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCroppedUpload}
+      />
     </AppLayout>
   );
 };
