@@ -32,6 +32,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
+import liveBadge from "@/assets/live-badge.webp";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'dylan@merchanthaus.io',
@@ -197,8 +198,17 @@ const LiveAccountDetail = () => {
     <AppLayout>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="border-b border-border bg-gradient-to-r from-amber-50/60 via-yellow-50/40 to-background dark:from-amber-950/20 dark:via-yellow-950/10 dark:to-background px-4 lg:px-6 py-4">
-          <div className="flex items-start justify-between gap-4">
+        <div className="relative border-b border-border bg-gradient-to-r from-amber-50/60 via-yellow-50/40 to-background dark:from-amber-950/20 dark:via-yellow-950/10 dark:to-background px-4 lg:px-6 py-4">
+          {/* Centered ribbon overlay */}
+          <div className="absolute inset-0 flex justify-center pointer-events-none z-10" style={{ top: '-1rem' }}>
+            <img 
+              src={liveBadge} 
+              alt="Live Account" 
+              className="h-36 w-auto drop-shadow-2xl opacity-90" 
+              style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
+            />
+          </div>
+          <div className="relative z-20 flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/live-billing")}>
                 <ArrowLeft className="h-4 w-4" />
