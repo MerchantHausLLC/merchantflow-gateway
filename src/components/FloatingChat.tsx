@@ -23,6 +23,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage, formatMessageTime } from "@/hooks/useChatUtils";
 import { useChatSounds } from "@/hooks/useChatSounds";
 import { isEmailAllowed } from "@/types/opportunity";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 type DirectMessage = {
   id: string;
@@ -151,6 +152,7 @@ const FloatingChat: React.FC = () => {
   const [contactSearch, setContactSearch] = useState("");
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [stickyDate, setStickyDate] = useState<string | null>(null);
+  const [profileModalUserId, setProfileModalUserId] = useState<string | null>(null);
   const [showStickyDate, setShowStickyDate] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -1654,12 +1656,18 @@ const FloatingChat: React.FC = () => {
                                     className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
                                   >
                                     {!isOwn && (
-                                      <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
-                                        <AvatarImage src={profile?.avatar_url || undefined} />
-                                        <AvatarFallback className={cn(getAvatarColor(channelMsg.user_email), "text-white text-xs")}>
-                                          {getInitials(displayName, channelMsg.user_email)}
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => setProfileModalUserId(channelMsg.user_id)}
+                                        className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                      >
+                                        <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
+                                          <AvatarImage src={profile?.avatar_url || undefined} />
+                                          <AvatarFallback className={cn(getAvatarColor(channelMsg.user_email), "text-white text-xs")}>
+                                            {getInitials(displayName, channelMsg.user_email)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      </button>
                                     )}
                                     <div className="max-w-[75%]">
                                       {replyMessage && (
@@ -1682,7 +1690,13 @@ const FloatingChat: React.FC = () => {
                                         )}
                                       >
                                         {!isOwn && (
-                                          <p className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400">{displayName}</p>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => setProfileModalUserId(channelMsg.user_id)}
+                                            className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block"
+                                          >
+                                            {displayName}
+                                          </button>
                                         )}
                                         {editingMessageId === channelMsg.id ? (
                                           <div className="space-y-2">
@@ -1924,12 +1938,18 @@ const FloatingChat: React.FC = () => {
                                     className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
                                   >
                                     {!isOwn && (
-                                      <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
-                                        <AvatarImage src={profile?.avatar_url || undefined} />
-                                        <AvatarFallback className={cn(getAvatarColor(profile?.email || displayName), "text-white text-xs")}>
-                                          {getInitials(displayName, profile?.email || "")}
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => setProfileModalUserId(senderId)}
+                                        className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                      >
+                                        <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
+                                          <AvatarImage src={profile?.avatar_url || undefined} />
+                                          <AvatarFallback className={cn(getAvatarColor(profile?.email || displayName), "text-white text-xs")}>
+                                            {getInitials(displayName, profile?.email || "")}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      </button>
                                     )}
                                     <div className="max-w-[75%]">
                                       {replyMessage && (
@@ -2157,6 +2177,11 @@ const FloatingChat: React.FC = () => {
           </div>
         </div>
       )}
+      <UserProfileModal
+        open={!!profileModalUserId}
+        onOpenChange={(open) => { if (!open) setProfileModalUserId(null); }}
+        userId={profileModalUserId || undefined}
+      />
     </TooltipProvider>
   );
 };

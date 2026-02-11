@@ -199,7 +199,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
   const getDisplayName = (msg: Message) => {
     const profile = profiles[msg.user_id];
-    return profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+    return profile?.full_name || msg.user_name || profile?.email?.split("@")[0] || msg.user_email.split("@")[0];
   };
 
   // Filter out current user from typing users
@@ -210,9 +210,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto space-y-3 border rounded-md p-4 mb-4 bg-background">
+      <div className="flex-grow overflow-y-auto space-y-3 border rounded-md p-4 mb-4 bg-slate-50 dark:bg-slate-900">
         {filteredMessages.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm">
+          <p className="text-center text-muted-foreground text-sm py-12">
             {searchQuery.trim() ? `No messages matching "${searchQuery}"` : 'No messages yet. Start the conversation!'}
           </p>
         ) : (
@@ -231,12 +231,12 @@ const ChatBox: React.FC<ChatBoxProps> = ({
               <React.Fragment key={msg.id}>
                 {/* Date separator */}
                 {showDateSeparator && (
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground font-medium px-2">
+                  <div className="flex items-center gap-2 my-3">
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                    <span className="text-xs text-slate-500 font-medium px-2">
                       {formatFullDate(msg.created_at)}
                     </span>
-                    <div className="flex-1 h-px bg-border" />
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                   </div>
                 )}
                 <div
@@ -253,7 +253,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                       onClick={() => onViewProfile?.(msg.user_id)}
                       className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                     >
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
                         <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                         <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                           {getInitials(displayName, msg.user_email)}
@@ -261,40 +261,59 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                       </Avatar>
                     </button>
                   )}
-                  <div className="max-w-xs">
+                  <div className="max-w-[75%]">
                     {/* Reply preview */}
                     {replyMessage && (
-                      <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
-                        <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
-                        <p className="text-muted-foreground truncate">{replyMessage.content}</p>
+                      <div className={cn(
+                        "text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800",
+                        isOwn && "ml-auto"
+                      )}>
+                        <span className="font-medium text-blue-600 dark:text-blue-400">{getDisplayName(replyMessage)}</span>
+                        <p className="text-slate-500 truncate">{replyMessage.content}</p>
                       </div>
                     )}
-                    <div className={`${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg group relative`}>
+                    <div className={cn(
+                      "p-3 rounded-2xl group relative",
+                      isOwn 
+                        ? "bg-blue-600 text-white rounded-br-md" 
+                        : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
+                    )}>
                       {!isOwn && (
                         <button 
                           type="button"
                           onClick={() => onViewProfile?.(msg.user_id)}
-                          className="text-xs font-semibold mb-1 opacity-80 hover:underline cursor-pointer"
+                          className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block"
                         >
                           {displayName}
                         </button>
                       )}
-                      <p className="text-sm">{highlightText(msg.content)}</p>
-                      <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {formatTime(msg.created_at)}
-                      </p>
+                      <p className="text-sm leading-relaxed">{highlightText(msg.content)}</p>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className={cn(
+                          "text-[10px]",
+                          isOwn ? "text-blue-200" : "text-slate-400"
+                        )}>
+                          {formatTime(msg.created_at)}
+                        </span>
+                      </div>
                       {/* Reply button */}
-                      <button
-                        onClick={() => setReplyTo(msg)}
-                        className={`absolute top-1 ${isOwn ? "left-1" : "right-1"} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10`}
-                        title="Reply"
-                      >
-                        <Reply className="h-3 w-3" />
-                      </button>
+                      <div className={cn(
+                        "absolute -top-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
+                        "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-1",
+                        isOwn ? "left-0" : "right-0"
+                      )}>
+                        <button
+                          onClick={() => setReplyTo(msg)}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                          title="Reply"
+                        >
+                          <Reply className="h-3.5 w-3.5 text-slate-500" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   {isOwn && (
-                    <Avatar className="h-8 w-8 shrink-0">
+                    <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
                       <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                       <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                         {getInitials(displayName, msg.user_email)}
@@ -328,10 +347,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-md border-l-2 border-primary">
+        <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-t-md border-l-2 border-blue-400">
           <Reply className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-primary">{getDisplayName(replyTo)}</p>
+            <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{getDisplayName(replyTo)}</p>
             <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
@@ -349,7 +368,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
           onKeyDown={handleKeyDown}
           className={replyTo ? "rounded-t-none" : ""}
         />
-        <Button onClick={handleSend}>Send</Button>
+        <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">Send</Button>
       </div>
     </div>
   );
@@ -773,7 +792,9 @@ const Chat: React.FC = () => {
 
     if (profilesData) {
       const profileMap: Record<string, Profile> = {};
-      profilesData.filter(p => isEmailAllowed(p.email)).forEach(p => {
+      // Include ALL profiles so message sender names resolve correctly
+      // (system users, former members, etc.)
+      profilesData.forEach(p => {
         profileMap[p.id] = p;
       });
       setProfiles(profileMap);
@@ -888,7 +909,7 @@ const Chat: React.FC = () => {
           if (!profiles[newMsg.user_id]) {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("id, avatar_url, full_name, last_seen")
+              .select("id, avatar_url, full_name, email, last_seen")
               .eq("id", newMsg.user_id)
               .single();
 
