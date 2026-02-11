@@ -86,7 +86,7 @@ type Reaction = {
   emoji: string;
 };
 
-type ChatView = "contacts" | "channels" | "chat" | "dm";
+type ChatView = "contacts" | "chat" | "dm";
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
 
@@ -1300,7 +1300,6 @@ const FloatingChat: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-sm">
                   {view === "contacts" && "Messages"}
-                  {view === "channels" && "Channels"}
                   {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
                   {view === "dm" && (currentDMUser?.name || "Direct Message")}
                 </h3>
@@ -1409,24 +1408,7 @@ const FloatingChat: React.FC = () => {
                   <Search className="h-4 w-4" />
                 </button>
               )}
-              {view === "contacts" && (
-                <button
-                  onClick={() => setView("channels")}
-                  className="hover:bg-white/10 p-2 rounded-lg transition-colors"
-                  title="Channels"
-                >
-                  <Hash className="h-4 w-4" />
-                </button>
-              )}
-              {view === "channels" && (
-                <button
-                  onClick={() => setView("contacts")}
-                  className="hover:bg-white/10 p-2 rounded-lg transition-colors"
-                  title="Contacts"
-                >
-                  <Users className="h-4 w-4" />
-                </button>
-              )}
+              
               {!isMobile && (
                 <button
                   onClick={() => setIsOpen(false)}
@@ -1464,15 +1446,15 @@ const FloatingChat: React.FC = () => {
 
           {/* Content */}
           <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900">
-            {/* Contacts View */}
+            {/* Unified Messages View (Channels + Contacts) */}
             {view === "contacts" && (
               <div className="flex-1 flex flex-col">
-                {/* Contact search */}
+                {/* Search */}
                 <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                      placeholder="Search contacts..."
+                      placeholder="Search..."
                       value={contactSearch}
                       onChange={(e) => setContactSearch(e.target.value)}
                       className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
@@ -1481,123 +1463,137 @@ const FloatingChat: React.FC = () => {
                 </div>
                 <ScrollArea className="flex-1">
                   <div className="p-2">
-                    {filteredContacts.length === 0 ? (
-                      <p className="text-center text-slate-500 text-sm py-8">No contacts found</p>
-                    ) : (
-                      filteredContacts.map((u) => (
+                    {/* Channels Section */}
+                    {channels.filter(ch => 
+                      !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase())
+                    ).length > 0 && (
+                      <>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 pt-2 pb-1">Channels</p>
+                        {channels
+                          .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()))
+                          .map((ch) => (
+                          <button
+                            key={ch.id}
+                            onClick={() => handleSelectChannel(ch.id)}
+                            className={cn(
+                              "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
+                              "hover:bg-white dark:hover:bg-slate-800 group",
+                              "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                            )}
+                          >
+                            <div className={cn(
+                              "w-11 h-11 rounded-full flex items-center justify-center",
+                              "bg-slate-200 dark:bg-slate-700"
+                            )}>
+                              <Hash className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                            </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate"># {ch.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Channel</p>
+                            </div>
+                            {(channelUnreadCounts[ch.id] || 0) > 0 && (
+                              <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
+                                {channelUnreadCounts[ch.id]}
+                              </Badge>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* New Channel Button */}
+                    {!contactSearch && (
+                      showNewChannel ? (
+                        <div className="p-3 mt-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <Input
+                            placeholder="Channel name"
+                            value={newChannelName}
+                            onChange={(e) => setNewChannelName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                            className="mb-2"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleCreateChannel} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                              Create
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setShowNewChannel(false)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
                         <button
-                          key={u.id}
-                          onClick={() => handleSelectContact(u.id)}
+                          onClick={() => setShowNewChannel(true)}
                           className={cn(
-                            "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                            "hover:bg-white dark:hover:bg-slate-800 group",
-                            "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                            "w-full flex items-center gap-3 p-2.5 rounded-lg transition-all",
+                            "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300",
+                            "hover:bg-white dark:hover:bg-slate-800"
                           )}
                         >
-                          <div className="relative">
-                            <Avatar className="h-11 w-11 border-2 border-slate-200 dark:border-slate-700">
-                              <AvatarImage src={u.avatarUrl || undefined} />
-                              <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
-                                {getInitials(u.name, u.email)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span
-                              className={cn(
-                                "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-50 dark:border-slate-900",
-                                u.isOnline ? "bg-emerald-500" : "bg-slate-400"
-                              )}
-                            />
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center border border-dashed border-slate-300 dark:border-slate-700">
+                            <Plus className="h-4 w-4" />
                           </div>
-                          <div className="flex-1 text-left min-w-0">
-                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {u.isOnline ? "Online" : u.lastSeen 
-                                ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
-                                : "Offline"
-                              }
-                            </p>
-                          </div>
-                          {(u.unreadCount || 0) > 0 && (
-                            <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
-                              {u.unreadCount}
-                            </Badge>
-                          )}
+                          <span className="text-sm">New Channel</span>
                         </button>
-                      ))
+                      )
+                    )}
+
+                    {/* Direct Messages Section */}
+                    {filteredContacts.length > 0 && (
+                      <>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 pt-4 pb-1">Direct Messages</p>
+                        {filteredContacts.map((u) => (
+                          <button
+                            key={u.id}
+                            onClick={() => handleSelectContact(u.id)}
+                            className={cn(
+                              "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
+                              "hover:bg-white dark:hover:bg-slate-800 group",
+                              "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                            )}
+                          >
+                            <div className="relative">
+                              <Avatar className="h-11 w-11 border-2 border-slate-200 dark:border-slate-700">
+                                <AvatarImage src={u.avatarUrl || undefined} />
+                                <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
+                                  {getInitials(u.name, u.email)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span
+                                className={cn(
+                                  "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-50 dark:border-slate-900",
+                                  u.isOnline ? "bg-emerald-500" : "bg-slate-400"
+                                )}
+                              />
+                            </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                {u.isOnline ? "Online" : u.lastSeen 
+                                  ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
+                                  : "Offline"
+                                }
+                              </p>
+                            </div>
+                            {(u.unreadCount || 0) > 0 && (
+                              <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
+                                {u.unreadCount}
+                              </Badge>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {filteredContacts.length === 0 && channels.filter(ch => 
+                      !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="text-center text-slate-500 text-sm py-8">No results found</p>
                     )}
                   </div>
                 </ScrollArea>
               </div>
-            )}
-
-            {/* Channels View */}
-            {view === "channels" && (
-              <ScrollArea className="flex-1">
-                <div className="p-2">
-                  {channels.map((ch) => (
-                    <button
-                      key={ch.id}
-                      onClick={() => handleSelectChannel(ch.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2 p-3 rounded-lg transition-all text-left",
-                        "hover:bg-white dark:hover:bg-slate-800",
-                        currentChannelId === ch.id 
-                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
-                          : "border border-transparent"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        currentChannelId === ch.id
-                          ? "bg-blue-100 dark:bg-blue-900/30"
-                          : "bg-slate-100 dark:bg-slate-800"
-                      )}>
-                        <Hash className="h-4 w-4" />
-                      </div>
-                      <span className="font-medium text-sm flex-1">{ch.name}</span>
-                      {(channelUnreadCounts[ch.id] || 0) > 0 && (
-                        <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">
-                          {channelUnreadCounts[ch.id]}
-                        </Badge>
-                      )}
-                    </button>
-                  ))}
-
-                  {showNewChannel ? (
-                    <div className="p-3 mt-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <Input
-                        placeholder="Channel name"
-                        value={newChannelName}
-                        onChange={(e) => setNewChannelName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
-                        className="mb-2"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={handleCreateChannel} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                          Create
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setShowNewChannel(false)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowNewChannel(true)}
-                      className={cn(
-                        "w-full flex items-center gap-2 p-3 rounded-lg transition-all",
-                        "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300",
-                        "hover:bg-white dark:hover:bg-slate-800",
-                        "border border-dashed border-slate-300 dark:border-slate-700 mt-2"
-                      )}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="text-sm">New Channel</span>
-                    </button>
-                  )}
-                </div>
-              </ScrollArea>
             )}
 
             {/* Channel Chat View */}
