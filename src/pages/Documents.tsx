@@ -34,6 +34,7 @@ const DOCUMENT_TYPE_OPTIONS = [
   "Transaction History",
   "Articles of Organisation",
   "Voided Check / Bank Confirmation Letter",
+  "VAR Sheet",
   "EIN",
   "SSN",
   "Unassigned",
