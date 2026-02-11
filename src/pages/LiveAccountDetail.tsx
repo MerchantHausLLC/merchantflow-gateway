@@ -204,7 +204,7 @@ const LiveAccountDetail = () => {
             <img 
               src={liveBadge} 
               alt="Live Account" 
-              className="h-36 w-auto drop-shadow-2xl opacity-90" 
+              className="h-36 w-auto drop-shadow-2xl opacity-90 animate-ribbon-drop" 
               style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
             />
           </div>
