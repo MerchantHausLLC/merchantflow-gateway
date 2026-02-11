@@ -87,16 +87,16 @@ export default function WebSubmissions() {
     setIsLoading(false);
   };
 
-  const updateStatus = async (id: string, status: string) => {
+  const deleteApplication = async (id: string) => {
     const { error } = await supabase
       .from("applications")
-      .update({ status })
+      .delete()
       .eq("id", id);
 
     if (error) {
-      toast({ variant: "destructive", title: "Update failed", description: error.message });
+      toast({ variant: "destructive", title: "Delete failed", description: error.message });
     } else {
-      toast({ title: "Status updated" });
+      toast({ title: "Submission removed" });
       fetchApplications();
     }
   };
@@ -212,9 +212,10 @@ export default function WebSubmissions() {
           form_state: wizardFormState,
         } as never, { onConflict: "opportunity_id" });
 
+      // Delete the application entry
       await supabase
         .from("applications")
-        .update({ status: "approved" })
+        .delete()
         .eq("id", app.id);
 
       toast({
@@ -324,7 +325,7 @@ export default function WebSubmissions() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => updateStatus(app.id, "rejected")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  <AlertDialogAction onClick={() => deleteApplication(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                     Reject
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -491,7 +492,7 @@ export default function WebSubmissions() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          updateStatus(selectedApp.id, "rejected");
+                          deleteApplication(selectedApp.id);
                           setSelectedApp(null);
                         }}
                       >
