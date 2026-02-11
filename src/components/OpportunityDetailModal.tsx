@@ -613,13 +613,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                 <div>
                   <div className="flex items-center gap-2">
                     <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
-                    {opportunity.stage === 'live_activated' && (
-                      <img 
-                        src={liveBadge} 
-                        alt="Live Account Badge" 
-                        className="h-12 w-auto drop-shadow-md -rotate-6" 
-                      />
-                    )}
                     <span className={cn(
                       "flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
                       getServiceType(opportunity) === 'gateway_only' 
@@ -862,11 +855,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           {/* Compact status strip / Live Account banner */}
           <div className="mt-2 space-y-2 flex-shrink-0">
             {opportunity.stage === 'live_activated' ? (
-              <div className="flex flex-col items-center py-6 rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20">
+              <div className="flex flex-col items-center py-8 rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20">
                 <img 
                   src={liveBadge} 
                   alt="Live Account" 
-                  className="h-20 w-auto drop-shadow-lg mb-2" 
+                  className="h-36 w-auto drop-shadow-xl mb-3" 
                 />
                 <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm">
                   Live Account
