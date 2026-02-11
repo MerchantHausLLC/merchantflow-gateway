@@ -93,8 +93,15 @@ const navMain: NavGroup[] = [
       { title: "Documents", url: "/documents", icon: FileText, description: "View uploaded documents" },
     ],
   },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
+  {
+    title: "Reporting",
+    url: "/reports",
+    icon: BarChart3,
+    items: [
+      { title: "Reports", url: "/reports", icon: BarChart3, description: "Performance & analytics" },
+      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
+    ],
+  },
 ];
 
 const toolsItems: NavItem[] = [
@@ -120,7 +127,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
-  // Fetch profile from profiles table
+
   useEffect(() => {
     if (!user) return;
 
@@ -139,7 +146,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
 
     fetchProfile();
 
-    // Subscribe to profile changes for real-time sync
     const channel = supabase
       .channel("header-profile-sync")
       .on(
@@ -163,30 +169,19 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     };
   }, [user]);
 
-
-
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
       case "opportunity":
-        if (onNewApplication) {
-          onNewApplication();
-        } else {
-          navigate("/opportunities?new=true");
-        }
+        if (onNewApplication) onNewApplication();
+        else navigate("/opportunities?new=true");
         break;
       case "account":
-        if (onNewAccount) {
-          onNewAccount();
-        } else {
-          navigate("/accounts?new=true");
-        }
+        if (onNewAccount) onNewAccount();
+        else navigate("/accounts?new=true");
         break;
       case "contact":
-        if (onNewContact) {
-          onNewContact();
-        } else {
-          navigate("/contacts?new=true");
-        }
+        if (onNewContact) onNewContact();
+        else navigate("/contacts?new=true");
         break;
     }
   };
@@ -215,7 +210,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuTrigger className="bg-transparent">
-                      <item.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                      <item.icon className="h-4 w-4 mr-2" />
                       {item.title}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
@@ -230,7 +225,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                 className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                               >
                                 <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                  <subItem.icon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
+                                  <subItem.icon className="h-4 w-4" />
                                   {subItem.title}
                                 </div>
                                 <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -244,7 +239,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                   className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                 >
                                   <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                    <subItem.icon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
+                                    <subItem.icon className="h-4 w-4" />
                                     {subItem.title}
                                   </div>
                                   <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -275,7 +270,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                         )
                       }
                     >
-                      <item.icon className="h-4 w-4 mr-2 shrink-0" fill="currentColor" strokeWidth={0} />
+                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
                       {item.title}
                     </RouterNavLink>
                   </NavigationMenuLink>
@@ -294,22 +289,22 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 size="sm"
                 className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                <Plus className="h-4 w-4 mr-1" fill="currentColor" strokeWidth={0} />
+                <Plus className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline">New</span>
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleNewClick("opportunity")}>
-                <Briefcase className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                <Briefcase className="h-4 w-4 mr-2" />
                 Create Opportunity
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("account")}>
-                <Building2 className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                <Building2 className="h-4 w-4 mr-2" />
                 Create Account
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("contact")}>
-                <Users className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                <Users className="h-4 w-4 mr-2" />
                 Create Contact
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -325,9 +320,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             className="h-9 w-9"
           >
             {theme === "dark" ? (
-              <Sun className="h-4 w-4" fill="currentColor" strokeWidth={0} />
+              <Sun className="h-4 w-4" />
             ) : (
-              <Moon className="h-4 w-4" fill="currentColor" strokeWidth={0} />
+              <Moon className="h-4 w-4" />
             )}
           </Button>
 
@@ -348,14 +343,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
                 <RouterNavLink to="/settings" className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                  <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </RouterNavLink>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
                   <RouterNavLink to="/admin/deletion-requests" className="cursor-pointer">
-                    <Trash2 className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                    <Trash2 className="h-4 w-4 mr-2" />
                     Deletion Requests
                   </RouterNavLink>
                 </DropdownMenuItem>
@@ -365,7 +360,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm">
-                    <Wrench className="h-4 w-4" fill="currentColor" strokeWidth={0} />
+                    <Wrench className="h-4 w-4" />
                     Tools
                     <ChevronDown className="h-3 w-3 ml-auto" />
                   </div>
@@ -380,14 +375,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                           rel="noopener noreferrer"
                           className="cursor-pointer"
                         >
-                          <tool.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                          <tool.icon className="h-4 w-4 mr-2" />
                           {tool.title}
                         </a>
                       </DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem key={tool.title} asChild>
                         <RouterNavLink to={tool.url} className="cursor-pointer">
-                          <tool.icon className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                          <tool.icon className="h-4 w-4 mr-2" />
                           {tool.title}
                         </RouterNavLink>
                       </DropdownMenuItem>
@@ -397,7 +392,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </DropdownMenu>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
-                <LogOut className="h-4 w-4 mr-2" fill="currentColor" strokeWidth={0} />
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
