@@ -858,7 +858,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <img 
                 src={liveBadge} 
                 alt="Live Account" 
-                className="h-40 w-auto drop-shadow-2xl" 
+                className="h-40 w-auto drop-shadow-2xl animate-ribbon-drop" 
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
               />
             </div>
