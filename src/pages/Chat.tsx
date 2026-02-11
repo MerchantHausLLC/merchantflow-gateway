@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search, PanelLeftOpen, ArrowLeft, Clock } from "lucide-react";
+import { UserProfileModal } from "@/components/UserProfileModal";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS, isEmailAllowed } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -93,6 +94,7 @@ interface ChatBoxProps {
   typingUsers: TypingUser[];
   onTyping: () => void;
   searchQuery: string;
+  onViewProfile?: (userId: string) => void;
 }
 
 const ChatBox: React.FC<ChatBoxProps> = ({ 
@@ -102,7 +104,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   profiles, 
   typingUsers,
   onTyping,
-  searchQuery
+  searchQuery,
+  onViewProfile
 }) => {
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<Message | null>(null);
@@ -245,12 +248,18 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   )}
                 >
                   {!isOwn && (
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
-                        {getInitials(displayName, msg.user_email)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <button 
+                      type="button"
+                      onClick={() => onViewProfile?.(msg.user_id)}
+                      className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                        <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
+                          {getInitials(displayName, msg.user_email)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                   )}
                   <div className="max-w-xs">
                     {/* Reply preview */}
@@ -262,7 +271,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                     )}
                     <div className={`${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg group relative`}>
                       {!isOwn && (
-                        <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
+                        <button 
+                          type="button"
+                          onClick={() => onViewProfile?.(msg.user_id)}
+                          className="text-xs font-semibold mb-1 opacity-80 hover:underline cursor-pointer"
+                        >
+                          {displayName}
+                        </button>
                       )}
                       <p className="text-sm">{highlightText(msg.content)}</p>
                       <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
@@ -1153,6 +1168,7 @@ const Chat: React.FC = () => {
   
   // Message search
   const [messageSearch, setMessageSearch] = useState("");
+  const [profileModalUserId, setProfileModalUserId] = useState<string | null>(null);
 
   const handleSendMessage = async (text: string, replyToId?: string) => {
     // Validate message
@@ -1418,7 +1434,7 @@ const Chat: React.FC = () => {
                             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
                           )}
                         </div>
-                        <div className="flex flex-col">
+                        <button type="button" onClick={() => headerProfile && setProfileModalUserId(headerProfile.id)} className="flex flex-col text-left hover:opacity-80 transition-opacity cursor-pointer">
                           <h2 className="font-semibold text-sm sm:text-base truncate leading-tight">{currentChannel.participant_name}</h2>
                           <span className={cn(
                             "text-[10px] leading-tight",
@@ -1426,7 +1442,7 @@ const Chat: React.FC = () => {
                           )}>
                             {isParticipantOnline ? "Online" : "Offline"}
                           </span>
-                        </div>
+                        </button>
                       </>
                     );
                   })()
@@ -1464,9 +1480,15 @@ const Chat: React.FC = () => {
               typingUsers={typingUsers}
               onTyping={handleTyping}
               searchQuery={messageSearch}
+              onViewProfile={(userId) => setProfileModalUserId(userId)}
             />
           </div>
         </div>
+        <UserProfileModal
+          open={!!profileModalUserId}
+          onOpenChange={(open) => { if (!open) setProfileModalUserId(null); }}
+          userId={profileModalUserId || undefined}
+        />
       </div>
     </AppLayout>
   );
