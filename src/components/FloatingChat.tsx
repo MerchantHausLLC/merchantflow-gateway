@@ -552,60 +552,69 @@ const FloatingChat: React.FC = () => {
     return () => { supabase.removeChannel(allChannelMsgs); };
   }, [user]);
 
-  // *** FIX: DM realtime - use refs to avoid stale closures ***
+  // *** FIX: DM realtime - use filtered channels to only receive own messages ***
   useEffect(() => {
     if (!user) return;
 
-    const dmChannel = supabase
-      .channel(`dm-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" },
-        (payload) => {
-          const newMsg = payload.new as DirectMessage;
-          if (newMsg.sender_id !== user.id && newMsg.receiver_id !== user.id) return;
-          
-          const currentView = viewRef.current;
-          const currentDM = currentDMUserIdRef.current;
-          
-          if (currentView === "dm" && currentDM) {
-            const isPartOfConversation = 
-              (newMsg.sender_id === user.id && newMsg.receiver_id === currentDM) ||
-              (newMsg.sender_id === currentDM && newMsg.receiver_id === user.id);
-            
-            if (isPartOfConversation) {
-              if (payload.eventType === 'INSERT') {
-                if (newMsg.sender_id !== user.id) playMessageSound();
-                setDirectMessages(prev => {
-                  if (prev.some(m => m.id === newMsg.id)) return prev;
-                  const filtered = prev.filter(m => !(m.id.startsWith('temp-') && m.content === newMsg.content && m.sender_id === newMsg.sender_id));
-                  return [...filtered, newMsg];
-                });
-                return;
-              }
-              if (payload.eventType === 'UPDATE') {
-                setDirectMessages(prev => prev.map(msg => msg.id === newMsg.id ? { ...msg, ...newMsg } : msg));
-                return;
-              }
-            }
+    const handleDMEvent = (payload: { eventType: string; new: unknown; old: unknown }) => {
+      const newMsg = payload.new as DirectMessage;
+      // Extra safety: skip messages not involving current user
+      if (newMsg.sender_id !== user.id && newMsg.receiver_id !== user.id) return;
+      
+      const currentView = viewRef.current;
+      const currentDM = currentDMUserIdRef.current;
+      
+      if (currentView === "dm" && currentDM) {
+        const isPartOfConversation = 
+          (newMsg.sender_id === user.id && newMsg.receiver_id === currentDM) ||
+          (newMsg.sender_id === currentDM && newMsg.receiver_id === user.id);
+        
+        if (isPartOfConversation) {
+          if (payload.eventType === 'INSERT') {
+            if (newMsg.sender_id !== user.id) playMessageSound();
+            setDirectMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              const filtered = prev.filter(m => !(m.id.startsWith('temp-') && m.content === newMsg.content && m.sender_id === newMsg.sender_id));
+              return [...filtered, newMsg];
+            });
+            return;
           }
-          
-          if (payload.eventType === 'INSERT' && newMsg.receiver_id === user.id) {
-            const isViewingConversation = currentView === "dm" && currentDM === newMsg.sender_id;
-            if (!isViewingConversation) {
-              playMessageSound();
-              setOnlineUsers(prev => prev.map(u => u.id === newMsg.sender_id ? { ...u, unreadCount: (u.unreadCount || 0) + 1 } : u));
-              setUnreadCount(prev => prev + 1);
-            }
-          }
-          
-          if (payload.eventType === 'UPDATE' && newMsg.sender_id === user.id && newMsg.read_at) {
-            setDirectMessages(prev => prev.map(msg => msg.id === newMsg.id ? { ...msg, read_at: newMsg.read_at } : msg));
+          if (payload.eventType === 'UPDATE') {
+            setDirectMessages(prev => prev.map(msg => msg.id === newMsg.id ? { ...msg, ...newMsg } : msg));
+            return;
           }
         }
-      )
+      }
+      
+      if (payload.eventType === 'INSERT' && newMsg.receiver_id === user.id) {
+        const isViewingConversation = currentView === "dm" && currentDM === newMsg.sender_id;
+        if (!isViewingConversation) {
+          playMessageSound();
+          setOnlineUsers(prev => prev.map(u => u.id === newMsg.sender_id ? { ...u, unreadCount: (u.unreadCount || 0) + 1 } : u));
+          setUnreadCount(prev => prev + 1);
+        }
+      }
+      
+      if (payload.eventType === 'UPDATE' && newMsg.sender_id === user.id && newMsg.read_at) {
+        setDirectMessages(prev => prev.map(msg => msg.id === newMsg.id ? { ...msg, read_at: newMsg.read_at } : msg));
+      }
+    };
+
+    // Use two filtered channels - one for received, one for sent
+    const dmReceivedChannel = supabase
+      .channel(`dm-received-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${user.id}` }, handleDMEvent)
       .subscribe();
 
-    dmChannelRef.current = dmChannel;
-    return () => { supabase.removeChannel(dmChannel); dmChannelRef.current = null; };
+    const dmSentChannel = supabase
+      .channel(`dm-sent-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages", filter: `sender_id=eq.${user.id}` }, handleDMEvent)
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(dmReceivedChannel); 
+      supabase.removeChannel(dmSentChannel); 
+    };
   }, [user, playMessageSound]);
 
   // Reactions subscription
