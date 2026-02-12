@@ -1113,7 +1113,7 @@ const FloatingChat: React.FC = () => {
             </Avatar>
           </button>
         )}
-        <div className="max-w-[75%]">
+        <div className="max-w-[75%] min-w-0 overflow-hidden">
           {replyMessage && (
             <div className={cn("text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800", isOwn && "ml-auto")}>
               <span className="font-medium text-blue-600 dark:text-blue-400">
@@ -1146,7 +1146,7 @@ const FloatingChat: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-sm leading-relaxed">{msg.content}</p>
+              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
             )}
             {renderAttachment(msg)}
             <div className="flex items-center gap-1 mt-1.5">
