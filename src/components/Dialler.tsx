@@ -22,6 +22,17 @@ interface MatchedContact {
   account_name?: string;
 }
 
+interface RecentCall {
+  id: string;
+  direction: string;
+  status: string;
+  duration: number | null;
+  phone_number: string | null;
+  created_at: string;
+  contact_name?: string;
+  account_name?: string;
+}
+
 const DIAL_KEYS = [
   { digit: "1", letters: "" },
   { digit: "2", letters: "ABC" },
@@ -43,7 +54,7 @@ export const Dialler = () => {
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
   const [selectedLineId, setSelectedLineId] = useState<string>("");
-  const [quoCalls, setQuoCalls] = useState<QuoCall[]>([]);
+  const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);
   const [matchedContacts, setMatchedContacts] = useState<MatchedContact[]>([]);
   const [loadingLines, setLoadingLines] = useState(false);
   const [loadingCalls, setLoadingCalls] = useState(false);
@@ -123,24 +134,36 @@ export const Dialler = () => {
     fetchLines();
   }, [open]);
 
-  // Fetch Quo recent calls when line selected
+  // Fetch recent calls from local call_logs table with contact matching
   useEffect(() => {
-    if (!open || !selectedLineId) return;
-    const selectedLine = quoNumbers.find(l => l.id === selectedLineId);
+    if (!open) return;
     const fetchCalls = async () => {
       setLoadingCalls(true);
-      const result = await quoApi.listCalls({
-        phoneNumberId: selectedLineId,
-        phoneNumber: selectedLine?.number,
-        maxResults: 20,
-      });
-      if (result.success && result.data) {
-        setQuoCalls(result.data);
+      const { data } = await supabase
+        .from("call_logs")
+        .select("id, direction, status, duration, phone_number, created_at, contact_id, contacts(first_name, last_name, account_id, accounts(name))")
+        .order("created_at", { ascending: false })
+        .limit(25);
+      if (data) {
+        setRecentCalls(
+          data.map((c: any) => ({
+            id: c.id,
+            direction: c.direction,
+            status: c.status,
+            duration: c.duration,
+            phone_number: c.phone_number,
+            created_at: c.created_at,
+            contact_name: c.contacts
+              ? `${c.contacts.first_name || ""} ${c.contacts.last_name || ""}`.trim()
+              : undefined,
+            account_name: c.contacts?.accounts?.name,
+          }))
+        );
       }
       setLoadingCalls(false);
     };
     fetchCalls();
-  }, [open, selectedLineId, quoNumbers]);
+  }, [open]);
 
   // Search contacts as user types
   useEffect(() => {
@@ -380,17 +403,17 @@ export const Dialler = () => {
               {loadingCalls ? (
                 <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Loading Quo calls...</span>
+                  <span className="text-sm">Loading recent calls...</span>
                 </div>
-              ) : quoCalls.length === 0 ? (
+              ) : recentCalls.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">No recent calls</p>
               ) : (
                 <div className="space-y-1">
-                  {quoCalls.map((call) => (
+                  {recentCalls.map((call) => (
                     <button
                       key={call.id}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left"
-                      onClick={() => call.participants?.[0] && handleCallNumber(call.participants[0])}
+                      onClick={() => call.phone_number && handleCallNumber(call.phone_number, call.contact_name)}
                     >
                       {call.direction === "incoming" ? (
                         <PhoneIncoming className="h-4 w-4 shrink-0 text-accent-foreground" />
@@ -399,19 +422,28 @@ export const Dialler = () => {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {call.participants?.[0] || "Unknown"}
+                          {call.contact_name || call.phone_number || "Unknown"}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {call.account_name && (
+                            <>
+                              <span className="truncate max-w-[100px]">{call.account_name}</span>
+                              <span>·</span>
+                            </>
+                          )}
                           <span>{call.direction}</span>
-                          {call.duration > 0 && (
+                          {call.duration && call.duration > 0 && (
                             <>
                               <span>·</span>
                               <span>{formatDuration(call.duration)}</span>
                             </>
                           )}
                           <span>·</span>
-                          <span>{formatDistanceToNow(new Date(call.createdAt), { addSuffix: true })}</span>
+                          <span>{formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}</span>
                         </div>
+                        {call.contact_name && call.phone_number && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{call.phone_number}</p>
+                        )}
                       </div>
                       <Badge variant={call.status === "completed" ? "secondary" : "outline"} className="text-[10px] shrink-0">
                         {call.status}
