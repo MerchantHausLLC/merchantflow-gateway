@@ -37,6 +37,7 @@ import MerchantApply from "./pages/MerchantApply";
 import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
 import { IncomingCallToast } from "./components/IncomingCallToast";
+import { Dialler } from "./components/Dialler";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <AuthProvider>
             <TasksProvider>
               <IncomingCallToast />
+              <Dialler />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
