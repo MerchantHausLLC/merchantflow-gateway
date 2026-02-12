@@ -39,7 +39,8 @@ import {
   Calendar,
   Clock,
   ExternalLink,
-  RotateCcw
+  RotateCcw,
+  Phone
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,8 @@ import { ApplicationProgress } from "@/components/opportunity-detail/Application
 import { OpportunityTasks } from "@/components/opportunity-detail/OpportunityTasks";
 import { NotesSection } from "@/components/opportunity-detail/NotesSection";
 import GameSplash from "@/components/GameSplash";
+import { ClickToCall } from "@/components/ClickToCall";
+import { CallLogPanel } from "@/components/CallLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 
@@ -650,9 +653,15 @@ const OpportunityDetail = () => {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Contact</p>
-                      <p className="text-sm font-medium">
-                        {contact?.first_name} {contact?.last_name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">
+                          {contact?.first_name} {contact?.last_name}
+                        </p>
+                        <ClickToCall 
+                          phoneNumber={contact?.phone} 
+                          contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
+                        />
+                      </div>
                       <p className="text-xs text-muted-foreground">{contact?.email}</p>
                     </div>
                   </div>
@@ -685,7 +694,7 @@ const OpportunityDetail = () => {
                 <Card>
                   <CardContent className="pt-6">
                     <Tabs defaultValue="overview">
-                      <TabsList className="grid w-full grid-cols-5">
+                      <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="overview" className="flex items-center gap-1">
                           <ClipboardList className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Overview</span>
@@ -693,6 +702,10 @@ const OpportunityDetail = () => {
                         <TabsTrigger value="tasks" className="flex items-center gap-1">
                           <ListChecks className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Tasks</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="calls" className="flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Calls</span>
                         </TabsTrigger>
                         <TabsTrigger value="notes" className="flex items-center gap-1">
                           <MessageSquare className="h-3.5 w-3.5" />
@@ -725,6 +738,22 @@ const OpportunityDetail = () => {
                           opportunityId={opportunity.id} 
                           tasks={relatedTasks}
                         />
+                      </TabsContent>
+
+                      <TabsContent value="calls" className="mt-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium">Call History</h3>
+                            <ClickToCall 
+                              phoneNumber={contact?.phone} 
+                              contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
+                              showLabel
+                              variant="default"
+                              size="sm"
+                            />
+                          </div>
+                          <CallLogPanel opportunityId={opportunity.id} />
+                        </div>
                       </TabsContent>
 
                       <TabsContent value="notes" className="mt-6">

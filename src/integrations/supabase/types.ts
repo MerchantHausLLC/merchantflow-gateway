@@ -229,6 +229,100 @@ export type Database = {
         }
         Relationships: []
       }
+      call_logs: {
+        Row: {
+          account_id: string | null
+          answered_at: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          duration: number | null
+          id: string
+          initiated_by: string | null
+          next_steps: string[] | null
+          notes: string | null
+          opportunity_id: string | null
+          participants: string[] | null
+          phone_number: string | null
+          quo_call_id: string | null
+          quo_phone_number_id: string | null
+          status: string
+          summary: string[] | null
+          transcript: Json | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          answered_at?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          duration?: number | null
+          id?: string
+          initiated_by?: string | null
+          next_steps?: string[] | null
+          notes?: string | null
+          opportunity_id?: string | null
+          participants?: string[] | null
+          phone_number?: string | null
+          quo_call_id?: string | null
+          quo_phone_number_id?: string | null
+          status?: string
+          summary?: string[] | null
+          transcript?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          answered_at?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          duration?: number | null
+          id?: string
+          initiated_by?: string | null
+          next_steps?: string[] | null
+          notes?: string | null
+          opportunity_id?: string | null
+          participants?: string[] | null
+          phone_number?: string | null
+          quo_call_id?: string | null
+          quo_phone_number_id?: string | null
+          status?: string
+          summary?: string[] | null
+          transcript?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_channels: {
         Row: {
           archived_at: string | null

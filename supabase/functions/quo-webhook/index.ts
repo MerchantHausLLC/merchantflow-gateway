@@ -1,0 +1,170 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const payload = await req.json();
+    console.log('Quo webhook received:', JSON.stringify(payload));
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const eventType = payload.type;
+    const callData = payload.data?.object;
+
+    if (!callData) {
+      console.log('No call data in payload');
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Try to match participant phone number to a CRM contact
+    let contactId: string | null = null;
+    let opportunityId: string | null = null;
+    let accountId: string | null = null;
+
+    if (callData.participants && callData.participants.length > 0) {
+      const participantPhone = callData.participants[0];
+      // Clean up phone number for matching - try with and without formatting
+      const cleanPhone = participantPhone.replace(/\D/g, '');
+      
+      const { data: contacts } = await supabase
+        .from('contacts')
+        .select('id, account_id, phone')
+        .or(`phone.ilike.%${cleanPhone.slice(-10)}%,phone.ilike.%${participantPhone}%`)
+        .limit(1);
+
+      if (contacts && contacts.length > 0) {
+        contactId = contacts[0].id;
+        accountId = contacts[0].account_id;
+
+        // Find related opportunity
+        const { data: opportunities } = await supabase
+          .from('opportunities')
+          .select('id')
+          .eq('contact_id', contactId)
+          .limit(1);
+
+        if (opportunities && opportunities.length > 0) {
+          opportunityId = opportunities[0].id;
+        }
+      }
+    }
+
+    // Map Quo event to call log status
+    let status = 'unknown';
+    if (eventType === 'call.ringing') status = 'ringing';
+    else if (eventType === 'call.completed') status = 'completed';
+    else if (eventType === 'call.recording.completed') status = 'recorded';
+
+    // Upsert call log
+    const callLog = {
+      quo_call_id: callData.id,
+      direction: callData.direction || 'unknown',
+      status,
+      duration: callData.duration || 0,
+      phone_number: callData.participants?.[0] || null,
+      participants: callData.participants || [],
+      quo_phone_number_id: callData.phoneNumberId || null,
+      initiated_by: callData.initiatedBy || null,
+      answered_at: callData.answeredAt || null,
+      completed_at: callData.completedAt || null,
+      contact_id: contactId,
+      opportunity_id: opportunityId,
+      account_id: accountId,
+    };
+
+    const { error } = await supabase
+      .from('call_logs')
+      .upsert(callLog, { onConflict: 'quo_call_id' });
+
+    if (error) {
+      console.error('Error upserting call log:', error);
+    } else {
+      console.log('Call log upserted:', callData.id);
+    }
+
+    // Also log as activity if we have an opportunity
+    if (opportunityId && eventType === 'call.completed') {
+      const durationMin = Math.round((callData.duration || 0) / 60);
+      await supabase.from('activities').insert({
+        opportunity_id: opportunityId,
+        type: 'call',
+        description: `${callData.direction === 'incoming' ? 'Incoming' : 'Outgoing'} call (${durationMin}m) - ${callData.participants?.[0] || 'Unknown'}`,
+      });
+    }
+
+    // Handle call summaries
+    if (eventType === 'call.summary.completed' || payload.type === 'callSummary') {
+      const summaryData = payload.data?.object;
+      if (summaryData?.callId) {
+        await supabase
+          .from('call_logs')
+          .update({
+            summary: summaryData.summary || [],
+            next_steps: summaryData.nextSteps || [],
+          })
+          .eq('quo_call_id', summaryData.callId);
+      }
+    }
+
+    // Handle call transcripts
+    if (eventType === 'call.transcript.completed' || payload.type === 'callTranscript') {
+      const transcriptData = payload.data?.object;
+      if (transcriptData?.callId) {
+        await supabase
+          .from('call_logs')
+          .update({
+            transcript: transcriptData.dialogue || [],
+          })
+          .eq('quo_call_id', transcriptData.callId);
+      }
+    }
+
+    // If it's a ringing incoming call, create a notification for all users
+    if (eventType === 'call.ringing' && callData.direction === 'incoming') {
+      const contactName = contactId ? 
+        (await supabase.from('contacts').select('first_name, last_name').eq('id', contactId).single())
+          .data : null;
+      
+      const callerDisplay = contactName 
+        ? `${contactName.first_name || ''} ${contactName.last_name || ''}`.trim()
+        : callData.participants?.[0] || 'Unknown';
+
+      // Notify all users
+      const { data: profiles } = await supabase.from('profiles').select('id, email');
+      if (profiles) {
+        const notifications = profiles.map(p => ({
+          user_id: p.id,
+          user_email: p.email || '',
+          title: '📞 Incoming Call',
+          message: `Incoming call from ${callerDisplay}`,
+          type: 'call',
+          link: opportunityId ? `/opportunities/${opportunityId}` : '/contacts',
+        }));
+        await supabase.from('notifications').insert(notifications);
+      }
+    }
+
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
