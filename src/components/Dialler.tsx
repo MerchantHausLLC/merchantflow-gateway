@@ -78,20 +78,30 @@ export const Dialler = () => {
     setNumber("");
   }, []);
 
+  // Use a temporary anchor to trigger tel: — more reliable for Android intent picker
+  const triggerTelLink = useCallback((phoneNumber: string) => {
+    const a = document.createElement("a");
+    a.href = `tel:${phoneNumber}`;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
+
   const handleCall = useCallback(() => {
     if (!number.trim()) return;
-    window.open(`tel:${number}`, "_self");
+    triggerTelLink(number);
     toast.success(`Initiating call to ${number}`, {
-      description: "Opening in your Quo dialler...",
+      description: "Select Quo when prompted to dial...",
     });
-  }, [number]);
+  }, [number, triggerTelLink]);
 
   const handleCallNumber = useCallback((phone: string, name?: string) => {
-    window.open(`tel:${phone}`, "_self");
+    triggerTelLink(phone);
     toast.success(`Initiating call to ${name || phone}`, {
-      description: "Opening in your Quo dialler...",
+      description: "Select Quo when prompted to dial...",
     });
-  }, []);
+  }, [triggerTelLink]);
 
   // Fetch Quo phone numbers on open
   useEffect(() => {
