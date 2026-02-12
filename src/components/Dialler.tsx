@@ -200,24 +200,28 @@ export const Dialler = () => {
 
       <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-        <SheetHeader className="p-4 pb-2">
+        {/* Quo branded header */}
+        <div className="bg-[hsl(0,0%,7%)] text-white px-4 pt-4 pb-3 space-y-2">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg flex items-center gap-2">
-              Quo Dialler
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl font-black tracking-tight">QUO</span>
+              <span className="text-sm font-medium opacity-80">Dialler</span>
+            </div>
+            <div className="flex items-center gap-2">
               {quoConnected === true && (
-                <Badge variant="secondary" className="text-xs gap-1">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[hsl(72,100%,50%)]/20 text-[hsl(72,100%,50%)]">
                   <Wifi className="h-3 w-3" /> Connected
-                </Badge>
+                </span>
               )}
               {quoConnected === false && (
                 <Badge variant="destructive" className="text-xs">Offline</Badge>
               )}
-            </SheetTitle>
+            </div>
           </div>
           {/* Quo line selector */}
           {quoNumbers.length > 0 && (
             <Select value={selectedLineId} onValueChange={setSelectedLineId}>
-              <SelectTrigger className="mt-2 h-9 text-sm">
+              <SelectTrigger className="h-9 text-sm bg-white/10 border-white/20 text-white hover:bg-white/15 [&>svg]:text-white/60">
                 <SelectValue placeholder="Select Quo line" />
               </SelectTrigger>
               <SelectContent>
@@ -231,11 +235,11 @@ export const Dialler = () => {
             </Select>
           )}
           {loadingLines && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <div className="flex items-center gap-2 text-xs text-white/60 mt-1">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading Quo lines...
             </div>
           )}
-        </SheetHeader>
+        </div>
 
         <Tabs defaultValue="keypad" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-4 grid w-auto grid-cols-2">
@@ -322,7 +326,7 @@ export const Dialler = () => {
               </Button>
               <Button
                 size="icon"
-                className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                className="h-16 w-16 rounded-full bg-[hsl(72,100%,50%)] hover:bg-[hsl(72,100%,45%)] text-[hsl(0,0%,7%)] shadow-lg"
                 onClick={handleCall}
                 disabled={!number.trim()}
               >
