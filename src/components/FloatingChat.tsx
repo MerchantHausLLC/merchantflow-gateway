@@ -1104,7 +1104,7 @@ const FloatingChat: React.FC = () => {
     const replyMessage = getReplyMessage(msg.reply_to_id);
 
     return (
-      <div key={msg.id} className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
+      <div key={msg.id} className={cn("flex gap-2 min-w-0 overflow-hidden", isOwn ? "justify-end" : "justify-start")}>
         {!isOwn && (
           <button type="button" onClick={() => setProfileModalUserId(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
             <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
@@ -1294,11 +1294,11 @@ const FloatingChat: React.FC = () => {
         <span className="text-xs text-slate-600 dark:text-slate-300 font-medium px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-200 dark:border-slate-700">{stickyDate}</span>
       </div>
       
-      <ScrollArea className="flex-1 px-3 py-2" viewportRef={scrollViewportRef} onScrollChange={handleScroll}>
+      <ScrollArea className="flex-1 px-3 py-2 overflow-hidden" viewportRef={scrollViewportRef} onScrollChange={handleScroll}>
         {isLoading ? (
           <div className="flex items-center justify-center py-8"><div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" /></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0 overflow-hidden">
             {messages.length === 0 ? (
               <div className="text-center py-12">
                 <MessageCircle className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
@@ -1313,7 +1313,7 @@ const FloatingChat: React.FC = () => {
                     <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
                     <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 overflow-hidden">
                     {group.messages.map((msg) => renderMessageBubble(msg, isChannel))}
                   </div>
                 </div>
