@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, Delete, X, Clock, User, PhoneIncoming, PhoneOutgoing, Loader2, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,23 @@ export const Dialler = () => {
   const [loadingLines, setLoadingLines] = useState(false);
   const [loadingCalls, setLoadingCalls] = useState(false);
   const [quoConnected, setQuoConnected] = useState<boolean | null>(null);
+
+  // Swipe-down to close on mobile
+  const swipeStartRef = useRef<{ startY: number; startTime: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    swipeStartRef.current = { startY: e.touches[0].clientY, startTime: Date.now() };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!swipeStartRef.current) return;
+    const deltaY = e.changedTouches[0].clientY - swipeStartRef.current.startY;
+    const elapsed = Date.now() - swipeStartRef.current.startTime;
+    if (deltaY > 80 || (deltaY > 40 && elapsed < 300)) {
+      setOpen(false);
+    }
+    swipeStartRef.current = null;
+  }, []);
 
   const handleKeyPress = useCallback((digit: string) => {
     setNumber((prev) => prev + digit);
@@ -202,6 +219,16 @@ export const Dialler = () => {
 
       <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+        {/* Swipe handle for mobile */}
+        {isMobile && (
+          <div
+            className="flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="w-10 h-1 rounded-full bg-white/30" />
+          </div>
+        )}
         {/* Quo branded header */}
         <div className="bg-[hsl(0,0%,7%)] text-white px-4 pt-4 pb-3 space-y-2">
           <div className="flex items-center justify-between">
