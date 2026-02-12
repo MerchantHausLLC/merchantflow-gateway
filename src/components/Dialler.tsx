@@ -1,23 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import { Phone, Delete, X, Search, Clock, User } from "lucide-react";
+import { Phone, Delete, X, Clock, User, PhoneIncoming, PhoneOutgoing, Loader2, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { quoApi, type QuoPhoneNumber, type QuoCall } from "@/lib/api/quo";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-
-interface RecentCall {
-  id: string;
-  phone_number: string | null;
-  direction: string;
-  duration: number;
-  created_at: string;
-  contact_name?: string;
-}
 
 interface MatchedContact {
   id: string;
@@ -45,9 +39,13 @@ const DIAL_KEYS = [
 export const Dialler = () => {
   const [open, setOpen] = useState(false);
   const [number, setNumber] = useState("");
-  const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);
+  const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
+  const [selectedLineId, setSelectedLineId] = useState<string>("");
+  const [quoCalls, setQuoCalls] = useState<QuoCall[]>([]);
   const [matchedContacts, setMatchedContacts] = useState<MatchedContact[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [loadingLines, setLoadingLines] = useState(false);
+  const [loadingCalls, setLoadingCalls] = useState(false);
+  const [quoConnected, setQuoConnected] = useState<boolean | null>(null);
 
   const handleKeyPress = useCallback((digit: string) => {
     setNumber((prev) => prev + digit);
@@ -69,26 +67,49 @@ export const Dialler = () => {
     });
   }, [number]);
 
-  const handleCallContact = useCallback((phone: string, name?: string) => {
+  const handleCallNumber = useCallback((phone: string, name?: string) => {
     window.open(`tel:${phone}`, "_self");
     toast.success(`Initiating call to ${name || phone}`, {
       description: "Opening in your Quo dialler...",
     });
   }, []);
 
-  // Fetch recent calls
+  // Fetch Quo phone numbers on open
   useEffect(() => {
     if (!open) return;
-    const fetchRecent = async () => {
-      const { data } = await supabase
-        .from("call_logs")
-        .select("id, phone_number, direction, duration, created_at")
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (data) setRecentCalls(data as RecentCall[]);
+    const fetchLines = async () => {
+      setLoadingLines(true);
+      const result = await quoApi.listPhoneNumbers();
+      if (result.success && result.data) {
+        setQuoNumbers(result.data);
+        setQuoConnected(true);
+        if (result.data.length > 0 && !selectedLineId) {
+          setSelectedLineId(result.data[0].id);
+        }
+      } else {
+        setQuoConnected(false);
+      }
+      setLoadingLines(false);
     };
-    fetchRecent();
+    fetchLines();
   }, [open]);
+
+  // Fetch Quo recent calls when line selected
+  useEffect(() => {
+    if (!open || !selectedLineId) return;
+    const fetchCalls = async () => {
+      setLoadingCalls(true);
+      const result = await quoApi.listCalls({
+        phoneNumberId: selectedLineId,
+        maxResults: 20,
+      });
+      if (result.success && result.data) {
+        setQuoCalls(result.data);
+      }
+      setLoadingCalls(false);
+    };
+    fetchCalls();
+  }, [open, selectedLineId]);
 
   // Search contacts as user types
   useEffect(() => {
@@ -96,7 +117,6 @@ export const Dialler = () => {
       setMatchedContacts([]);
       return;
     }
-    setSearching(true);
     const timeout = setTimeout(async () => {
       const { data } = await supabase
         .from("contacts")
@@ -114,7 +134,6 @@ export const Dialler = () => {
           }))
         );
       }
-      setSearching(false);
     }, 300);
     return () => clearTimeout(timeout);
   }, [number]);
@@ -135,6 +154,14 @@ export const Dialler = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [open, handleKeyPress, handleBackspace, handleCall, number]);
 
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return "0s";
+    if (seconds < 60) return `${seconds}s`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}m ${s}s`;
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -148,7 +175,40 @@ export const Dialler = () => {
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="p-4 pb-2">
-          <SheetTitle className="text-lg">Dialler</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-lg flex items-center gap-2">
+              Quo Dialler
+              {quoConnected === true && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <Wifi className="h-3 w-3" /> Connected
+                </Badge>
+              )}
+              {quoConnected === false && (
+                <Badge variant="destructive" className="text-xs">Offline</Badge>
+              )}
+            </SheetTitle>
+          </div>
+          {/* Quo line selector */}
+          {quoNumbers.length > 0 && (
+            <Select value={selectedLineId} onValueChange={setSelectedLineId}>
+              <SelectTrigger className="mt-2 h-9 text-sm">
+                <SelectValue placeholder="Select Quo line" />
+              </SelectTrigger>
+              <SelectContent>
+                {quoNumbers.map((line) => (
+                  <SelectItem key={line.id} value={line.id}>
+                    <span className="font-medium">{line.name || "Line"}</span>
+                    <span className="text-muted-foreground ml-2">{line.formattedNumber || line.number}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {loadingLines && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading Quo lines...
+            </div>
+          )}
         </SheetHeader>
 
         <Tabs defaultValue="keypad" className="flex-1 flex flex-col overflow-hidden">
@@ -188,7 +248,7 @@ export const Dialler = () => {
                   <button
                     key={c.id}
                     className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-muted text-left text-sm transition-colors"
-                    onClick={() => c.phone && handleCallContact(c.phone, `${c.first_name || ""} ${c.last_name || ""}`.trim())}
+                    onClick={() => c.phone && handleCallNumber(c.phone, `${c.first_name || ""} ${c.last_name || ""}`.trim())}
                   >
                     <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-medium truncate">
@@ -248,28 +308,45 @@ export const Dialler = () => {
 
           <TabsContent value="recent" className="flex-1 mt-0 overflow-hidden">
             <ScrollArea className="h-full px-4 pb-4">
-              {recentCalls.length === 0 ? (
+              {loadingCalls ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Loading Quo calls...</span>
+                </div>
+              ) : quoCalls.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">No recent calls</p>
               ) : (
                 <div className="space-y-1">
-                  {recentCalls.map((call) => (
+                  {quoCalls.map((call) => (
                     <button
                       key={call.id}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left"
-                      onClick={() => call.phone_number && handleCallContact(call.phone_number)}
+                      onClick={() => call.participants?.[0] && handleCallNumber(call.participants[0])}
                     >
-                      <Phone className={cn(
-                        "h-4 w-4 shrink-0",
-                        call.direction === "incoming" ? "text-accent-foreground" : "text-primary"
-                      )} />
+                      {call.direction === "incoming" ? (
+                        <PhoneIncoming className="h-4 w-4 shrink-0 text-accent-foreground" />
+                      ) : (
+                        <PhoneOutgoing className="h-4 w-4 shrink-0 text-primary" />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {call.phone_number || "Unknown"}
+                          {call.participants?.[0] || "Unknown"}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {call.direction} · {formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{call.direction}</span>
+                          {call.duration > 0 && (
+                            <>
+                              <span>·</span>
+                              <span>{formatDuration(call.duration)}</span>
+                            </>
+                          )}
+                          <span>·</span>
+                          <span>{formatDistanceToNow(new Date(call.createdAt), { addSuffix: true })}</span>
+                        </div>
                       </div>
+                      <Badge variant={call.status === "completed" ? "secondary" : "outline"} className="text-[10px] shrink-0">
+                        {call.status}
+                      </Badge>
                     </button>
                   ))}
                 </div>
