@@ -571,11 +571,17 @@ const FloatingChat: React.FC = () => {
         
         if (isPartOfConversation) {
           if (payload.eventType === 'INSERT') {
-            if (newMsg.sender_id !== user.id) playMessageSound();
+            if (newMsg.sender_id !== user.id) {
+              playMessageSound();
+              // Auto-mark as read since we're viewing this conversation
+              supabase.from("direct_messages").update({ read_at: new Date().toISOString() }).eq("id", newMsg.id).then(() => {
+                fetchUnreadCounts();
+              });
+            }
             setDirectMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               const filtered = prev.filter(m => !(m.id.startsWith('temp-') && m.content === newMsg.content && m.sender_id === newMsg.sender_id));
-              return [...filtered, newMsg];
+              return [...filtered, { ...newMsg, read_at: newMsg.receiver_id === user.id ? new Date().toISOString() : newMsg.read_at }];
             });
             return;
           }
