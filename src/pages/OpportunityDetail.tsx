@@ -429,8 +429,16 @@ const OpportunityDetail = () => {
     
     const { error } = await supabase
       .from('opportunities')
-      .update({ status: 'dead' })
+      .update({ status: 'dead', stage: 'closed_lost' })
       .eq('id', opportunity.id);
+
+    if (!error) {
+      // Also mark the account as dead
+      await supabase
+        .from('accounts')
+        .update({ status: 'dead' })
+        .eq('id', opportunity.account_id);
+    }
 
     if (error) {
       toast.error("Failed to mark as dead");
