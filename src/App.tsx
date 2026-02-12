@@ -36,6 +36,7 @@ import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
 import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
+import { IncomingCallToast } from "./components/IncomingCallToast";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <TasksProvider>
+              <IncomingCallToast />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />

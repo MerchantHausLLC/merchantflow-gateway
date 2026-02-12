@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.generate-profile-avatars]
 verify_jwt = false
+
+[functions.quo-proxy]
+verify_jwt = false
+
+[functions.quo-webhook]
+verify_jwt = false

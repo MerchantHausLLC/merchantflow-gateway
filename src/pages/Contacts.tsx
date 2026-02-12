@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
+import { ClickToCall } from "@/components/ClickToCall";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
@@ -734,7 +735,15 @@ const Contacts = () => {
                               <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
                               <TableCell>{contact.last_name || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
-                              <TableCell className="text-sm">{contact.phone || '-'}</TableCell>
+                              <TableCell className="text-sm">
+                                <div className="flex items-center gap-1">
+                                  {contact.phone || '-'}
+                                  <ClickToCall 
+                                    phoneNumber={contact.phone} 
+                                    contactName={`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
+                                  />
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Building2 className="h-4 w-4 text-muted-foreground" />
