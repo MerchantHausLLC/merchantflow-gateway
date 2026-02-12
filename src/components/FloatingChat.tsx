@@ -1540,6 +1540,7 @@ const FloatingChat: React.FC = () => {
                     {/* Channels section */}
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5">Channels</p>
                     {channels
+                      .filter(ch => !ch.name.toLowerCase().startsWith('dm-'))
                       .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()))
                       .map((ch) => (
                       <button
