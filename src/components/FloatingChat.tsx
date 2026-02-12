@@ -1605,10 +1605,18 @@ const FloatingChat: React.FC = () => {
             )}
 
             {/* Channel Chat View */}
-            {view === "chat" && renderMessagesList(groupedChannelMessages, true)}
+            {view === "chat" && (
+              <div className="flex-1 flex flex-col overflow-hidden relative">
+                {renderMessagesList(groupedChannelMessages, true)}
+              </div>
+            )}
 
             {/* Direct Message View */}
-            {view === "dm" && renderMessagesList(groupedDirectMessages, false)}
+            {view === "dm" && (
+              <div className="flex-1 flex flex-col overflow-hidden relative">
+                {renderMessagesList(groupedDirectMessages, false)}
+              </div>
+            )}
           </div>
         </div>
       )}
