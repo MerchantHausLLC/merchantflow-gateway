@@ -99,10 +99,12 @@ export const Dialler = () => {
   // Fetch Quo recent calls when line selected
   useEffect(() => {
     if (!open || !selectedLineId) return;
+    const selectedLine = quoNumbers.find(l => l.id === selectedLineId);
     const fetchCalls = async () => {
       setLoadingCalls(true);
       const result = await quoApi.listCalls({
         phoneNumberId: selectedLineId,
+        phoneNumber: selectedLine?.number,
         maxResults: 20,
       });
       if (result.success && result.data) {
@@ -111,7 +113,7 @@ export const Dialler = () => {
       setLoadingCalls(false);
     };
     fetchCalls();
-  }, [open, selectedLineId]);
+  }, [open, selectedLineId, quoNumbers]);
 
   // Search contacts as user types
   useEffect(() => {

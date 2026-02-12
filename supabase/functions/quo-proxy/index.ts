@@ -33,9 +33,14 @@ Deno.serve(async (req) => {
       case 'list-calls': {
         const searchParams = new URLSearchParams();
         if (params?.phoneNumberId) searchParams.set('phoneNumberId', params.phoneNumberId);
-        if (params?.participants) searchParams.set('participants', params.participants);
         if (params?.maxResults) searchParams.set('maxResults', params.maxResults.toString());
         if (params?.createdAfter) searchParams.set('createdAfter', params.createdAfter);
+        // participants must be an array - append each as separate query param
+        if (params?.participants && Array.isArray(params.participants)) {
+          for (const p of params.participants) {
+            searchParams.append('participants', p);
+          }
+        }
         url = `${QUO_API_BASE}/calls?${searchParams.toString()}`;
         break;
       }

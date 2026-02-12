@@ -31,11 +31,19 @@ export const quoApi = {
 
   async listCalls(params: {
     phoneNumberId: string;
-    participants?: string;
+    phoneNumber?: string;
     maxResults?: number;
   }): Promise<{ success: boolean; data?: QuoCall[]; error?: string }> {
+    const proxyParams: Record<string, unknown> = {
+      phoneNumberId: params.phoneNumberId,
+      maxResults: params.maxResults,
+    };
+    // Pass the phone number as participants array if available
+    if (params.phoneNumber) {
+      proxyParams.participants = [params.phoneNumber];
+    }
     const { data, error } = await supabase.functions.invoke('quo-proxy', {
-      body: { action: 'list-calls', params },
+      body: { action: 'list-calls', params: proxyParams },
     });
     if (error) return { success: false, error: error.message };
     if (!data?.success) return { success: false, error: data?.error || 'Failed to fetch calls' };
