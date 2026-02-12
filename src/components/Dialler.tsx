@@ -3,6 +3,7 @@ import { Phone, Delete, X, Clock, User, PhoneIncoming, PhoneOutgoing, Loader2, W
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +38,7 @@ const DIAL_KEYS = [
 ];
 
 export const Dialler = () => {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
@@ -163,16 +165,40 @@ export const Dialler = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          size="icon"
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 md:bottom-8 md:right-8"
-          aria-label="Open dialler"
-        >
-          <Phone className="h-6 w-6" />
-        </Button>
-      </SheetTrigger>
+    <>
+      {/* Trigger: matches FloatingChat style */}
+      {!open && (
+        isMobile ? (
+          <button
+            onClick={() => setOpen(true)}
+            className={cn(
+              "fixed bottom-20 left-4 z-50 w-14 h-14 rounded-full flex items-center justify-center",
+              "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
+              "hover:scale-105 transition-all duration-200 ease-out",
+              "border border-slate-600"
+            )}
+            aria-label="Open dialler"
+          >
+            <Phone className="h-6 w-6" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setOpen(true)}
+            className={cn(
+              "fixed bottom-0 right-[358px] z-50 w-[240px] h-12 rounded-t-xl flex items-center gap-3 px-4",
+              "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
+              "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
+              "border border-b-0 border-slate-600"
+            )}
+            aria-label="Open dialler"
+          >
+            <Phone className="h-5 w-5 shrink-0" />
+            <span className="font-semibold text-sm">Quo Dialler</span>
+          </button>
+        )
+      )}
+
+      <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
@@ -356,5 +382,6 @@ export const Dialler = () => {
         </Tabs>
       </SheetContent>
     </Sheet>
+    </>
   );
 };
