@@ -1126,9 +1126,9 @@ const FloatingChat: React.FC = () => {
             </div>
           )}
           <div className={cn(
-            "p-3 rounded-2xl group relative",
+            "p-3 rounded-2xl group relative break-words overflow-hidden",
             isOwn ? "bg-blue-600 text-white rounded-br-md" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
-          )}>
+          )} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
             {!isOwn && (
               <button type="button" onClick={() => setProfileModalUserId(senderId)} className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block">
                 {displayName}
@@ -1294,7 +1294,7 @@ const FloatingChat: React.FC = () => {
         <span className="text-xs text-slate-600 dark:text-slate-300 font-medium px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-200 dark:border-slate-700">{stickyDate}</span>
       </div>
       
-      <ScrollArea className="flex-1 px-3 py-2 overflow-hidden" viewportRef={scrollViewportRef} onScrollChange={handleScroll}>
+      <ScrollArea className="flex-1 px-3 py-2 overflow-hidden [&>div[style]]:!overflow-x-hidden" viewportRef={scrollViewportRef} onScrollChange={handleScroll}>
         {isLoading ? (
           <div className="flex items-center justify-center py-8"><div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" /></div>
         ) : (
