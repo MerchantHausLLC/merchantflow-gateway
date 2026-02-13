@@ -1353,6 +1353,42 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     }
   };
 
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+
+  const handleDownloadAll = async () => {
+    if (documents.length === 0) return;
+    setIsDownloadingAll(true);
+
+    for (const doc of documents) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('opportunity-documents')
+          .download(doc.file_path);
+
+        if (error || !data) {
+          toast.error(`Failed to download ${doc.file_name}`);
+          continue;
+        }
+
+        const url = URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        await new Promise((r) => setTimeout(r, 300));
+      } catch {
+        toast.error(`Failed to download ${doc.file_name}`);
+      }
+    }
+
+    setIsDownloadingAll(false);
+    toast.success('Downloads complete');
+  };
+
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return '';
     if (bytes < 1024) return `${bytes} B`;
@@ -1362,7 +1398,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -1370,8 +1406,19 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           onChange={handleFileSelect}
           className="hidden"
         />
-        <Button 
-          size="sm" 
+        {documents.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDownloadAll}
+            disabled={isDownloadingAll}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            {isDownloadingAll ? 'Downloading...' : 'Download all'}
+          </Button>
+        )}
+        <Button
+          size="sm"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
         >

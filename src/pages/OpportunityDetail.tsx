@@ -20,27 +20,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  ArrowLeft, 
-  Building2, 
-  User, 
-  Briefcase, 
-  FileText, 
-  Activity, 
-  Pencil, 
-  X, 
-  Trash2, 
-  MessageSquare, 
-  Skull, 
-  ClipboardList, 
-  ListChecks, 
-  Zap, 
+import {
+  ArrowLeft,
+  Building2,
+  User,
+  Briefcase,
+  FileText,
+  Activity,
+  Pencil,
+  X,
+  Trash2,
+  MessageSquare,
+  Skull,
+  ClipboardList,
+  ListChecks,
+  Zap,
   CreditCard,
   Calendar,
   Clock,
   ExternalLink,
   RotateCcw,
-  Phone
+  Phone,
+  Download
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +105,7 @@ const EditField = ({
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -118,8 +120,42 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
     fetchDocs();
   }, [opportunityId]);
 
+  const handleDownloadAll = async () => {
+    if (documents.length === 0) return;
+    setIsDownloadingAll(true);
+
+    for (const doc of documents) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('opportunity-documents')
+          .download(doc.file_path);
+
+        if (error || !data) {
+          toast.error(`Failed to download ${doc.file_name}`);
+          continue;
+        }
+
+        const url = URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        await new Promise((r) => setTimeout(r, 300));
+      } catch {
+        toast.error(`Failed to download ${doc.file_name}`);
+      }
+    }
+
+    setIsDownloadingAll(false);
+    toast.success('Downloads complete');
+  };
+
   if (loading) return <Skeleton className="h-20 w-full" />;
-  
+
   if (documents.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -131,6 +167,17 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
 
   return (
     <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadAll}
+          disabled={isDownloadingAll}
+        >
+          <Download className="h-4 w-4 mr-1" />
+          {isDownloadingAll ? 'Downloading...' : 'Download all'}
+        </Button>
+      </div>
       {documents.map((doc) => (
         <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-3">
