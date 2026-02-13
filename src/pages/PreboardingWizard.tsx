@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { OnboardingWizardState } from "@/types/opportunity";
 
-const STEPS = [
+const PROCESSING_STEPS = [
   "Business Profile",
   "Legal Information",
   "Processing Information",
@@ -23,9 +23,14 @@ const STEPS = [
   "Review"
 ] as const;
 
-type SectionKey = "business" | "legal" | "processing" | "documents";
+const GATEWAY_STEPS = [
+  "Business Details",
+  "Documents & Submit"
+] as const;
 
-const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
+type SectionKey = "business" | "legal" | "processing" | "documents" | "gateway_business";
+
+const REQUIRED_FIELDS: Record<string, string[]> = {
   business: [
     "dbaName",
     "products",
@@ -63,7 +68,11 @@ const REQUIRED_FIELDS: Record<SectionKey, string[]> = {
     "b2cPct",
     "b2bPct"
   ],
-  documents: ["documents"]
+  documents: ["documents"],
+  gateway_business: [
+    "dbaName", "dbaContactFirst", "dbaContactLast", "dbaPhone", "dbaEmail",
+    "dbaAddress", "dbaCity", "dbaState", "dbaZip", "username", "currentProcessor"
+  ]
 };
 
 interface PreboardingForm {
@@ -108,6 +117,10 @@ interface PreboardingForm {
   sicMcc: string;
   website: string;
 
+  // gateway-only fields
+  username: string;
+  currentProcessor: string;
+
   // docs
   documents: File[];
   notes: string;
@@ -149,14 +162,18 @@ const initialState: PreboardingForm = {
   b2bPct: "",
   sicMcc: "",
   website: "",
+  username: "",
+  currentProcessor: "",
   documents: [],
   notes: ""
 };
+
 
 interface OpportunityOption {
   id: string;
   accountName: string;
   stage?: string | null;
+  serviceType?: string | null;
 }
 
 interface WizardStateRecord extends OnboardingWizardState {
@@ -164,6 +181,7 @@ interface WizardStateRecord extends OnboardingWizardState {
 }
 
 interface OpportunityWithRelations {
+  service_type?: string | null;
   account?: {
     name?: string;
     address1?: string | null;
@@ -222,10 +240,13 @@ export default function PreboardingWizard() {
   const [form, setForm] = useState<PreboardingForm>(initialState);
   const [opportunityOptions, setOpportunityOptions] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
+  const [isGatewayOnly, setIsGatewayOnly] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  const steps = isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
 
   useEffect(() => {
     fetchOpportunities();
@@ -256,10 +277,18 @@ export default function PreboardingWizard() {
       return;
     }
 
+    // Fetch service_type separately to avoid type issues with generated types
+    const ids = (data || []).map(d => d.id);
+    const { data: serviceTypes } = ids.length > 0
+      ? await supabase.from('opportunities').select('id, service_type').in('id', ids)
+      : { data: [] as any[] };
+    const serviceTypeMap = new Map((serviceTypes || []).map((s: any) => [s.id, s.service_type]));
+
     const mapped = (data || []).map(item => ({
       id: item.id,
       accountName: item.account?.name ?? "Unknown account",
-      stage: item.stage
+      stage: item.stage,
+      serviceType: serviceTypeMap.get(item.id) || null
     }));
 
     setOpportunityOptions(mapped);
@@ -275,11 +304,21 @@ export default function PreboardingWizard() {
         contact:contacts(first_name, last_name, email, phone, fax)
       `)
       .eq('id', opportunityId)
-      .single<OpportunityWithRelations>();
+      .single();
 
     if (opportunityError && opportunityError.code !== "PGRST116") {
       toast({ title: "Could not load account", description: opportunityError.message, variant: "destructive" });
     }
+
+    // Fetch service_type separately
+    const { data: oppServiceType } = await supabase
+      .from('opportunities')
+      .select('service_type')
+      .eq('id', opportunityId)
+      .single();
+
+    const gatewayOnly = (oppServiceType as any)?.service_type === "gateway_only";
+    setIsGatewayOnly(gatewayOnly);
 
     const prefilledForm = createFormFromOpportunity(opportunity);
     const { data, error } = await supabase
@@ -319,7 +358,7 @@ export default function PreboardingWizard() {
     setForm(prev => ({ ...prev, documents: files }));
   };
 
-  const getMissingFieldsForSection = (sectionKey: SectionKey) => {
+  const getMissingFieldsForSection = (sectionKey: string) => {
     const required = REQUIRED_FIELDS[sectionKey] ?? [];
     if (sectionKey === "documents") {
       return form.documents.length > 0 ? [] : ["At least one supporting document"];
@@ -327,24 +366,41 @@ export default function PreboardingWizard() {
     return required.filter(field => !String(form[field as keyof PreboardingForm] ?? "").trim());
   };
 
-  const missingBySection = useMemo(() => ({
-    business: getMissingFieldsForSection("business"),
-    legal: getMissingFieldsForSection("legal"),
-    processing: getMissingFieldsForSection("processing"),
-    documents: getMissingFieldsForSection("documents")
-  }), [form]);
+  const missingBySection = useMemo(() => {
+    if (isGatewayOnly) {
+      return {
+        gateway_business: getMissingFieldsForSection("gateway_business"),
+        documents: getMissingFieldsForSection("documents"),
+      };
+    }
+    return {
+      business: getMissingFieldsForSection("business"),
+      legal: getMissingFieldsForSection("legal"),
+      processing: getMissingFieldsForSection("processing"),
+      documents: getMissingFieldsForSection("documents"),
+    };
+  }, [form, isGatewayOnly]);
 
-  const totalRequiredFields =
-    REQUIRED_FIELDS.business.length +
-    REQUIRED_FIELDS.legal.length +
-    REQUIRED_FIELDS.processing.length +
-    1;
+  const totalRequiredFields = useMemo(() => {
+    if (isGatewayOnly) {
+      return REQUIRED_FIELDS.gateway_business.length + 1; // +1 for documents
+    }
+    return REQUIRED_FIELDS.business.length + REQUIRED_FIELDS.legal.length + REQUIRED_FIELDS.processing.length + 1;
+  }, [isGatewayOnly]);
 
-  const completedRequiredFields =
-    (REQUIRED_FIELDS.business.length - missingBySection.business.length) +
-    (REQUIRED_FIELDS.legal.length - missingBySection.legal.length) +
-    (REQUIRED_FIELDS.processing.length - missingBySection.processing.length) +
-    (missingBySection.documents.length === 0 ? 1 : 0);
+  const completedRequiredFields = useMemo(() => {
+    if (isGatewayOnly) {
+      const gwMissing = missingBySection.gateway_business?.length ?? 0;
+      return (REQUIRED_FIELDS.gateway_business.length - gwMissing) +
+        ((missingBySection.documents?.length ?? 1) === 0 ? 1 : 0);
+    }
+    return (
+      (REQUIRED_FIELDS.business.length - (missingBySection.business?.length ?? 0)) +
+      (REQUIRED_FIELDS.legal.length - (missingBySection.legal?.length ?? 0)) +
+      (REQUIRED_FIELDS.processing.length - (missingBySection.processing?.length ?? 0)) +
+      ((missingBySection.documents?.length ?? 1) === 0 ? 1 : 0)
+    );
+  }, [missingBySection, isGatewayOnly]);
 
   const progress = Math.round((completedRequiredFields / totalRequiredFields) * 100);
 
@@ -386,13 +442,13 @@ export default function PreboardingWizard() {
     alert("Preboarding checklist complete! You can now move to the formal merchant app.");
   };
 
-  const currentStep = STEPS[stepIndex];
+  const currentStep = steps[stepIndex];
 
   return (
     <AppLayout
       pageTitle="Preboarding Wizard"
       headerActions={
-        <span className="text-xs text-muted-foreground">Step {stepIndex + 1} of {STEPS.length}</span>
+        <span className="text-xs text-muted-foreground">Step {stepIndex + 1} of {steps.length}</span>
       }
     >
       <div className="p-4 md:p-8">
@@ -446,7 +502,7 @@ export default function PreboardingWizard() {
               </div>
 
               <ol className="flex flex-wrap gap-2 text-xs font-medium text-gray-400">
-                {STEPS.map((label, index) => (
+                {steps.map((label, index) => (
                   <li
                     key={label}
                     onClick={() => setStepIndex(index)}
@@ -478,11 +534,14 @@ export default function PreboardingWizard() {
                   {currentStep === "Processing Information" && (
                     <ProcessingStep form={form} onChange={handleChange} />
                   )}
-                  {currentStep === "Documents" && (
+                  {(currentStep === "Documents" || currentStep === "Documents & Submit") && (
                     <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} />
                   )}
                   {currentStep === "Review" && (
-                    <ReviewStep form={form} missingBySection={missingBySection} />
+                    <ReviewStep form={form} missingBySection={missingBySection as any} />
+                  )}
+                  {currentStep === "Business Details" && (
+                    <GatewayBusinessStep form={form} onChange={handleChange} />
                   )}
 
                   <div className="mt-6 flex items-center justify-between border-t border-merchant-gray/60 pt-4">
@@ -495,11 +554,11 @@ export default function PreboardingWizard() {
                       ← Back
                     </button>
 
-                    {stepIndex < STEPS.length - 1 ? (
+                    {stepIndex < steps.length - 1 ? (
                       <button
                         type="button"
                         className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight"
-                        onClick={() => setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1))}
+                        onClick={() => setStepIndex(prev => Math.min(steps.length - 1, prev + 1))}
                       >
                         Next →
                       </button>
@@ -527,33 +586,52 @@ export default function PreboardingWizard() {
                     </p>
 
                     <div className="mt-3 space-y-3 text-xs">
-                      <SectionStatus
-                        label="Business profile"
-                        done={missingBySection.business.length === 0}
-                        count={REQUIRED_FIELDS.business.length - missingBySection.business.length}
-                        total={REQUIRED_FIELDS.business.length}
-                      />
-                      <SectionStatus
-                        label="Legal info"
-                        done={missingBySection.legal.length === 0}
-                        count={REQUIRED_FIELDS.legal.length - missingBySection.legal.length}
-                        total={REQUIRED_FIELDS.legal.length}
-                      />
-                      <SectionStatus
-                        label="Processing"
-                        done={missingBySection.processing.length === 0}
-                        count={REQUIRED_FIELDS.processing.length - missingBySection.processing.length}
-                        total={REQUIRED_FIELDS.processing.length}
-                      />
-                      <SectionStatus
-                        label="Documents"
-                        done={missingBySection.documents.length === 0}
-                        count={missingBySection.documents.length === 0 ? 1 : 0}
-                        total={1}
-                      />
+                      {isGatewayOnly ? (
+                        <>
+                          <SectionStatus
+                            label="Business details"
+                            done={(missingBySection.gateway_business?.length ?? 0) === 0}
+                            count={REQUIRED_FIELDS.gateway_business.length - (missingBySection.gateway_business?.length ?? 0)}
+                            total={REQUIRED_FIELDS.gateway_business.length}
+                          />
+                          <SectionStatus
+                            label="Documents"
+                            done={(missingBySection.documents?.length ?? 0) === 0}
+                            count={(missingBySection.documents?.length ?? 1) === 0 ? 1 : 0}
+                            total={1}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <SectionStatus
+                            label="Business profile"
+                            done={(missingBySection.business?.length ?? 0) === 0}
+                            count={REQUIRED_FIELDS.business.length - (missingBySection.business?.length ?? 0)}
+                            total={REQUIRED_FIELDS.business.length}
+                          />
+                          <SectionStatus
+                            label="Legal info"
+                            done={(missingBySection.legal?.length ?? 0) === 0}
+                            count={REQUIRED_FIELDS.legal.length - (missingBySection.legal?.length ?? 0)}
+                            total={REQUIRED_FIELDS.legal.length}
+                          />
+                          <SectionStatus
+                            label="Processing"
+                            done={(missingBySection.processing?.length ?? 0) === 0}
+                            count={REQUIRED_FIELDS.processing.length - (missingBySection.processing?.length ?? 0)}
+                            total={REQUIRED_FIELDS.processing.length}
+                          />
+                          <SectionStatus
+                            label="Documents"
+                            done={(missingBySection.documents?.length ?? 0) === 0}
+                            count={(missingBySection.documents?.length ?? 1) === 0 ? 1 : 0}
+                            total={1}
+                          />
+                        </>
+                      )}
                     </div>
 
-                    <OutstandingSummary progress={progress} missingBySection={missingBySection} />
+                    <OutstandingSummary progress={progress} missingBySection={missingBySection as any} />
                   </div>
 
                   <div className="rounded-2xl border border-merchant-gray bg-merchant-dark p-4 shadow-xl text-xs text-gray-300 space-y-2">
@@ -624,7 +702,7 @@ function SectionStatus({ label, done, count, total }: { label: string; done: boo
   );
 }
 
-function OutstandingSummary({ progress, missingBySection }: { progress: number; missingBySection: Record<SectionKey, string[]>; }) {
+function OutstandingSummary({ progress, missingBySection }: { progress: number; missingBySection: Record<string, string[]>; }) {
   return (
     <div className="mt-4 rounded-2xl border border-merchant-gray bg-merchant-black p-4 text-sm">
       <div className="mb-2 flex items-center gap-2 font-semibold text-white">
@@ -644,6 +722,65 @@ function OutstandingSummary({ progress, missingBySection }: { progress: number; 
           )}
         </ul>
       )}
+    </div>
+  );
+}
+
+function GatewayBusinessStep({ form, onChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <Users className="w-4 h-4 text-merchant-redLight" />
+        Gateway Business Details
+      </div>
+      <p className="text-xs text-gray-400">
+        Simplified form for gateway-only accounts. Provide business and contact details plus your preferred NMI username.
+      </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="DBA Name" required>
+          <Input value={form.dbaName} onChange={e => onChange("dbaName", e.target.value)} />
+        </Field>
+        <Field label="Current Processor" required>
+          <Input value={form.currentProcessor} onChange={e => onChange("currentProcessor", e.target.value)} placeholder="e.g. Stripe, Square" />
+        </Field>
+        <Field label="Preferred NMI Username" required>
+          <Input value={form.username} onChange={e => onChange("username", e.target.value)} placeholder="Desired NMI login username" />
+        </Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Contact First Name" required>
+          <Input value={form.dbaContactFirst} onChange={e => onChange("dbaContactFirst", e.target.value)} />
+        </Field>
+        <Field label="Contact Last Name" required>
+          <Input value={form.dbaContactLast} onChange={e => onChange("dbaContactLast", e.target.value)} />
+        </Field>
+        <Field label="Phone" required>
+          <Input value={form.dbaPhone} onChange={e => onChange("dbaPhone", e.target.value)} placeholder="+1 (555) 555-5555" />
+        </Field>
+        <Field label="Email" required>
+          <Input type="email" value={form.dbaEmail} onChange={e => onChange("dbaEmail", e.target.value)} />
+        </Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Address" required>
+          <Input value={form.dbaAddress} onChange={e => onChange("dbaAddress", e.target.value)} />
+        </Field>
+        <Field label="Address Line 2">
+          <Input value={form.dbaAddress2} onChange={e => onChange("dbaAddress2", e.target.value)} />
+        </Field>
+        <Field label="City" required>
+          <Input value={form.dbaCity} onChange={e => onChange("dbaCity", e.target.value)} />
+        </Field>
+        <Field label="State / Province" required>
+          <Input value={form.dbaState} onChange={e => onChange("dbaState", e.target.value)} />
+        </Field>
+        <Field label="ZIP / Postal" required>
+          <Input value={form.dbaZip} onChange={e => onChange("dbaZip", e.target.value)} />
+        </Field>
+      </div>
+      <Field label="Notes" hint="Any additional details (voided check instructions, VAR sheet, etc.)">
+        <Input value={form.notes} onChange={e => onChange("notes", e.target.value)} />
+      </Field>
     </div>
   );
 }

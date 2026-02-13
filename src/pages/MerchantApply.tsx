@@ -308,6 +308,7 @@ export default function MerchantApply() {
       phone: form.phone,
       company_name: form.dbaName,
       business_type: isGatewayOnly ? "Gateway Only" : (form.businessStructure || form.natureOfBusiness),
+      service_type: isGatewayOnly ? "gateway_only" : "processing",
       monthly_volume: form.monthlyVolume || null,
       message: form.notes || null,
       status: "pending",
