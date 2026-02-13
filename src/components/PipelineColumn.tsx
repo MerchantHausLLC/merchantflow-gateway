@@ -69,8 +69,8 @@ const PipelineColumn = ({
       className={cn(
         "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/30 overflow-hidden snap-start",
         isCompact 
-          ? "rounded-md w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] mobile-landscape:w-[140px]" 
-          : "rounded-lg w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px] mobile-landscape:w-[160px]"
+          ? "rounded-md w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" 
+          : "rounded-lg w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]"
       )}
       data-stage={stage}
       onDragOver={onDragOver}

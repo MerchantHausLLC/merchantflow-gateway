@@ -231,62 +231,62 @@ const OpportunityCard = ({
       )}
     >
       <CardContent className={cn(
-        "p-1.5 space-y-0.5",
+        "p-1.5 md:p-2.5 lg:p-3 space-y-0.5 md:space-y-1 lg:space-y-1.5",
         "landscape:p-1.5 landscape:space-y-0.5",
-        isCollapsed && "py-0.5"
+        isCollapsed && "py-0.5 md:py-1"
       )}>
         {/* Account Name + Pipeline Type */}
-        <div className="flex items-center justify-center gap-0.5">
+        <div className="flex items-center justify-center gap-0.5 md:gap-1">
           <div className="flex items-center justify-center gap-1 min-w-0 flex-1">
-            <h3 className="font-semibold text-[10px] landscape:text-[10px] text-foreground truncate leading-tight text-center">
+            <h3 className="font-semibold text-[10px] md:text-xs lg:text-sm landscape:text-[10px] text-foreground truncate leading-tight text-center">
               {account?.name || 'Unknown'}
             </h3>
             {!isCollapsed && (
-              <span className={cn(
-                "flex items-center gap-0.5 text-[10px] landscape:text-[10px] font-semibold flex-shrink-0",
+                <span className={cn(
+                "flex items-center gap-0.5 text-[10px] md:text-xs landscape:text-[10px] font-semibold flex-shrink-0",
                 getServiceType(opportunity) === 'gateway_only' 
                   ? "text-teal-600 dark:text-teal-400" 
                   : "text-primary"
               )}>
                 {getServiceType(opportunity) === 'gateway_only' ? (
                   <>
-                    <Zap className="h-2.5 w-2.5 landscape:h-2.5 landscape:w-2.5" />
+                    <Zap className="h-2.5 w-2.5 md:h-3 md:w-3 landscape:h-2.5 landscape:w-2.5" />
                     <span className="hidden sm:inline landscape:hidden">Gateway</span>
                   </>
                 ) : (
                   <>
-                    <CreditCard className="h-2.5 w-2.5 landscape:h-2.5 landscape:w-2.5" />
+                    <CreditCard className="h-2.5 w-2.5 md:h-3 md:w-3 landscape:h-2.5 landscape:w-2.5" />
                     <span className="hidden sm:inline landscape:hidden">Processing</span>
                   </>
                 )}
               </span>
             )}
           </div>
-          <GripVertical className="h-2.5 w-2.5 landscape:h-2.5 landscape:w-2.5 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
+          <GripVertical className="h-2.5 w-2.5 md:h-3 md:w-3 landscape:h-2.5 landscape:w-2.5 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
         </div>
 
         {/* Contact Last Name - hidden when collapsed */}
         {!isCollapsed && (
-          <p className="text-[9px] landscape:text-[9px] text-muted-foreground truncate">
+          <p className="text-[9px] md:text-[11px] lg:text-xs landscape:text-[9px] text-muted-foreground truncate">
             {contactLastName || 'No contact'}
           </p>
         )}
 
         {/* Footer: Date + SLA + Assignment Avatar - hidden when collapsed */}
         {!isCollapsed && (
-          <div className="flex items-center justify-between pt-0.5 border-t border-border/30">
+          <div className="flex items-center justify-between pt-0.5 md:pt-1 border-t border-border/30">
             {/* Date Created + SLA Indicator */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-[9px] landscape:text-[9px] text-muted-foreground">
-                    <Calendar className="h-2 w-2 landscape:h-2 landscape:w-2" />
+                  <div className="flex items-center gap-1 text-[9px] md:text-[11px] lg:text-xs landscape:text-[9px] text-muted-foreground">
+                    <Calendar className="h-2 w-2 md:h-2.5 md:w-2.5 landscape:h-2 landscape:w-2" />
                     <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
                     {/* Enhanced SLA Status Indicator - hidden for live deals */}
                     {!slaInfo.hidden && (
                       <span 
                         className={cn(
-                          "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] landscape:text-[8px] font-medium",
+                          "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] md:text-[10px] landscape:text-[8px] font-medium",
                           slaInfo.status === 'red' && "bg-red-500/20 text-red-500",
                           slaInfo.status === 'amber' && "bg-amber-500/20 text-amber-500",
                           slaInfo.status === 'green' && "bg-green-500/20 text-green-500"
@@ -320,11 +320,11 @@ const OpportunityCard = ({
             <Popover>
               <PopoverTrigger asChild>
                 <button onClick={(e) => e.stopPropagation()}>
-                  <Avatar className="h-5 w-5 landscape:h-5 landscape:w-5 border border-background shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
+                  <Avatar className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 landscape:h-5 landscape:w-5 border border-background shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
                     {avatarUrl && (
                       <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || 'Unassigned'} />
                     )}
-                    <AvatarFallback className={cn("text-[8px] landscape:text-[8px] font-medium", teamColors.bg, teamColors.text)}>
+                    <AvatarFallback className={cn("text-[8px] md:text-[10px] landscape:text-[8px] font-medium", teamColors.bg, teamColors.text)}>
                       {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : '?'}
                     </AvatarFallback>
                   </Avatar>

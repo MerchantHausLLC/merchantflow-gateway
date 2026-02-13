@@ -66,18 +66,20 @@ const PipelineSection = ({
 
   // Calculate column width based on compact mode and screen size
   const getColumnWidth = useCallback(() => {
-    if (typeof window === 'undefined') return 150;
+    if (typeof window === 'undefined') return 210;
     const width = window.innerWidth;
     if (isCompact) {
       if (width < 640) return 90;
       if (width < 768) return 110;
-      if (width < 1024) return 130;
-      return 150;
+      if (width < 1024) return 140;
+      if (width < 1280) return 170;
+      return 190;
     }
     if (width < 640) return 100;
     if (width < 768) return 130;
-    if (width < 1024) return 150;
-    return 180;
+    if (width < 1024) return 170;
+    if (width < 1280) return 210;
+    return 240;
   }, [isCompact]);
 
   // Scroll to specific column
@@ -161,12 +163,12 @@ const PipelineSection = ({
             {stages.map(stage => {
             const config = STAGE_CONFIG[stage];
             const count = getOpportunitiesByStage(stage).length;
-            return <div key={stage} className={cn("flex-shrink-0 pb-1 border-b-2", isCompact ? "w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] mobile-landscape:w-[140px]" : "w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px] mobile-landscape:w-[160px]")} style={{
+            return <div key={stage} className={cn("flex-shrink-0 pb-1 border-b-2", isCompact ? "w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" : "w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]")} style={{
               borderColor: config.color || 'hsl(var(--primary))'
             }}>
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1">
-                      <span className={cn("font-semibold text-foreground truncate", isCompact ? "text-[9px] max-w-[55px] mobile-landscape:text-[10px] mobile-landscape:max-w-[100px]" : "text-[10px] max-w-[60px] mobile-landscape:text-[10px] mobile-landscape:max-w-[120px]")}>
+                      <span className={cn("font-semibold text-foreground truncate", isCompact ? "text-[9px] max-w-[55px] md:text-[11px] md:max-w-[90px] mobile-landscape:text-[10px] mobile-landscape:max-w-[100px]" : "text-[10px] max-w-[60px] md:text-xs md:max-w-[120px] lg:text-sm lg:max-w-[160px] mobile-landscape:text-[10px] mobile-landscape:max-w-[120px]")}>
                         {config.label}
                       </span>
                     </div>
