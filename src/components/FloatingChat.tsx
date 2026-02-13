@@ -1092,19 +1092,71 @@ const FloatingChat: React.FC = () => {
 
   if (!user) return null;
 
+  // Swipe-to-reply handler for touch devices
+  const swipeRef = useRef<{ startX: number; startY: number; msgId: string; swiping: boolean } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent, msg: ChannelMessage | DirectMessage) => {
+    const touch = e.touches[0];
+    swipeRef.current = { startX: touch.clientX, startY: touch.clientY, msgId: msg.id, swiping: false };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent, element: HTMLElement | null) => {
+    if (!swipeRef.current || !element) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - swipeRef.current.startX;
+    const deltaY = Math.abs(touch.clientY - swipeRef.current.startY);
+
+    // Only register as swipe if horizontal movement > vertical movement
+    if (deltaY > 30 && !swipeRef.current.swiping) {
+      swipeRef.current = null;
+      return;
+    }
+
+    if (deltaX > 10) {
+      swipeRef.current.swiping = true;
+      const translateX = Math.min(deltaX * 0.5, 60);
+      element.style.transform = `translateX(${translateX}px)`;
+      element.style.transition = 'none';
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent, element: HTMLElement | null, msg: ChannelMessage | DirectMessage) => {
+    if (!swipeRef.current || !element) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - swipeRef.current.startX;
+
+    element.style.transform = '';
+    element.style.transition = 'transform 0.2s ease-out';
+
+    if (swipeRef.current.swiping && deltaX > 50) {
+      setReplyTo(msg);
+    }
+
+    swipeRef.current = null;
+  }, []);
+
   // Render a message bubble (shared between channel and DM views)
   const renderMessageBubble = (msg: ChannelMessage | DirectMessage, isChannel: boolean) => {
     const isOwn = isChannel ? (msg as ChannelMessage).user_id === user.id : (msg as DirectMessage).sender_id === user.id;
     const senderId = isChannel ? (msg as ChannelMessage).user_id : (msg as DirectMessage).sender_id;
     const profile = profiles[senderId];
-    const displayName = isChannel 
+    const displayName = isChannel
       ? (profile?.full_name || (msg as ChannelMessage).user_name || (msg as ChannelMessage).user_email.split("@")[0])
       : (profile?.full_name || profile?.email?.split("@")[0] || "User");
     const email = isChannel ? (msg as ChannelMessage).user_email : (profile?.email || "");
     const replyMessage = getReplyMessage(msg.reply_to_id);
+    const replySourceName = replyMessage
+      ? (isChannel
+          ? (profiles[(replyMessage as ChannelMessage).user_id]?.full_name || (replyMessage as ChannelMessage).user_name)
+          : getDisplayName((replyMessage as DirectMessage).sender_id))
+      : null;
 
     return (
       <div key={msg.id} className={cn("flex gap-2 min-w-0 overflow-hidden", isOwn ? "justify-end" : "justify-start")}>
+        {/* Swipe reply indicator (shown on left during swipe) */}
+        <div className="flex items-center shrink-0 opacity-30 pointer-events-none">
+          <Reply className="h-4 w-4 text-blue-500" />
+        </div>
         {!isOwn && (
           <button type="button" onClick={() => setProfileModalUserId(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
             <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
@@ -1113,22 +1165,44 @@ const FloatingChat: React.FC = () => {
             </Avatar>
           </button>
         )}
-        <div className="max-w-[75%] min-w-0 overflow-hidden">
+        <div
+          className="max-w-[75%] min-w-0 overflow-hidden"
+          onTouchStart={(e) => handleTouchStart(e, msg)}
+          onTouchMove={(e) => handleTouchMove(e, e.currentTarget)}
+          onTouchEnd={(e) => handleTouchEnd(e, e.currentTarget, msg)}
+        >
           {replyMessage && (
-            <div className={cn("text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800", isOwn && "ml-auto")}>
-              <span className="font-medium text-blue-600 dark:text-blue-400">
-                {isChannel 
-                  ? (profiles[(replyMessage as ChannelMessage).user_id]?.full_name || (replyMessage as ChannelMessage).user_name)
-                  : getDisplayName((replyMessage as DirectMessage).sender_id)
+            <button
+              type="button"
+              className={cn(
+                "text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800 w-full text-left cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors",
+                isOwn && "ml-auto"
+              )}
+              onClick={() => {
+                // Scroll to the original message
+                const replyEl = document.getElementById(`msg-${replyMessage.id}`);
+                if (replyEl) {
+                  replyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  replyEl.classList.add('ring-2', 'ring-blue-400', 'ring-opacity-75');
+                  setTimeout(() => replyEl.classList.remove('ring-2', 'ring-blue-400', 'ring-opacity-75'), 2000);
                 }
+              }}
+            >
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                {replySourceName}
               </span>
               <p className="text-slate-500 truncate">{replyMessage.content}</p>
-            </div>
+            </button>
           )}
-          <div className={cn(
-            "p-3 rounded-2xl group relative break-words overflow-hidden",
-            isOwn ? "bg-blue-600 text-white rounded-br-md" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
-          )} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+          <div
+            id={`msg-${msg.id}`}
+            className={cn(
+              "p-3 rounded-2xl group relative break-words overflow-hidden transition-all duration-300",
+              isOwn ? "bg-blue-600 text-white rounded-br-md" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
+            )}
+            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+            onDoubleClick={() => setReplyTo(msg)}
+          >
             {!isOwn && (
               <button type="button" onClick={() => setProfileModalUserId(senderId)} className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block">
                 {displayName}
@@ -1155,7 +1229,7 @@ const FloatingChat: React.FC = () => {
               {!isChannel && renderReadReceipt(msg as DirectMessage)}
             </div>
             {renderReactions(msg.id, isChannel ? 'channel' : 'direct')}
-            
+
             {/* Message actions */}
             <div className={cn(
               "absolute -top-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",

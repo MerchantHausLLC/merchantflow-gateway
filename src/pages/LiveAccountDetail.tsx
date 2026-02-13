@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +25,10 @@ import {
   ExternalLink,
   Briefcase,
   Archive,
+  Download,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import { getServiceType, STAGE_CONFIG, migrateStage } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -67,6 +70,7 @@ const LiveAccountDetail = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
@@ -119,6 +123,40 @@ const LiveAccountDetail = () => {
     },
     enabled: oppIds.length > 0,
   });
+
+  const handleDownloadAllDocs = async () => {
+    if (!documents || documents.length === 0) return;
+    setIsDownloadingAll(true);
+
+    for (const doc of documents) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('opportunity-documents')
+          .download(doc.file_path);
+
+        if (error || !data) {
+          toast.error(`Failed to download ${doc.file_name}`);
+          continue;
+        }
+
+        const url = URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        await new Promise((r) => setTimeout(r, 300));
+      } catch {
+        toast.error(`Failed to download ${doc.file_name}`);
+      }
+    }
+
+    setIsDownloadingAll(false);
+    toast.success('Downloads complete');
+  };
 
   // Fetch activities for ALL opportunities
   const { data: activities } = useQuery({
@@ -421,6 +459,18 @@ const LiveAccountDetail = () => {
                   Documents
                   {documents && documents.length > 0 && (
                     <Badge variant="secondary" className="text-[10px] ml-auto">{documents.length}</Badge>
+                  )}
+                  {documents && documents.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleDownloadAllDocs}
+                      disabled={isDownloadingAll}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />
+                      {isDownloadingAll ? 'Downloading...' : 'Download all'}
+                    </Button>
                   )}
                 </CardTitle>
               </CardHeader>

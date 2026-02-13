@@ -162,8 +162,8 @@ const DocumentsPage = () => {
     }
   };
 
-  const handleBulkDownload = async () => {
-    const docsToDownload = documents.filter((doc) => selectedDocuments.has(doc.id));
+  const handleBulkDownload = async (docsOverride?: DocumentWithOpportunity[]) => {
+    const docsToDownload = docsOverride || documents.filter((doc) => selectedDocuments.has(doc.id));
     if (docsToDownload.length === 0) return;
 
     setIsDownloading(true);
@@ -197,6 +197,11 @@ const DocumentsPage = () => {
 
     setIsDownloading(false);
     toast.success("Downloads complete");
+  };
+
+  const handleDownloadAll = () => {
+    if (filteredDocs.length === 0) return;
+    handleBulkDownload(filteredDocs);
   };
 
   /**
@@ -369,11 +374,19 @@ const DocumentsPage = () => {
             />
           </div>
           <Button
-            onClick={handleBulkDownload}
+            variant="outline"
+            onClick={handleDownloadAll}
+            disabled={filteredDocs.length === 0 || isDownloading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isDownloading && selectedDocuments.size === 0 ? "Preparing..." : "Download all"}
+          </Button>
+          <Button
+            onClick={() => handleBulkDownload()}
             disabled={selectedDocuments.size === 0 || isDownloading}
           >
             <Download className="h-4 w-4 mr-2" />
-            {isDownloading ? "Preparing..." : "Download selected"}
+            {isDownloading && selectedDocuments.size > 0 ? "Preparing..." : "Download selected"}
           </Button>
         </>
       }
