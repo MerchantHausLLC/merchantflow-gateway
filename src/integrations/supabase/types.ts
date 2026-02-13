@@ -134,6 +134,7 @@ export type Database = {
           owner_zip: string | null
           phone: string | null
           products: string | null
+          service_type: string | null
           state: string | null
           state_of_incorporation: string | null
           status: string | null
@@ -177,6 +178,7 @@ export type Database = {
           owner_zip?: string | null
           phone?: string | null
           products?: string | null
+          service_type?: string | null
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null
@@ -220,6 +222,7 @@ export type Database = {
           owner_zip?: string | null
           phone?: string | null
           products?: string | null
+          service_type?: string | null
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null

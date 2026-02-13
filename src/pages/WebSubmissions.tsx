@@ -140,6 +140,8 @@ export default function WebSubmissions() {
 
       if (contactError) throw contactError;
 
+      const isGatewayOnly = app.service_type === "gateway_only" || app.business_type === "Gateway Only";
+
       const { data: opportunity, error: opportunityError } = await supabase
         .from("opportunities")
         .insert({
@@ -147,6 +149,8 @@ export default function WebSubmissions() {
           contact_id: contact.id,
           stage: "application_started",
           status: "active",
+          service_type: isGatewayOnly ? "gateway_only" : "processing",
+          username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
         })
         .select()
         .single();
@@ -268,12 +272,13 @@ export default function WebSubmissions() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Business Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Volume</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                     <TableHead>Date</TableHead>
+                     <TableHead>Business Name</TableHead>
+                     <TableHead>Type</TableHead>
+                     <TableHead>Contact</TableHead>
+                     <TableHead>Volume</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -282,10 +287,17 @@ export default function WebSubmissions() {
                       <TableCell>
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {app.company_name || app.dba_name || "Untitled"}
-                      </TableCell>
-                      <TableCell>
+                       <TableCell className="font-medium">
+                         {app.company_name || app.dba_name || "Untitled"}
+                       </TableCell>
+                       <TableCell>
+                         {(app.service_type === "gateway_only" || app.business_type === "Gateway Only") ? (
+                           <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/40">Gateway</Badge>
+                         ) : (
+                           <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>
+                         )}
+                       </TableCell>
+                       <TableCell>
                         <div className="flex flex-col">
                           <span>{app.full_name}</span>
                           <span className="text-xs text-muted-foreground">
@@ -384,12 +396,19 @@ export default function WebSubmissions() {
               <ScrollArea className="max-h-[70vh] pr-4">
                 <div className="space-y-5">
                   {/* Status & Date */}
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(selectedApp.status)}
-                    <span className="text-xs text-muted-foreground">
-                      Submitted {new Date(selectedApp.created_at).toLocaleString()}
-                    </span>
-                  </div>
+                   <div className="flex items-center justify-between">
+                     {getStatusBadge(selectedApp.status)}
+                     <div className="flex items-center gap-2">
+                       {(selectedApp.service_type === "gateway_only" || selectedApp.business_type === "Gateway Only") ? (
+                         <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/40">Gateway Only</Badge>
+                       ) : (
+                         <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>
+                       )}
+                       <span className="text-xs text-muted-foreground">
+                         Submitted {new Date(selectedApp.created_at).toLocaleString()}
+                       </span>
+                     </div>
+                   </div>
 
                   <Separator />
 
