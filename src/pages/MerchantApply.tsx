@@ -11,25 +11,152 @@ import {
   AlertCircle,
   Info,
   Zap,
-  FileText
+  FileText,
+  Users,
+  Landmark,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import merchanthausLogo from "@/assets/merchanthaus-logo.png";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Service Type Selection
+// Types using canonical keys
 // ─────────────────────────────────────────────────────────────────────────────
 
 type ServiceType = "gateway_only" | "gateway_and_processing" | null;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Steps config per service type
-// ─────────────────────────────────────────────────────────────────────────────
+interface PrincipalForm {
+  principal_first_name: string;
+  principal_last_name: string;
+  principal_title: string;
+  ownership_percent: string;
+  principal_phone: string;
+  principal_email: string;
+  principal_address_line1: string;
+  principal_address_line2: string;
+  principal_city: string;
+  principal_state: string;
+  principal_zip: string;
+  principal_country: string;
+  date_of_birth: string;
+  ssn_full: string;
+}
+
+const emptyPrincipal: PrincipalForm = {
+  principal_first_name: "",
+  principal_last_name: "",
+  principal_title: "",
+  ownership_percent: "",
+  principal_phone: "",
+  principal_email: "",
+  principal_address_line1: "",
+  principal_address_line2: "",
+  principal_city: "",
+  principal_state: "",
+  principal_zip: "",
+  principal_country: "US",
+  date_of_birth: "",
+  ssn_full: "",
+};
+
+interface MerchantForm {
+  // Business Profile
+  dba_name: string;
+  product_description: string;
+  nature_of_business: string;
+  dba_contact_first_name: string;
+  dba_contact_last_name: string;
+  dba_contact_phone: string;
+  dba_contact_email: string;
+  dba_address_line1: string;
+  dba_address_line2: string;
+  dba_city: string;
+  dba_state: string;
+  dba_zip: string;
+  dba_country: string;
+
+  // Legal Information
+  legal_entity_name: string;
+  federal_tax_id: string;
+  ownership_type: string;
+  business_formation_date: string;
+  state_incorporated: string;
+  tax_exempt: boolean;
+  legal_address_line1: string;
+  legal_address_line2: string;
+  legal_city: string;
+  legal_state: string;
+  legal_zip: string;
+  legal_country: string;
+
+  // Processing Profile
+  monthly_volume: string;
+  average_transaction: string;
+  high_ticket: string;
+  percent_swiped: string;
+  percent_keyed: string;
+  percent_moto: string;
+  percent_ecommerce: string;
+  percent_b2b: string;
+  percent_b2c: string;
+  website_url: string;
+  sic_mcc_code: string;
+
+  // Principals
+  principals: PrincipalForm[];
+
+  // Banking
+  bank_name: string;
+  account_holder_name: string;
+  routing_number: string;
+  account_number: string;
+
+  // Agreements
+  beneficial_owner_certification: boolean;
+  bank_disclosure_ack: boolean;
+
+  // Notes
+  additional_notes: string;
+
+  // Gateway-only
+  username: string;
+  current_processor: string;
+}
+
+const initialState: MerchantForm = {
+  dba_name: "", product_description: "", nature_of_business: "",
+  dba_contact_first_name: "", dba_contact_last_name: "",
+  dba_contact_phone: "", dba_contact_email: "",
+  dba_address_line1: "", dba_address_line2: "",
+  dba_city: "", dba_state: "", dba_zip: "", dba_country: "US",
+
+  legal_entity_name: "", federal_tax_id: "", ownership_type: "",
+  business_formation_date: "", state_incorporated: "", tax_exempt: false,
+  legal_address_line1: "", legal_address_line2: "",
+  legal_city: "", legal_state: "", legal_zip: "", legal_country: "US",
+
+  monthly_volume: "", average_transaction: "", high_ticket: "",
+  percent_swiped: "", percent_keyed: "", percent_moto: "", percent_ecommerce: "",
+  percent_b2b: "", percent_b2c: "", website_url: "", sic_mcc_code: "",
+
+  principals: [{ ...emptyPrincipal }],
+
+  bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
+
+  beneficial_owner_certification: false, bank_disclosure_ack: false,
+
+  additional_notes: "",
+  username: "", current_processor: "",
+};
+
+// ─── Steps config ───
 
 const PROCESSING_STEPS = [
   { label: "Business Profile", icon: Building2 },
   { label: "Legal Information", icon: Scale },
   { label: "Processing Info", icon: CreditCard },
-  { label: "Application Readiness", icon: CheckCircle2 }
+  { label: "Owners & Banking", icon: Users },
+  { label: "Review & Submit", icon: CheckCircle2 },
 ] as const;
 
 const GATEWAY_STEPS = [
@@ -37,169 +164,79 @@ const GATEWAY_STEPS = [
   { label: "Documents & Submit", icon: FileText },
 ] as const;
 
-type SectionKey = "business" | "legal" | "processing" | "gateway_business";
+// ─── Required fields per section ───
 
-const PROCESSING_REQUIRED_FIELDS: Record<"business" | "legal" | "processing", string[]> = {
+const PROCESSING_REQUIRED: Record<string, string[]> = {
   business: [
-    "dbaName", "products", "natureOfBusiness", "contactFirst", "contactLast",
-    "phone", "email", "address", "city", "state", "zip"
+    "dba_name", "product_description", "nature_of_business",
+    "dba_contact_first_name", "dba_contact_last_name",
+    "dba_contact_phone", "dba_contact_email",
+    "dba_address_line1", "dba_city", "dba_state", "dba_zip",
   ],
   legal: [
-    "legalName", "federalTaxId", "stateOfIncorporation", "businessStructure",
-    "dateEstablished", "ownerName", "ownerTitle", "ownerDob", "ownerSsn",
-    "ownerAddress", "ownerCity"
+    "legal_entity_name", "federal_tax_id", "ownership_type",
+    "business_formation_date", "state_incorporated",
+    "legal_address_line1", "legal_city", "legal_state", "legal_zip",
   ],
   processing: [
-    "monthlyVolume", "avgTicket", "highTicket", "currentProcessor",
-    "acceptedCards", "ecommercePercent", "inPersonPercent", "keyed"
-  ]
+    "monthly_volume", "average_transaction", "high_ticket",
+    "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
+  ],
+  owners_banking: [
+    "principal_first_name_0", "principal_last_name_0", "principal_title_0",
+    "ownership_percent_0", "date_of_birth_0", "ssn_full_0",
+    "bank_name", "account_holder_name", "routing_number", "account_number",
+  ],
 };
 
-const GATEWAY_REQUIRED_FIELDS: Record<"gateway_business", string[]> = {
+const GATEWAY_REQUIRED: Record<string, string[]> = {
   gateway_business: [
-    "dbaName", "contactFirst", "contactLast", "phone", "email",
-    "address", "city", "state", "zip", "username", "currentProcessor"
-  ]
+    "dba_name", "dba_contact_first_name", "dba_contact_last_name",
+    "dba_contact_phone", "dba_contact_email",
+    "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+    "username", "current_processor",
+  ],
 };
 
 const FIELD_LABELS: Record<string, string> = {
-  dbaName: "DBA Name",
-  products: "Products / Services",
-  natureOfBusiness: "Nature of Business",
-  contactFirst: "First Name",
-  contactLast: "Last Name",
-  phone: "Phone Number",
-  email: "Email Address",
-  address: "Address",
-  city: "City",
-  state: "State",
-  zip: "ZIP Code",
-  legalName: "Legal Business Name",
-  federalTaxId: "Federal Tax ID",
-  stateOfIncorporation: "State of Incorporation",
-  businessStructure: "Business Structure",
-  dateEstablished: "Date Established",
-  ownerName: "Owner Full Name",
-  ownerTitle: "Title",
-  ownerDob: "Date of Birth",
-  ownerSsn: "SSN (last 4)",
-  ownerAddress: "Owner Home Address",
-  ownerCity: "Owner City",
-  monthlyVolume: "Monthly Volume",
-  avgTicket: "Average Ticket",
-  highTicket: "High Ticket",
-  currentProcessor: "Current Processor",
-  acceptedCards: "Accepted Card Types",
-  ecommercePercent: "eCommerce %",
-  inPersonPercent: "In-Person %",
-  keyed: "Keyed %",
-  username: "Username"
+  dba_name: "DBA Name", product_description: "Products/Services",
+  nature_of_business: "Nature of Business",
+  dba_contact_first_name: "First Name", dba_contact_last_name: "Last Name",
+  dba_contact_phone: "Phone", dba_contact_email: "Email",
+  dba_address_line1: "Address", dba_city: "City", dba_state: "State", dba_zip: "ZIP",
+  legal_entity_name: "Legal Entity Name", federal_tax_id: "Federal Tax ID",
+  ownership_type: "Ownership Type", business_formation_date: "Formation Date",
+  state_incorporated: "State Incorporated",
+  legal_address_line1: "Legal Address", legal_city: "Legal City",
+  legal_state: "Legal State", legal_zip: "Legal ZIP",
+  monthly_volume: "Monthly Volume", average_transaction: "Avg Transaction",
+  high_ticket: "High Ticket", percent_swiped: "Swiped %",
+  percent_keyed: "Keyed %", percent_moto: "MOTO %", percent_ecommerce: "eCommerce %",
+  percent_b2b: "B2B %", percent_b2c: "B2C %",
+  bank_name: "Bank Name", account_holder_name: "Account Holder",
+  routing_number: "Routing Number", account_number: "Account Number",
+  username: "Username", current_processor: "Current Processor",
 };
 
-interface MerchantForm {
-  dbaName: string;
-  products: string;
-  natureOfBusiness: string;
-  contactFirst: string;
-  contactLast: string;
-  phone: string;
-  email: string;
-  address: string;
-  address2: string;
-  city: string;
-  state: string;
-  zip: string;
-  legalName: string;
-  federalTaxId: string;
-  stateOfIncorporation: string;
-  businessStructure: string;
-  dateEstablished: string;
-  ownerName: string;
-  ownerTitle: string;
-  ownerDob: string;
-  ownerSsn: string;
-  ownerAddress: string;
-  ownerCity: string;
-  ownerState: string;
-  ownerZip: string;
-  monthlyVolume: string;
-  avgTicket: string;
-  highTicket: string;
-  currentProcessor: string;
-  acceptedCards: string;
-  ecommercePercent: string;
-  inPersonPercent: string;
-  keyed: string;
-  website: string;
-  notes: string;
-  username: string;
-}
+type TouchedFields = Record<string, boolean>;
 
-const initialState: MerchantForm = {
-  dbaName: "", products: "", natureOfBusiness: "",
-  contactFirst: "", contactLast: "", phone: "", email: "",
-  address: "", address2: "", city: "", state: "", zip: "",
-  legalName: "", federalTaxId: "", stateOfIncorporation: "",
-  businessStructure: "", dateEstablished: "",
-  ownerName: "", ownerTitle: "", ownerDob: "", ownerSsn: "",
-  ownerAddress: "", ownerCity: "", ownerState: "", ownerZip: "",
-  monthlyVolume: "", avgTicket: "", highTicket: "",
-  currentProcessor: "", acceptedCards: "",
-  ecommercePercent: "", inPersonPercent: "", keyed: "",
-  website: "", notes: "", username: ""
-};
-
-type TouchedFields = Partial<Record<keyof MerchantForm, boolean>>;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Validation
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Validation ───
 
 function validateEmail(email: string): string | null {
   if (!email.trim()) return "Email is required";
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return "Please enter a valid email address";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Invalid email";
   return null;
 }
 
 function validatePhone(phone: string): string | null {
-  if (!phone.trim()) return "Phone number is required";
-  const digitsOnly = phone.replace(/\D/g, "");
-  if (digitsOnly.length < 10) return "Please enter a valid phone number";
+  if (!phone.trim()) return "Phone is required";
+  if (phone.replace(/\D/g, "").length < 10) return "Invalid phone number";
   return null;
 }
 
-function validateSsn(ssn: string): string | null {
-  if (!ssn.trim()) return "Last 4 digits of SSN is required";
-  if (ssn.length !== 4 || !/^\d{4}$/.test(ssn)) return "Please enter exactly 4 digits";
+function validateRequired(value: string, label: string): string | null {
+  if (!value.trim()) return `${label} is required`;
   return null;
-}
-
-function validatePercentage(value: string, fieldName: string): string | null {
-  if (!value.trim()) return `${fieldName} is required`;
-  const num = parseFloat(value);
-  if (isNaN(num) || num < 0 || num > 100) return "Must be between 0 and 100";
-  return null;
-}
-
-function validateRequired(value: string, fieldName: string): string | null {
-  if (!value.trim()) return `${fieldName} is required`;
-  return null;
-}
-
-function getFieldError(field: keyof MerchantForm, value: string, allRequired: string[]): string | null {
-  const label = FIELD_LABELS[field] || field;
-  switch (field) {
-    case "email": return validateEmail(value);
-    case "phone": return validatePhone(value);
-    case "ownerSsn": return validateSsn(value);
-    case "ecommercePercent":
-    case "inPersonPercent":
-    case "keyed": return validatePercentage(value, label);
-    default:
-      if (allRequired.includes(field)) return validateRequired(value, label);
-      return null;
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,7 +245,7 @@ function getFieldError(field: keyof MerchantForm, value: string, allRequired: st
 
 export default function MerchantApply() {
   const [serviceType, setServiceType] = useState<ServiceType>(null);
-  const [stepIndex, setStepIndex] = useState<number>(0);
+  const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<MerchantForm>(initialState);
   const [touched, setTouched] = useState<TouchedFields>({});
   const [showAllErrors, setShowAllErrors] = useState(false);
@@ -220,196 +257,311 @@ export default function MerchantApply() {
   const steps = isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
 
   const allRequiredFields = useMemo(() => {
-    if (isGatewayOnly) return GATEWAY_REQUIRED_FIELDS.gateway_business;
+    if (isGatewayOnly) return GATEWAY_REQUIRED.gateway_business;
     return [
-      ...PROCESSING_REQUIRED_FIELDS.business,
-      ...PROCESSING_REQUIRED_FIELDS.legal,
-      ...PROCESSING_REQUIRED_FIELDS.processing
+      ...PROCESSING_REQUIRED.business,
+      ...PROCESSING_REQUIRED.legal,
+      ...PROCESSING_REQUIRED.processing,
+      // Dynamic principal fields
+      ...form.principals.flatMap((_, i) => [
+        `principal_first_name_${i}`, `principal_last_name_${i}`,
+        `principal_title_${i}`, `ownership_percent_${i}`,
+        `date_of_birth_${i}`, `ssn_full_${i}`,
+      ]),
+      "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
-  }, [isGatewayOnly]);
+  }, [isGatewayOnly, form.principals.length]);
+
+  const getFieldValue = (key: string): string => {
+    // Handle principal indexed fields like "principal_first_name_0"
+    const principalMatch = key.match(/^(.+)_(\d+)$/);
+    if (principalMatch) {
+      const fieldName = principalMatch[1] as keyof PrincipalForm;
+      const idx = parseInt(principalMatch[2]);
+      if (form.principals[idx] && fieldName in form.principals[idx]) {
+        return String(form.principals[idx][fieldName] ?? "");
+      }
+    }
+    const val = form[key as keyof MerchantForm];
+    if (typeof val === "string") return val;
+    if (typeof val === "boolean") return val ? "true" : "";
+    return "";
+  };
 
   const handleChange = <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBlur = (field: keyof MerchantForm) => {
+  const handleBlur = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  const getError = (field: keyof MerchantForm): string | null => {
-    if (!touched[field] && !showAllErrors) return null;
-    return getFieldError(field, form[field], allRequiredFields);
+  const handlePrincipalChange = (index: number, field: keyof PrincipalForm, value: string) => {
+    setForm(prev => {
+      const updated = [...prev.principals];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, principals: updated };
+    });
   };
 
-  const getMissingForFields = (fields: string[]) =>
-    fields.filter(f => !String(form[f as keyof MerchantForm] ?? "").trim());
+  const addPrincipal = () => {
+    if (form.principals.length < 5) {
+      setForm(prev => ({ ...prev, principals: [...prev.principals, { ...emptyPrincipal }] }));
+    }
+  };
 
-  const getErrorsForFields = (fields: string[]) =>
-    fields
-      .map(f => getFieldError(f as keyof MerchantForm, form[f as keyof MerchantForm], allRequiredFields))
-      .filter((e): e is string => e !== null);
+  const removePrincipal = (index: number) => {
+    if (form.principals.length > 1) {
+      setForm(prev => ({ ...prev, principals: prev.principals.filter((_, i) => i !== index) }));
+    }
+  };
 
-  // Processing flow sections
-  const missingBySection = useMemo(() => ({
-    business: getMissingForFields(PROCESSING_REQUIRED_FIELDS.business),
-    legal: getMissingForFields(PROCESSING_REQUIRED_FIELDS.legal),
-    processing: getMissingForFields(PROCESSING_REQUIRED_FIELDS.processing),
-    gateway_business: getMissingForFields(GATEWAY_REQUIRED_FIELDS.gateway_business),
-  }), [form]);
+  const getError = (field: string): string | null => {
+    if (!touched[field] && !showAllErrors) return null;
+    const value = getFieldValue(field);
+    const label = FIELD_LABELS[field] || field.replace(/_\d+$/, "").replace(/_/g, " ");
+    if (field.includes("email")) return validateEmail(value);
+    if (field.includes("phone")) return validatePhone(value);
+    if (allRequiredFields.includes(field)) return validateRequired(value, label);
+    return null;
+  };
+
+  const getMissing = (fields: string[]) =>
+    fields.filter(f => !getFieldValue(f).trim());
+
+  const missingBySection = useMemo(() => {
+    if (isGatewayOnly) {
+      return { gateway_business: getMissing(GATEWAY_REQUIRED.gateway_business) };
+    }
+    const ownersBankingFields = [
+      ...form.principals.flatMap((_, i) => [
+        `principal_first_name_${i}`, `principal_last_name_${i}`,
+        `principal_title_${i}`, `ownership_percent_${i}`,
+        `date_of_birth_${i}`, `ssn_full_${i}`,
+      ]),
+      "bank_name", "account_holder_name", "routing_number", "account_number",
+    ];
+    return {
+      business: getMissing(PROCESSING_REQUIRED.business),
+      legal: getMissing(PROCESSING_REQUIRED.legal),
+      processing: getMissing(PROCESSING_REQUIRED.processing),
+      owners_banking: getMissing(ownersBankingFields),
+    };
+  }, [form, isGatewayOnly]);
 
   const totalRequired = allRequiredFields.length;
-  const completedRequired = totalRequired - getMissingForFields(allRequiredFields).length;
-  const progress = Math.round((completedRequired / totalRequired) * 100);
-
-  const validateCurrentStep = (): boolean => {
-    let fieldsToValidate: string[];
-    if (isGatewayOnly) {
-      fieldsToValidate = stepIndex === 0 ? GATEWAY_REQUIRED_FIELDS.gateway_business : [];
-    } else {
-      const sectionMap: Record<number, SectionKey | null> = {
-        0: "business", 1: "legal", 2: "processing", 3: null
-      };
-      const section = sectionMap[stepIndex];
-      fieldsToValidate = section ? PROCESSING_REQUIRED_FIELDS[section as keyof typeof PROCESSING_REQUIRED_FIELDS] || [] : [];
-    }
-
-    const errors = getErrorsForFields(fieldsToValidate);
-    if (errors.length > 0) {
-      const newTouched: TouchedFields = {};
-      fieldsToValidate.forEach(f => { newTouched[f as keyof MerchantForm] = true; });
-      setTouched(prev => ({ ...prev, ...newTouched }));
-      toast({
-        variant: "destructive",
-        title: "Please fix the errors",
-        description: `${errors.length} field(s) need attention before continuing.`
-      });
-      return false;
-    }
-    return true;
-  };
+  const completedRequired = totalRequired - getMissing(allRequiredFields).length;
+  const progress = totalRequired > 0 ? Math.round((completedRequired / totalRequired) * 100) : 0;
 
   const handleNextStep = () => {
-    if (validateCurrentStep()) setStepIndex(prev => Math.min(steps.length - 1, prev + 1));
+    setStepIndex(prev => Math.min(steps.length - 1, prev + 1));
   };
 
   const handleSubmit = async () => {
     setShowAllErrors(true);
-    const allErrors = getErrorsForFields(allRequiredFields);
-    if (allErrors.length > 0) {
-      toast({ variant: "destructive", title: "Please complete all required fields", description: `${allErrors.length} field(s) need attention.` });
+    const missing = getMissing(allRequiredFields);
+    if (missing.length > 0) {
+      toast({ variant: "destructive", title: "Please complete all required fields", description: `${missing.length} field(s) need attention.` });
       return;
+    }
+
+    // Validate percentage rules for processing
+    if (!isGatewayOnly) {
+      const txMix = [form.percent_swiped, form.percent_keyed, form.percent_moto, form.percent_ecommerce]
+        .map(v => parseFloat(v) || 0)
+        .reduce((a, b) => a + b, 0);
+      if (Math.abs(txMix - 100) > 0.01) {
+        toast({ variant: "destructive", title: "Transaction mix must equal 100%", description: `Currently totals ${txMix}%` });
+        return;
+      }
+
+      if (form.percent_b2b && form.percent_b2c) {
+        const salesMix = (parseFloat(form.percent_b2b) || 0) + (parseFloat(form.percent_b2c) || 0);
+        if (Math.abs(salesMix - 100) > 0.01) {
+          toast({ variant: "destructive", title: "B2B + B2C must equal 100%", description: `Currently totals ${salesMix}%` });
+          return;
+        }
+      }
+
+      const ownershipTotal = form.principals.reduce((sum, p) => sum + (parseFloat(p.ownership_percent) || 0), 0);
+      if (Math.abs(ownershipTotal - 100) > 0.01) {
+        toast({ variant: "destructive", title: "Ownership % must total 100%", description: `Currently totals ${ownershipTotal}%` });
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
-    const { error } = await supabase.from("applications").insert({
-      full_name: `${form.contactFirst} ${form.contactLast}`.trim(),
-      email: form.email,
-      phone: form.phone,
-      company_name: form.dbaName,
-      business_type: isGatewayOnly ? "Gateway Only" : (form.businessStructure || form.natureOfBusiness),
-      service_type: isGatewayOnly ? "gateway_only" : "processing",
-      monthly_volume: form.monthlyVolume || null,
-      message: form.notes || null,
-      status: "pending",
-      dba_name: form.dbaName || null,
-      products: isGatewayOnly ? "Gateway Only" : (form.products || null),
-      nature_of_business: form.natureOfBusiness || null,
-      address: form.address || null,
-      address2: form.address2 || null,
-      city: form.city || null,
-      state: form.state || null,
-      zip: form.zip || null,
-      legal_name: form.legalName || null,
-      federal_tax_id: form.federalTaxId || null,
-      state_of_incorporation: form.stateOfIncorporation || null,
-      business_structure: form.businessStructure || null,
-      date_established: form.dateEstablished || null,
-      owner_name: form.ownerName || null,
-      owner_title: form.ownerTitle || null,
-      owner_dob: form.ownerDob || null,
-      owner_ssn_last4: form.ownerSsn || null,
-      owner_address: form.ownerAddress || null,
-      owner_city: form.ownerCity || null,
-      owner_state: form.ownerState || null,
-      owner_zip: form.ownerZip || null,
-      avg_ticket: form.avgTicket || null,
-      high_ticket: form.highTicket || null,
-      current_processor: form.currentProcessor || null,
-      accepted_cards: form.acceptedCards || null,
-      ecommerce_percent: form.ecommercePercent || null,
-      in_person_percent: form.inPersonPercent || null,
-      keyed_percent: form.keyed || null,
-      website: form.website || null,
-      notes: isGatewayOnly
-        ? `[Gateway Only Application] Processor: ${form.currentProcessor}. Username: ${form.username}. ${form.notes || ""}`
-        : (form.notes || null),
-    });
+    try {
+      // 1. Insert into applications table
+      const { data: appData, error: appError } = await supabase
+        .from("applications")
+        .insert({
+          full_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
+          email: form.dba_contact_email,
+          phone: form.dba_contact_phone,
+          company_name: form.dba_name,
+          service_type: isGatewayOnly ? "gateway_only" : "processing",
+          status: "pending",
+          dba_name: form.dba_name || null,
+          nature_of_business: form.nature_of_business || null,
+          monthly_volume: form.monthly_volume || null,
+          notes: form.additional_notes || null,
+        })
+        .select("id")
+        .single();
 
-    setIsSubmitting(false);
+      if (appError) throw appError;
+      const applicationId = appData.id;
 
-    if (error) {
+      if (!isGatewayOnly) {
+        // 2. Insert into merchants table (canonical keys match column names)
+        const { error: merchantError } = await supabase
+          .from("merchants")
+          .insert({
+            application_id: applicationId,
+            dba_name: form.dba_name,
+            product_description: form.product_description,
+            nature_of_business: form.nature_of_business,
+            dba_contact_first_name: form.dba_contact_first_name,
+            dba_contact_last_name: form.dba_contact_last_name,
+            dba_contact_phone: form.dba_contact_phone,
+            dba_contact_email: form.dba_contact_email,
+            dba_address_line1: form.dba_address_line1,
+            dba_address_line2: form.dba_address_line2 || null,
+            dba_city: form.dba_city,
+            dba_state: form.dba_state,
+            dba_zip: form.dba_zip,
+            dba_country: form.dba_country || "US",
+            legal_entity_name: form.legal_entity_name,
+            federal_tax_id: form.federal_tax_id,
+            ownership_type: form.ownership_type,
+            business_formation_date: form.business_formation_date,
+            state_incorporated: form.state_incorporated,
+            tax_exempt: form.tax_exempt,
+            legal_address_line1: form.legal_address_line1,
+            legal_address_line2: form.legal_address_line2 || null,
+            legal_city: form.legal_city,
+            legal_state: form.legal_state,
+            legal_zip: form.legal_zip,
+            legal_country: form.legal_country || "US",
+            monthly_volume: form.monthly_volume,
+            average_transaction: form.average_transaction,
+            high_ticket: form.high_ticket,
+            percent_swiped: form.percent_swiped,
+            percent_keyed: form.percent_keyed,
+            percent_moto: form.percent_moto,
+            percent_ecommerce: form.percent_ecommerce,
+            percent_b2b: form.percent_b2b || null,
+            percent_b2c: form.percent_b2c || null,
+            website_url: form.website_url || null,
+            sic_mcc_code: form.sic_mcc_code || null,
+          });
+        if (merchantError) console.error("Merchant insert error:", merchantError);
+
+        // 3. Insert principals
+        for (const principal of form.principals) {
+          const { error: principalError } = await supabase
+            .from("principals")
+            .insert({
+              application_id: applicationId,
+              principal_first_name: principal.principal_first_name,
+              principal_last_name: principal.principal_last_name,
+              principal_title: principal.principal_title,
+              ownership_percent: parseFloat(principal.ownership_percent) || 0,
+              principal_phone: principal.principal_phone || null,
+              principal_email: principal.principal_email || null,
+              principal_address_line1: principal.principal_address_line1 || null,
+              principal_address_line2: principal.principal_address_line2 || null,
+              principal_city: principal.principal_city || null,
+              principal_state: principal.principal_state || null,
+              principal_zip: principal.principal_zip || null,
+              principal_country: principal.principal_country || "US",
+              date_of_birth: principal.date_of_birth,
+              ssn_last4: principal.ssn_full ? principal.ssn_full.slice(-4) : null,
+            });
+          if (principalError) console.error("Principal insert error:", principalError);
+        }
+
+        // 4. Insert bank account
+        const { error: bankError } = await supabase
+          .from("bank_accounts")
+          .insert({
+            application_id: applicationId,
+            bank_name: form.bank_name,
+            account_holder_name: form.account_holder_name,
+            account_last4: form.account_number ? form.account_number.slice(-4) : null,
+          });
+        if (bankError) console.error("Bank account insert error:", bankError);
+
+        // 5. Encrypt sensitive data via edge function
+        const hasSensitive = form.principals.some(p => p.ssn_full) || form.routing_number || form.account_number;
+        if (hasSensitive) {
+          const encryptPayload: Record<string, string> = { application_id: applicationId };
+          // Combine all SSNs (for now, primary principal's SSN)
+          const primarySsn = form.principals[0]?.ssn_full;
+          if (primarySsn) encryptPayload.ssn_full = primarySsn;
+          if (form.routing_number) encryptPayload.routing_number = form.routing_number;
+          if (form.account_number) encryptPayload.account_number = form.account_number;
+
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+            await fetch(`${supabaseUrl}/functions/v1/encrypt-secrets`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+              body: JSON.stringify(encryptPayload),
+            });
+          } catch (encErr) {
+            console.error("Encryption call failed (non-blocking):", encErr);
+          }
+        }
+      } else {
+        // Gateway only — store notes with processor/username info
+        await supabase
+          .from("applications")
+          .update({
+            notes: `[Gateway Only] Processor: ${form.current_processor}. Username: ${form.username}. ${form.additional_notes || ""}`.trim(),
+          })
+          .eq("id", applicationId);
+      }
+
+      setIsSubmitted(true);
+      window.location.href = "https://merchanthaus.io";
+    } catch (error: any) {
       toast({ variant: "destructive", title: "Submission failed", description: error.message });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    window.location.href = "https://merchanthaus.io";
   };
 
-  // ─── Service type selection screen ───
+  // ─── Service type selection ───
   if (serviceType === null) {
     return (
-      <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
         <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
           </div>
         </header>
-
         <div className="p-4 md:p-8">
           <div className="max-w-2xl mx-auto space-y-6 md:space-y-8">
             <div className="text-center space-y-2">
-              <h1 className="text-xl md:text-3xl font-bold text-foreground">
-                What do you need?
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground">
-                Select the service that best fits your business requirements.
-              </p>
+              <h1 className="text-xl md:text-3xl font-bold text-foreground">What do you need?</h1>
+              <p className="text-sm md:text-base text-muted-foreground">Select the service that best fits your business requirements.</p>
             </div>
-
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Gateway Only */}
-              <button
-                onClick={() => { setServiceType("gateway_only"); setStepIndex(0); }}
-                className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3"
-              >
-                <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-teal-600" />
-                </div>
+              <button onClick={() => { setServiceType("gateway_only"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center"><Zap className="w-6 h-6 text-teal-600" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Gateway Only</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  I already have a processor and need NMI gateway access to connect my existing merchant account.
-                </p>
-                <div className="text-xs text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Quick setup — fewer fields required →
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">I already have a processor and need NMI gateway access.</p>
+                <div className="text-xs text-primary font-medium">Quick setup — fewer fields required →</div>
               </button>
-
-              {/* Gateway + Processing */}
-              <button
-                onClick={() => { setServiceType("gateway_and_processing"); setStepIndex(0); }}
-                className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3"
-              >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-primary" />
-                </div>
+              <button onClick={() => { setServiceType("gateway_and_processing"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><CreditCard className="w-6 h-6 text-primary" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Gateway + Processing</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  I need both a payment processor and NMI gateway — full merchant account setup.
-                </p>
-                <div className="text-xs text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Full application required →
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">I need both a payment processor and NMI gateway.</p>
+                <div className="text-xs text-primary font-medium">Full application required →</div>
               </button>
             </div>
           </div>
@@ -421,18 +573,14 @@ export default function MerchantApply() {
   // ─── Submitted screen ───
   if (isSubmitted) {
     return (
-      <div className="merchant-form fixed inset-0 z-50 bg-background flex items-center justify-center p-4 overflow-y-auto">
+      <div className="merchant-form fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-success" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-emerald-500" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Application Received!</h1>
-          <p className="text-muted-foreground">
-            Thank you for your interest. Our team will review your application and contact you within 1-2 business days.
-          </p>
-          <a href="https://merchanthaus.io" className="inline-block mt-4 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-            Return to Website
-          </a>
+          <p className="text-muted-foreground">Our team will review your application and contact you within 1-2 business days.</p>
+          <a href="https://merchanthaus.io" className="inline-block mt-4 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Return to Website</a>
         </div>
       </div>
     );
@@ -442,20 +590,14 @@ export default function MerchantApply() {
   const currentStep = steps[stepIndex];
 
   return (
-    <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-      {/* Header */}
+    <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setServiceType(null); setStepIndex(0); setForm(initialState); setTouched({}); setShowAllErrors(false); }}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors mr-2"
-            >
-              ← Change type
-            </button>
+            <button onClick={() => { setServiceType(null); setStepIndex(0); setForm(initialState); setTouched({}); setShowAllErrors(false); }} className="text-xs text-muted-foreground hover:text-foreground mr-2">← Change type</button>
             <div className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-secondary overflow-hidden">
               <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
@@ -473,29 +615,15 @@ export default function MerchantApply() {
               const isActive = index === stepIndex;
               const isCompleted = index < stepIndex;
               return (
-                <button
-                  key={step.label}
-                  onClick={() => setStepIndex(index)}
-                  className={cn(
-                    "flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg flex-1 min-w-0 transition-all border-b-2",
-                    isActive ? "bg-card border-primary shadow-sm"
-                      : isCompleted ? "bg-card/50 border-primary/50"
-                        : "bg-transparent border-transparent hover:bg-card/50"
-                  )}
-                >
-                  <div className={cn(
-                    "w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                    isActive ? "bg-primary/10 text-primary"
-                      : isCompleted ? "bg-primary/5 text-primary/70"
-                        : "bg-secondary text-muted-foreground"
-                  )}>
+                <button key={step.label} onClick={() => setStepIndex(index)} className={cn(
+                  "flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg flex-1 min-w-0 transition-all border-b-2",
+                  isActive ? "bg-card border-primary shadow-sm" : isCompleted ? "bg-card/50 border-primary/50" : "bg-transparent border-transparent hover:bg-card/50"
+                )}>
+                  <div className={cn("w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0", isActive ? "bg-primary/10 text-primary" : isCompleted ? "bg-primary/5 text-primary/70" : "bg-secondary text-muted-foreground")}>
                     <StepIcon className="w-3 h-3 md:w-5 md:h-5" />
                   </div>
                   <div className="text-left min-w-0 hidden sm:block">
-                    <p className={cn(
-                      "text-xs md:text-sm font-medium truncate",
-                      isActive ? "text-primary" : isCompleted ? "text-primary/70" : "text-muted-foreground"
-                    )}>{step.label}</p>
+                    <p className={cn("text-xs md:text-sm font-medium truncate", isActive ? "text-primary" : isCompleted ? "text-primary/70" : "text-muted-foreground")}>{step.label}</p>
                   </div>
                 </button>
               );
@@ -507,55 +635,31 @@ export default function MerchantApply() {
             <section className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm overflow-visible">
               <div className="p-4 md:p-6">
                 <div className="mb-4 md:mb-6">
-                  <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground mb-1 md:mb-2">
-                    <span className="font-medium">Step {stepIndex + 1}: {currentStep.label}</span>
-                    <span className="text-border">•</span>
-                    <span>{stepIndex + 1} of {steps.length}</span>
-                  </div>
                   <h2 className="text-base md:text-xl font-semibold text-foreground">{currentStep.label}</h2>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">
-                    Please complete all required fields marked with <span className="text-destructive">*</span>
-                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Required fields marked with <span className="text-destructive">*</span></p>
                 </div>
 
-                {/* Step Content */}
                 {isGatewayOnly ? (
                   <>
-                    {stepIndex === 0 && (
-                      <GatewayBusinessStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />
-                    )}
-                    {stepIndex === 1 && (
-                      <GatewayDocumentsStep form={form} missingBySection={missingBySection} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />
-                    )}
+                    {stepIndex === 0 && <GatewayBusinessStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 1 && <GatewayDocumentsStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
                   </>
                 ) : (
                   <>
                     {stepIndex === 0 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
                     {stepIndex === 1 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
                     {stepIndex === 2 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 3 && <ReviewStep form={form} missingBySection={missingBySection} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
+                    {stepIndex === 3 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 4 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
                   </>
                 )}
               </div>
 
-              {/* Navigation - hide on last step */}
-              {((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 3)) && (
+              {/* Navigation — hide on last step */}
+              {((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 4)) && (
                 <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
-                  <button
-                    type="button"
-                    className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 transition-colors"
-                    onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
-                    disabled={stepIndex === 0}
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                    onClick={handleNextStep}
-                  >
-                    Next Step
-                  </button>
+                  <button type="button" className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40" onClick={() => setStepIndex(prev => Math.max(0, prev - 1))} disabled={stepIndex === 0}>Back</button>
+                  <button type="button" className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={handleNextStep}>Next Step</button>
                 </div>
               )}
             </section>
@@ -567,43 +671,17 @@ export default function MerchantApply() {
                   <AlertCircle className="w-4 h-4 text-primary" />
                   Status Snapshot
                 </div>
-
                 <div className="space-y-4">
                   {isGatewayOnly ? (
-                    <SectionStatus
-                      label="Business Details"
-                      count={GATEWAY_REQUIRED_FIELDS.gateway_business.length - missingBySection.gateway_business.length}
-                      total={GATEWAY_REQUIRED_FIELDS.gateway_business.length}
-                    />
+                    <SectionStatus label="Business Details" count={GATEWAY_REQUIRED.gateway_business.length - (missingBySection.gateway_business?.length ?? 0)} total={GATEWAY_REQUIRED.gateway_business.length} />
                   ) : (
                     <>
-                      <SectionStatus label="Business Profile" count={PROCESSING_REQUIRED_FIELDS.business.length - missingBySection.business.length} total={PROCESSING_REQUIRED_FIELDS.business.length} />
-                      <SectionStatus label="Legal Info" count={PROCESSING_REQUIRED_FIELDS.legal.length - missingBySection.legal.length} total={PROCESSING_REQUIRED_FIELDS.legal.length} />
-                      <SectionStatus label="Processing" count={PROCESSING_REQUIRED_FIELDS.processing.length - missingBySection.processing.length} total={PROCESSING_REQUIRED_FIELDS.processing.length} />
+                      <SectionStatus label="Business Profile" count={PROCESSING_REQUIRED.business.length - (missingBySection.business?.length ?? 0)} total={PROCESSING_REQUIRED.business.length} />
+                      <SectionStatus label="Legal Info" count={PROCESSING_REQUIRED.legal.length - (missingBySection.legal?.length ?? 0)} total={PROCESSING_REQUIRED.legal.length} />
+                      <SectionStatus label="Processing" count={PROCESSING_REQUIRED.processing.length - (missingBySection.processing?.length ?? 0)} total={PROCESSING_REQUIRED.processing.length} />
+                      <SectionStatus label="Owners & Banking" count={(missingBySection.owners_banking ? allRequiredFields.filter(f => f.includes("principal") || ["bank_name","account_holder_name","routing_number","account_number"].includes(f)).length - missingBySection.owners_banking.length : 0)} total={allRequiredFields.filter(f => f.includes("principal") || ["bank_name","account_holder_name","routing_number","account_number"].includes(f)).length} />
                     </>
                   )}
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-border">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Missing Items</p>
-                  <ul className="space-y-1 text-sm">
-                    {isGatewayOnly ? (
-                      missingBySection.gateway_business.length > 0 ? (
-                        <li className="text-destructive">
-                          <span className="font-medium">Details:</span> {missingBySection.gateway_business.length} fields remaining
-                        </li>
-                      ) : (
-                        <li className="text-success font-medium">All fields complete! ✓</li>
-                      )
-                    ) : (
-                      <>
-                        {missingBySection.business.length > 0 && <li className="text-destructive"><span className="font-medium">Business:</span> {missingBySection.business.length} fields remaining</li>}
-                        {missingBySection.legal.length > 0 && <li className="text-destructive"><span className="font-medium">Legal:</span> {missingBySection.legal.length} fields remaining</li>}
-                        {missingBySection.processing.length > 0 && <li className="text-destructive"><span className="font-medium">Processing:</span> {missingBySection.processing.length} fields remaining</li>}
-                        {progress === 100 && <li className="text-success font-medium">All fields complete! ✓</li>}
-                      </>
-                    )}
-                  </ul>
                 </div>
               </div>
 
@@ -611,13 +689,8 @@ export default function MerchantApply() {
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-info-foreground">Tip</p>
-                    <p className="text-xs text-info/80 mt-1">
-                      {isGatewayOnly
-                        ? "For gateway-only setup, please have your processor's VAR sheet and a voided check or bank confirmation letter ready."
-                        : "If your business does not currently have a processor, we will ask for additional documentation readiness checks after you click \"Complete\"."
-                      }
-                    </p>
+                    <p className="text-sm font-medium text-info-foreground">Security Notice</p>
+                    <p className="text-xs text-info/80 mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
                   </div>
                 </div>
               </div>
@@ -633,15 +706,7 @@ export default function MerchantApply() {
 // Helper Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface FieldProps {
-  label: string;
-  required?: boolean;
-  children: ReactNode;
-  hint?: string;
-  error?: string | null;
-}
-
-function Field({ label, required, children, hint, error }: FieldProps) {
+function Field({ label, required, children, hint, error }: { label: string; required?: boolean; children: ReactNode; hint?: string; error?: string | null }) {
   return (
     <label className="space-y-1 md:space-y-1.5 text-xs md:text-sm">
       <span className="flex items-center gap-1 font-medium text-foreground">
@@ -649,78 +714,50 @@ function Field({ label, required, children, hint, error }: FieldProps) {
         {required && <span className="text-destructive">*</span>}
       </span>
       {children}
-      {error && (
-        <p className="text-xs text-destructive flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          {error}
-        </p>
-      )}
+      {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error}</p>}
       {!error && hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </label>
   );
 }
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  hasError?: boolean;
-}
-
-function Input({ hasError, ...props }: InputProps) {
+function Input({ hasError, ...props }: InputHTMLAttributes<HTMLInputElement> & { hasError?: boolean }) {
   return (
-    <input
-      {...props}
-      className={cn(
-        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2",
-        hasError
-          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
-          : "border-input focus:border-primary focus:ring-primary/20",
-        props.className
-      )}
-    />
+    <input {...props} className={cn(
+      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2",
+      hasError ? "border-destructive focus:border-destructive focus:ring-destructive/20" : "border-input focus:border-primary focus:ring-primary/20",
+      props.className
+    )} />
   );
 }
 
-function NumberInput(props: InputProps) {
+function NumberInput(props: InputHTMLAttributes<HTMLInputElement> & { hasError?: boolean }) {
   return <Input type="number" step="any" min="0" {...props} />;
 }
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  hasError?: boolean;
-}
-
-function Textarea({ hasError, ...props }: TextareaProps) {
+function SelectInput({ children, hasError, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode; hasError?: boolean }) {
   return (
-    <textarea
-      {...props}
-      className={cn(
-        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 min-h-[60px] md:min-h-[80px]",
-        hasError
-          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
-          : "border-input focus:border-primary focus:ring-primary/20",
-        props.className
-      )}
-    />
+    <select {...props} className={cn(
+      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground shadow-sm focus:outline-none focus:ring-2",
+      hasError ? "border-destructive focus:ring-destructive/20" : "border-input focus:ring-primary/20",
+    )}>{children}</select>
   );
 }
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  children: ReactNode;
-  hasError?: boolean;
+function Textarea({ hasError, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { hasError?: boolean }) {
+  return (
+    <textarea {...props} className={cn(
+      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 min-h-[60px]",
+      hasError ? "border-destructive focus:ring-destructive/20" : "border-input focus:ring-primary/20",
+    )} />
+  );
 }
 
-function Select({ children, hasError, ...props }: SelectProps) {
+function Divider({ label }: { label: string }) {
   return (
-    <select
-      {...props}
-      className={cn(
-        "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground shadow-sm focus:outline-none focus:ring-2",
-        hasError
-          ? "border-destructive focus:border-destructive focus:ring-destructive/20"
-          : "border-input focus:border-primary focus:ring-primary/20",
-        props.className
-      )}
-    >
-      {children}
-    </select>
+    <div className="relative my-6">
+      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+      <div className="relative flex justify-start"><span className="bg-card pr-3 text-sm font-medium text-muted-foreground">{label}</span></div>
+    </div>
   );
 }
 
@@ -738,472 +775,464 @@ function SectionStatus({ label, count, total }: { label: string; count: number; 
   );
 }
 
-function Divider({ label }: { label: string }) {
-  return (
-    <div className="relative my-6">
-      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-      <div className="relative flex justify-start"><span className="bg-card pr-3 text-sm font-medium text-muted-foreground">{label}</span></div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Step Components
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface StepProps {
-  form: MerchantForm;
-  onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
-  onBlur: (field: keyof MerchantForm) => void;
-  getError: (field: keyof MerchantForm) => string | null;
-}
-
-// ─── Gateway Only: Business Details ───
-function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
-  return (
-    <div className="space-y-3 md:space-y-4">
-      <Field label="Business / DBA Name" required error={getError("dbaName")}>
-        <Input value={form.dbaName} onChange={e => onChange("dbaName", e.target.value)} onBlur={() => onBlur("dbaName")} placeholder="Doing Business As..." hasError={!!getError("dbaName")} />
-      </Field>
-
-      <Divider label="Contact Information" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="First Name" required error={getError("contactFirst")}>
-          <Input value={form.contactFirst} onChange={e => onChange("contactFirst", e.target.value)} onBlur={() => onBlur("contactFirst")} hasError={!!getError("contactFirst")} />
-        </Field>
-        <Field label="Last Name" required error={getError("contactLast")}>
-          <Input value={form.contactLast} onChange={e => onChange("contactLast", e.target.value)} onBlur={() => onBlur("contactLast")} hasError={!!getError("contactLast")} />
-        </Field>
-        <Field label="Phone Number" required error={getError("phone")}>
-          <Input value={form.phone} onChange={e => onChange("phone", e.target.value)} onBlur={() => onBlur("phone")} placeholder="+1 (555) 000-0000" hasError={!!getError("phone")} />
-        </Field>
-        <Field label="Email Address" required error={getError("email")}>
-          <Input type="email" value={form.email} onChange={e => onChange("email", e.target.value)} onBlur={() => onBlur("email")} placeholder="name@business.com" hasError={!!getError("email")} />
-        </Field>
-      </div>
-
-      <Divider label="Location" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Address Line 1" required error={getError("address")}>
-          <Input value={form.address} onChange={e => onChange("address", e.target.value)} onBlur={() => onBlur("address")} hasError={!!getError("address")} />
-        </Field>
-        <Field label="Address Line 2">
-          <Input value={form.address2} onChange={e => onChange("address2", e.target.value)} placeholder="Suite, Unit, etc." />
-        </Field>
-        <Field label="City" required error={getError("city")}>
-          <Input value={form.city} onChange={e => onChange("city", e.target.value)} onBlur={() => onBlur("city")} hasError={!!getError("city")} />
-        </Field>
-        <Field label="State" required error={getError("state")}>
-          <Input value={form.state} onChange={e => onChange("state", e.target.value)} onBlur={() => onBlur("state")} hasError={!!getError("state")} />
-        </Field>
-        <Field label="ZIP Code" required error={getError("zip")}>
-          <Input value={form.zip} onChange={e => onChange("zip", e.target.value)} onBlur={() => onBlur("zip")} hasError={!!getError("zip")} />
-        </Field>
-      </div>
-
-      <Divider label="Gateway Details" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Username" required hint="Your preferred NMI portal username" error={getError("username")}>
-          <Input value={form.username} onChange={e => onChange("username", e.target.value)} onBlur={() => onBlur("username")} placeholder="e.g. jsmith_gateway" hasError={!!getError("username")} />
-        </Field>
-        <Field label="Current Processor" required hint="Who processes your transactions today?" error={getError("currentProcessor")}>
-          <Input value={form.currentProcessor} onChange={e => onChange("currentProcessor", e.target.value)} onBlur={() => onBlur("currentProcessor")} placeholder="e.g. First Data, TSYS, Worldpay" hasError={!!getError("currentProcessor")} />
-        </Field>
-      </div>
-
-      <Field label="Additional Notes" hint="Any other information you'd like us to know">
-        <Textarea value={form.notes} onChange={e => onChange("notes", e.target.value)} placeholder="Tell us more..." />
-      </Field>
-    </div>
-  );
-}
-
-// ─── Gateway Only: Documents & Submit ───
-function GatewayDocumentsStep({ form, missingBySection, onSubmit, isSubmitting, progress }: {
-  form: MerchantForm;
-  missingBySection: Record<string, string[]>;
-  onSubmit: () => void;
-  isSubmitting: boolean;
-  progress: number;
-}) {
-  const allComplete = progress === 100;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <FileText className="w-5 h-5 text-primary" />
-        Required Documents
-      </div>
-
-      <div className="rounded-xl border border-border bg-muted p-5 space-y-4">
-        <p className="text-sm text-foreground">
-          Please prepare the following documents and send them to <a href="mailto:onboarding@merchanthaus.io" className="text-primary font-medium hover:underline">onboarding@merchanthaus.io</a> after submitting this form:
-        </p>
-
-        <ul className="space-y-3 text-sm">
-          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <FileText className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">VAR Sheet</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                The VAR sheet from your current processor. This document contains your merchant configuration details needed to set up the gateway.
-              </p>
-            </div>
-          </li>
-          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <FileText className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Voided Check or Bank Confirmation Letter</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                A voided check or a bank letter confirming your account and routing number for settlement purposes.
-              </p>
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      {/* Review summary */}
-      <div className="rounded-xl border border-border bg-muted p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Application Summary</h3>
-        <dl className="grid gap-2 text-sm md:grid-cols-2">
-          <DataItem label="Business Name" value={form.dbaName} />
-          <DataItem label="Contact" value={`${form.contactFirst} ${form.contactLast}`} />
-          <DataItem label="Email" value={form.email} />
-          <DataItem label="Phone" value={form.phone} />
-          <DataItem label="Username" value={form.username} />
-          <DataItem label="Current Processor" value={form.currentProcessor} />
-          <DataItem label="Address" value={`${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zip}`} />
-        </dl>
-      </div>
-
-      {!allComplete && (
-        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Missing Required Information</p>
-              <p className="mt-1">Please go back and complete all required fields before submitting.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {allComplete && (
-        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-success">
-          <div className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Ready to Submit!</p>
-              <p className="mt-1">All required fields are complete. Submit your application and then email the documents listed above.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="pt-4 border-t border-border">
-        <button
-          type="button"
-          className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:bg-secondary disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          onClick={onSubmit}
-          disabled={!allComplete || isSubmitting}
-        >
-          {isSubmitting ? "Submitting..." : (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              Submit Gateway Application
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Processing: Business Profile (unchanged) ───
-function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
-  return (
-    <div className="space-y-3 md:space-y-4">
-      <Field label="DBA Name" required hint="Doing Business As..." error={getError("dbaName")}>
-        <Input value={form.dbaName} onChange={e => onChange("dbaName", e.target.value)} onBlur={() => onBlur("dbaName")} placeholder="Doing Business As..." hasError={!!getError("dbaName")} />
-      </Field>
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Products / Services" required error={getError("products")}>
-          <Input value={form.products} onChange={e => onChange("products", e.target.value)} onBlur={() => onBlur("products")} placeholder="e.g. Shoes, Consulting" hasError={!!getError("products")} />
-        </Field>
-        <Field label="Nature of Business" required error={getError("natureOfBusiness")}>
-          <Input value={form.natureOfBusiness} onChange={e => onChange("natureOfBusiness", e.target.value)} onBlur={() => onBlur("natureOfBusiness")} placeholder="e.g. Retail, eCommerce" hasError={!!getError("natureOfBusiness")} />
-        </Field>
-      </div>
-
-      <Divider label="Contact Information" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="First Name" required error={getError("contactFirst")}>
-          <Input value={form.contactFirst} onChange={e => onChange("contactFirst", e.target.value)} onBlur={() => onBlur("contactFirst")} hasError={!!getError("contactFirst")} />
-        </Field>
-        <Field label="Last Name" required error={getError("contactLast")}>
-          <Input value={form.contactLast} onChange={e => onChange("contactLast", e.target.value)} onBlur={() => onBlur("contactLast")} hasError={!!getError("contactLast")} />
-        </Field>
-        <Field label="Phone Number" required error={getError("phone")}>
-          <Input value={form.phone} onChange={e => onChange("phone", e.target.value)} onBlur={() => onBlur("phone")} placeholder="+1 (555) 000-0000" hasError={!!getError("phone")} />
-        </Field>
-        <Field label="Email Address" required error={getError("email")}>
-          <Input type="email" value={form.email} onChange={e => onChange("email", e.target.value)} onBlur={() => onBlur("email")} placeholder="name@business.com" hasError={!!getError("email")} />
-        </Field>
-      </div>
-
-      <Divider label="Location" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Address Line 1" required error={getError("address")}>
-          <Input value={form.address} onChange={e => onChange("address", e.target.value)} onBlur={() => onBlur("address")} hasError={!!getError("address")} />
-        </Field>
-        <Field label="Address Line 2">
-          <Input value={form.address2} onChange={e => onChange("address2", e.target.value)} placeholder="Suite, Unit, etc." />
-        </Field>
-        <Field label="City" required error={getError("city")}>
-          <Input value={form.city} onChange={e => onChange("city", e.target.value)} onBlur={() => onBlur("city")} hasError={!!getError("city")} />
-        </Field>
-        <Field label="State" required error={getError("state")}>
-          <Input value={form.state} onChange={e => onChange("state", e.target.value)} onBlur={() => onBlur("state")} hasError={!!getError("state")} />
-        </Field>
-        <Field label="ZIP Code" required error={getError("zip")}>
-          <Input value={form.zip} onChange={e => onChange("zip", e.target.value)} onBlur={() => onBlur("zip")} hasError={!!getError("zip")} />
-        </Field>
-      </div>
-    </div>
-  );
-}
-
-// ─── Processing: Legal Info (unchanged) ───
-function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
-  return (
-    <div className="space-y-3 md:space-y-4">
-      <Field label="Legal Business Name" required error={getError("legalName")}>
-        <Input value={form.legalName} onChange={e => onChange("legalName", e.target.value)} onBlur={() => onBlur("legalName")} placeholder="As registered with state/IRS" hasError={!!getError("legalName")} />
-      </Field>
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Federal Tax ID (EIN)" required error={getError("federalTaxId")}>
-          <Input value={form.federalTaxId} onChange={e => onChange("federalTaxId", e.target.value)} onBlur={() => onBlur("federalTaxId")} placeholder="XX-XXXXXXX" hasError={!!getError("federalTaxId")} />
-        </Field>
-        <Field label="State of Incorporation" required error={getError("stateOfIncorporation")}>
-          <Input value={form.stateOfIncorporation} onChange={e => onChange("stateOfIncorporation", e.target.value)} onBlur={() => onBlur("stateOfIncorporation")} hasError={!!getError("stateOfIncorporation")} />
-        </Field>
-        <Field label="Business Structure" required error={getError("businessStructure")}>
-          <Select value={form.businessStructure} onChange={e => onChange("businessStructure", e.target.value)} onBlur={() => onBlur("businessStructure")} hasError={!!getError("businessStructure")}>
-            <option value="">Select structure...</option>
-            <option value="sole_proprietor">Sole Proprietor</option>
-            <option value="llc">LLC</option>
-            <option value="corporation">Corporation</option>
-            <option value="partnership">Partnership</option>
-            <option value="nonprofit">Non-Profit</option>
-          </Select>
-        </Field>
-        <Field label="Date Established" required error={getError("dateEstablished")}>
-          <Input type="date" value={form.dateEstablished} onChange={e => onChange("dateEstablished", e.target.value)} onBlur={() => onBlur("dateEstablished")} hasError={!!getError("dateEstablished")} />
-        </Field>
-      </div>
-
-      <Divider label="Principal Owner Information" />
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Owner Full Name" required error={getError("ownerName")}>
-          <Input value={form.ownerName} onChange={e => onChange("ownerName", e.target.value)} onBlur={() => onBlur("ownerName")} hasError={!!getError("ownerName")} />
-        </Field>
-        <Field label="Title" required error={getError("ownerTitle")}>
-          <Input value={form.ownerTitle} onChange={e => onChange("ownerTitle", e.target.value)} onBlur={() => onBlur("ownerTitle")} placeholder="e.g. CEO, Owner, President" hasError={!!getError("ownerTitle")} />
-        </Field>
-        <Field label="Date of Birth" required error={getError("ownerDob")}>
-          <Input type="date" value={form.ownerDob} onChange={e => onChange("ownerDob", e.target.value)} onBlur={() => onBlur("ownerDob")} hasError={!!getError("ownerDob")} />
-        </Field>
-        <Field label="SSN (last 4 digits)" required hint="Used for verification only" error={getError("ownerSsn")}>
-          <Input value={form.ownerSsn} onChange={e => onChange("ownerSsn", e.target.value)} onBlur={() => onBlur("ownerSsn")} placeholder="XXXX" maxLength={4} hasError={!!getError("ownerSsn")} />
-        </Field>
-      </div>
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Owner Home Address" required error={getError("ownerAddress")}>
-          <Input value={form.ownerAddress} onChange={e => onChange("ownerAddress", e.target.value)} onBlur={() => onBlur("ownerAddress")} hasError={!!getError("ownerAddress")} />
-        </Field>
-        <Field label="City" required error={getError("ownerCity")}>
-          <Input value={form.ownerCity} onChange={e => onChange("ownerCity", e.target.value)} onBlur={() => onBlur("ownerCity")} hasError={!!getError("ownerCity")} />
-        </Field>
-        <Field label="State">
-          <Input value={form.ownerState} onChange={e => onChange("ownerState", e.target.value)} />
-        </Field>
-        <Field label="ZIP">
-          <Input value={form.ownerZip} onChange={e => onChange("ownerZip", e.target.value)} />
-        </Field>
-      </div>
-    </div>
-  );
-}
-
-// ─── Processing: Processing Info (unchanged) ───
-function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
-  return (
-    <div className="space-y-3 md:space-y-4">
-      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-3">
-        <Field label="Monthly Vol ($)" required hint="Est. monthly CC sales" error={getError("monthlyVolume")}>
-          <NumberInput value={form.monthlyVolume} onChange={e => onChange("monthlyVolume", e.target.value)} onBlur={() => onBlur("monthlyVolume")} placeholder="50000" hasError={!!getError("monthlyVolume")} />
-        </Field>
-        <Field label="Avg Ticket ($)" required hint="Avg transaction" error={getError("avgTicket")}>
-          <NumberInput value={form.avgTicket} onChange={e => onChange("avgTicket", e.target.value)} onBlur={() => onBlur("avgTicket")} placeholder="75" hasError={!!getError("avgTicket")} />
-        </Field>
-        <Field label="High Ticket ($)" required hint="Largest transaction" error={getError("highTicket")}>
-          <NumberInput value={form.highTicket} onChange={e => onChange("highTicket", e.target.value)} onBlur={() => onBlur("highTicket")} placeholder="500" hasError={!!getError("highTicket")} />
-        </Field>
-      </div>
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Current Processor" required hint="If none, enter 'None'" error={getError("currentProcessor")}>
-          <Input value={form.currentProcessor} onChange={e => onChange("currentProcessor", e.target.value)} onBlur={() => onBlur("currentProcessor")} placeholder="e.g. Square, Stripe, None" hasError={!!getError("currentProcessor")} />
-        </Field>
-        <Field label="Accepted Card Types" required error={getError("acceptedCards")}>
-          <Input value={form.acceptedCards} onChange={e => onChange("acceptedCards", e.target.value)} onBlur={() => onBlur("acceptedCards")} placeholder="Visa, Mastercard, Amex, Discover" hasError={!!getError("acceptedCards")} />
-        </Field>
-      </div>
-
-      <Divider label="Transaction Mix" />
-
-      <div className="grid gap-3 md:gap-4 grid-cols-3">
-        <Field label="eCommerce %" required hint="Online transactions" error={getError("ecommercePercent")}>
-          <NumberInput value={form.ecommercePercent} onChange={e => onChange("ecommercePercent", e.target.value)} onBlur={() => onBlur("ecommercePercent")} placeholder="30" hasError={!!getError("ecommercePercent")} />
-        </Field>
-        <Field label="In-Person %" required hint="Card-present transactions" error={getError("inPersonPercent")}>
-          <NumberInput value={form.inPersonPercent} onChange={e => onChange("inPersonPercent", e.target.value)} onBlur={() => onBlur("inPersonPercent")} placeholder="60" hasError={!!getError("inPersonPercent")} />
-        </Field>
-        <Field label="Keyed %" required hint="Manually entered" error={getError("keyed")}>
-          <NumberInput value={form.keyed} onChange={e => onChange("keyed", e.target.value)} onBlur={() => onBlur("keyed")} placeholder="10" hasError={!!getError("keyed")} />
-        </Field>
-      </div>
-
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Website" hint="Optional - your business website">
-          <Input value={form.website} onChange={e => onChange("website", e.target.value)} placeholder="https://yourbusiness.com" />
-        </Field>
-      </div>
-
-      <Field label="Additional Notes" hint="Any other information you'd like us to know">
-        <Textarea value={form.notes} onChange={e => onChange("notes", e.target.value)} placeholder="Tell us more about your business..." />
-      </Field>
-    </div>
-  );
-}
-
-// ─── Processing: Review Step (unchanged) ───
-function ReviewStep({ form, missingBySection, onSubmit, isSubmitting, progress }: {
-  form: MerchantForm;
-  missingBySection: Record<string, string[]>;
-  onSubmit: () => void;
-  isSubmitting: boolean;
-  progress: number;
-}) {
-  const allComplete = progress === 100;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <CheckCircle2 className="w-5 h-5 text-primary" />
-        Application Readiness
-      </div>
-
-      {!allComplete && (
-        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Missing Required Information</p>
-              <p className="mt-1">Please complete all required fields before submitting your application.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {allComplete && (
-        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-success">
-          <div className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Ready to Submit!</p>
-              <p className="mt-1">All required fields are complete. Review your information below and click Submit.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-muted p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Business Information</h3>
-          <dl className="grid gap-2 text-sm md:grid-cols-2">
-            <DataItem label="DBA Name" value={form.dbaName} />
-            <DataItem label="Products/Services" value={form.products} />
-            <DataItem label="Nature of Business" value={form.natureOfBusiness} />
-            <DataItem label="Contact" value={`${form.contactFirst} ${form.contactLast}`} />
-            <DataItem label="Email" value={form.email} />
-            <DataItem label="Phone" value={form.phone} />
-            <DataItem label="Address" value={`${form.address} ${form.address2}, ${form.city}, ${form.state} ${form.zip}`} />
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-border bg-muted p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Legal Information</h3>
-          <dl className="grid gap-2 text-sm md:grid-cols-2">
-            <DataItem label="Legal Name" value={form.legalName} />
-            <DataItem label="Federal Tax ID" value={form.federalTaxId} />
-            <DataItem label="State of Inc." value={form.stateOfIncorporation} />
-            <DataItem label="Structure" value={form.businessStructure} />
-            <DataItem label="Date Established" value={form.dateEstablished} />
-            <DataItem label="Owner" value={`${form.ownerName} (${form.ownerTitle})`} />
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-border bg-muted p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Processing Information</h3>
-          <dl className="grid gap-2 text-sm md:grid-cols-3">
-            <DataItem label="Monthly Volume" value={form.monthlyVolume ? `$${form.monthlyVolume}` : ""} />
-            <DataItem label="Average Ticket" value={form.avgTicket ? `$${form.avgTicket}` : ""} />
-            <DataItem label="High Ticket" value={form.highTicket ? `$${form.highTicket}` : ""} />
-            <DataItem label="Current Processor" value={form.currentProcessor} />
-            <DataItem label="eCommerce" value={form.ecommercePercent ? `${form.ecommercePercent}%` : ""} />
-            <DataItem label="In-Person" value={form.inPersonPercent ? `${form.inPersonPercent}%` : ""} />
-          </dl>
-        </div>
-      </div>
-
-      <div className="pt-4 border-t border-border">
-        <button
-          type="button"
-          className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:bg-secondary disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          onClick={onSubmit}
-          disabled={!allComplete || isSubmitting}
-        >
-          {isSubmitting ? "Submitting..." : (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              Complete Application
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function DataItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-foreground font-medium">{value || <span className="text-muted-foreground font-normal italic">Not provided</span>}</dd>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step: Gateway Business Details
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface StepProps {
+  form: MerchantForm;
+  onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
+  onBlur: (field: string) => void;
+  getError: (field: string) => string | null;
+}
+
+function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <Field label="Business / DBA Name" required error={getError("dba_name")}>
+        <Input value={form.dba_name} onChange={e => onChange("dba_name", e.target.value)} onBlur={() => onBlur("dba_name")} hasError={!!getError("dba_name")} />
+      </Field>
+      <Divider label="Contact Information" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="First Name" required error={getError("dba_contact_first_name")}>
+          <Input value={form.dba_contact_first_name} onChange={e => onChange("dba_contact_first_name", e.target.value)} onBlur={() => onBlur("dba_contact_first_name")} hasError={!!getError("dba_contact_first_name")} />
+        </Field>
+        <Field label="Last Name" required error={getError("dba_contact_last_name")}>
+          <Input value={form.dba_contact_last_name} onChange={e => onChange("dba_contact_last_name", e.target.value)} onBlur={() => onBlur("dba_contact_last_name")} hasError={!!getError("dba_contact_last_name")} />
+        </Field>
+        <Field label="Phone" required error={getError("dba_contact_phone")}>
+          <Input value={form.dba_contact_phone} onChange={e => onChange("dba_contact_phone", e.target.value)} onBlur={() => onBlur("dba_contact_phone")} placeholder="+1 (555) 000-0000" hasError={!!getError("dba_contact_phone")} />
+        </Field>
+        <Field label="Email" required error={getError("dba_contact_email")}>
+          <Input type="email" value={form.dba_contact_email} onChange={e => onChange("dba_contact_email", e.target.value)} onBlur={() => onBlur("dba_contact_email")} hasError={!!getError("dba_contact_email")} />
+        </Field>
+      </div>
+      <Divider label="Location" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Address" required error={getError("dba_address_line1")}>
+          <Input value={form.dba_address_line1} onChange={e => onChange("dba_address_line1", e.target.value)} onBlur={() => onBlur("dba_address_line1")} hasError={!!getError("dba_address_line1")} />
+        </Field>
+        <Field label="Address Line 2">
+          <Input value={form.dba_address_line2} onChange={e => onChange("dba_address_line2", e.target.value)} />
+        </Field>
+        <Field label="City" required error={getError("dba_city")}>
+          <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
+        </Field>
+        <Field label="State" required error={getError("dba_state")}>
+          <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
+        </Field>
+        <Field label="ZIP Code" required error={getError("dba_zip")}>
+          <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
+        </Field>
+      </div>
+      <Divider label="Gateway Details" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Preferred NMI Username" required error={getError("username")}>
+          <Input value={form.username} onChange={e => onChange("username", e.target.value)} onBlur={() => onBlur("username")} placeholder="e.g. jsmith_gateway" hasError={!!getError("username")} />
+        </Field>
+        <Field label="Current Processor" required error={getError("current_processor")}>
+          <Input value={form.current_processor} onChange={e => onChange("current_processor", e.target.value)} onBlur={() => onBlur("current_processor")} placeholder="e.g. First Data, TSYS" hasError={!!getError("current_processor")} />
+        </Field>
+      </div>
+      <Field label="Additional Notes">
+        <Textarea value={form.additional_notes} onChange={e => onChange("additional_notes", e.target.value)} placeholder="Anything else..." />
+      </Field>
+    </div>
+  );
+}
+
+// ─── Gateway Documents & Submit ───
+
+function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number }) {
+  const allComplete = progress === 100;
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-border bg-muted p-5 space-y-4">
+        <p className="text-sm text-foreground">Please prepare the following documents and send to <a href="mailto:onboarding@merchanthaus.io" className="text-primary font-medium hover:underline">onboarding@merchanthaus.io</a>:</p>
+        <ul className="space-y-3 text-sm">
+          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
+            <FileText className="w-4 h-4 text-primary mt-0.5" />
+            <div><p className="font-medium text-foreground">VAR Sheet</p><p className="text-xs text-muted-foreground mt-0.5">From your current processor.</p></div>
+          </li>
+          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
+            <FileText className="w-4 h-4 text-primary mt-0.5" />
+            <div><p className="font-medium text-foreground">Voided Check or Bank Confirmation Letter</p></div>
+          </li>
+        </ul>
+      </div>
+      <div className="rounded-xl border border-border bg-muted p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Application Summary</h3>
+        <dl className="grid gap-2 text-sm md:grid-cols-2">
+          <DataItem label="Business Name" value={form.dba_name} />
+          <DataItem label="Contact" value={`${form.dba_contact_first_name} ${form.dba_contact_last_name}`} />
+          <DataItem label="Email" value={form.dba_contact_email} />
+          <DataItem label="Phone" value={form.dba_contact_phone} />
+          <DataItem label="Username" value={form.username} />
+          <DataItem label="Current Processor" value={form.current_processor} />
+        </dl>
+      </div>
+      {allComplete ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex items-start gap-2">
+          <CheckCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Ready to Submit!</p></div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-500 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Please complete all required fields.</p></div>
+        </div>
+      )}
+      <div className="pt-4 border-t border-border">
+        <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting}>
+          {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Gateway Application</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Business Profile ───
+
+function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <Field label="DBA Name (Doing Business As)" required error={getError("dba_name")}>
+        <Input value={form.dba_name} onChange={e => onChange("dba_name", e.target.value)} onBlur={() => onBlur("dba_name")} hasError={!!getError("dba_name")} />
+      </Field>
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Describe Products or Services" required error={getError("product_description")}>
+          <Input value={form.product_description} onChange={e => onChange("product_description", e.target.value)} onBlur={() => onBlur("product_description")} placeholder="e.g. Shoes, Consulting" hasError={!!getError("product_description")} />
+        </Field>
+        <Field label="Nature of Business" required error={getError("nature_of_business")}>
+          <Input value={form.nature_of_business} onChange={e => onChange("nature_of_business", e.target.value)} onBlur={() => onBlur("nature_of_business")} placeholder="e.g. Retail, eCommerce" hasError={!!getError("nature_of_business")} />
+        </Field>
+      </div>
+      <Divider label="DBA Contact" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="First Name" required error={getError("dba_contact_first_name")}>
+          <Input value={form.dba_contact_first_name} onChange={e => onChange("dba_contact_first_name", e.target.value)} onBlur={() => onBlur("dba_contact_first_name")} hasError={!!getError("dba_contact_first_name")} />
+        </Field>
+        <Field label="Last Name" required error={getError("dba_contact_last_name")}>
+          <Input value={form.dba_contact_last_name} onChange={e => onChange("dba_contact_last_name", e.target.value)} onBlur={() => onBlur("dba_contact_last_name")} hasError={!!getError("dba_contact_last_name")} />
+        </Field>
+        <Field label="Phone" required error={getError("dba_contact_phone")}>
+          <Input value={form.dba_contact_phone} onChange={e => onChange("dba_contact_phone", e.target.value)} onBlur={() => onBlur("dba_contact_phone")} placeholder="+1 (555) 000-0000" hasError={!!getError("dba_contact_phone")} />
+        </Field>
+        <Field label="Email" required error={getError("dba_contact_email")}>
+          <Input type="email" value={form.dba_contact_email} onChange={e => onChange("dba_contact_email", e.target.value)} onBlur={() => onBlur("dba_contact_email")} hasError={!!getError("dba_contact_email")} />
+        </Field>
+      </div>
+      <Divider label="DBA Address" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Address" required error={getError("dba_address_line1")}>
+          <Input value={form.dba_address_line1} onChange={e => onChange("dba_address_line1", e.target.value)} onBlur={() => onBlur("dba_address_line1")} hasError={!!getError("dba_address_line1")} />
+        </Field>
+        <Field label="Address Line 2"><Input value={form.dba_address_line2} onChange={e => onChange("dba_address_line2", e.target.value)} /></Field>
+        <Field label="City" required error={getError("dba_city")}>
+          <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
+        </Field>
+        <Field label="State" required error={getError("dba_state")}>
+          <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
+        </Field>
+        <Field label="ZIP Code" required error={getError("dba_zip")}>
+          <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
+        </Field>
+        <Field label="Country">
+          <Input value={form.dba_country} onChange={e => onChange("dba_country", e.target.value)} placeholder="US" />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── Legal Information ───
+
+function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <Field label="Legal Entity Name" required error={getError("legal_entity_name")}>
+        <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} onBlur={() => onBlur("legal_entity_name")} placeholder="As registered with state/IRS" hasError={!!getError("legal_entity_name")} />
+      </Field>
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Federal Tax ID (TIN/EIN)" required error={getError("federal_tax_id")}>
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} onBlur={() => onBlur("federal_tax_id")} placeholder="XX-XXXXXXX" hasError={!!getError("federal_tax_id")} />
+        </Field>
+        <Field label="Business Ownership Type" required error={getError("ownership_type")}>
+          <SelectInput value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} onBlur={() => onBlur("ownership_type")} hasError={!!getError("ownership_type")}>
+            <option value="">Select type...</option>
+            <option value="sole_proprietor">Sole Proprietor</option>
+            <option value="llc">LLC</option>
+            <option value="corporation">Corporation</option>
+            <option value="partnership">Partnership</option>
+            <option value="nonprofit">Non-Profit</option>
+          </SelectInput>
+        </Field>
+        <Field label="Business Formation Date" required error={getError("business_formation_date")}>
+          <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} onBlur={() => onBlur("business_formation_date")} hasError={!!getError("business_formation_date")} />
+        </Field>
+        <Field label="State Incorporated" required error={getError("state_incorporated")}>
+          <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} onBlur={() => onBlur("state_incorporated")} hasError={!!getError("state_incorporated")} />
+        </Field>
+      </div>
+      <div className="flex items-center gap-2 mt-2">
+        <input type="checkbox" id="tax_exempt" checked={form.tax_exempt} onChange={e => onChange("tax_exempt", e.target.checked)} className="rounded border-border" />
+        <label htmlFor="tax_exempt" className="text-sm text-foreground">Tax Exempt</label>
+      </div>
+      <Divider label="Legal Address" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Address" required error={getError("legal_address_line1")}>
+          <Input value={form.legal_address_line1} onChange={e => onChange("legal_address_line1", e.target.value)} onBlur={() => onBlur("legal_address_line1")} hasError={!!getError("legal_address_line1")} />
+        </Field>
+        <Field label="Address Line 2"><Input value={form.legal_address_line2} onChange={e => onChange("legal_address_line2", e.target.value)} /></Field>
+        <Field label="City" required error={getError("legal_city")}>
+          <Input value={form.legal_city} onChange={e => onChange("legal_city", e.target.value)} onBlur={() => onBlur("legal_city")} hasError={!!getError("legal_city")} />
+        </Field>
+        <Field label="State" required error={getError("legal_state")}>
+          <Input value={form.legal_state} onChange={e => onChange("legal_state", e.target.value)} onBlur={() => onBlur("legal_state")} hasError={!!getError("legal_state")} />
+        </Field>
+        <Field label="ZIP Code" required error={getError("legal_zip")}>
+          <Input value={form.legal_zip} onChange={e => onChange("legal_zip", e.target.value)} onBlur={() => onBlur("legal_zip")} hasError={!!getError("legal_zip")} />
+        </Field>
+        <Field label="Country"><Input value={form.legal_country} onChange={e => onChange("legal_country", e.target.value)} placeholder="US" /></Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── Processing Info ───
+
+function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-3">
+        <Field label="Monthly Volume ($)" required error={getError("monthly_volume")}>
+          <NumberInput value={form.monthly_volume} onChange={e => onChange("monthly_volume", e.target.value)} onBlur={() => onBlur("monthly_volume")} placeholder="50000" hasError={!!getError("monthly_volume")} />
+        </Field>
+        <Field label="Average Transaction ($)" required error={getError("average_transaction")}>
+          <NumberInput value={form.average_transaction} onChange={e => onChange("average_transaction", e.target.value)} onBlur={() => onBlur("average_transaction")} placeholder="75" hasError={!!getError("average_transaction")} />
+        </Field>
+        <Field label="High Ticket ($)" required error={getError("high_ticket")}>
+          <NumberInput value={form.high_ticket} onChange={e => onChange("high_ticket", e.target.value)} onBlur={() => onBlur("high_ticket")} placeholder="500" hasError={!!getError("high_ticket")} />
+        </Field>
+      </div>
+      <Divider label="Transaction Mix (must total 100%)" />
+      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
+        <Field label="Swiped %" required error={getError("percent_swiped")}>
+          <NumberInput value={form.percent_swiped} onChange={e => onChange("percent_swiped", e.target.value)} onBlur={() => onBlur("percent_swiped")} hasError={!!getError("percent_swiped")} />
+        </Field>
+        <Field label="Keyed %" required error={getError("percent_keyed")}>
+          <NumberInput value={form.percent_keyed} onChange={e => onChange("percent_keyed", e.target.value)} onBlur={() => onBlur("percent_keyed")} hasError={!!getError("percent_keyed")} />
+        </Field>
+        <Field label="MOTO %" required error={getError("percent_moto")}>
+          <NumberInput value={form.percent_moto} onChange={e => onChange("percent_moto", e.target.value)} onBlur={() => onBlur("percent_moto")} hasError={!!getError("percent_moto")} />
+        </Field>
+        <Field label="eCommerce %" required error={getError("percent_ecommerce")}>
+          <NumberInput value={form.percent_ecommerce} onChange={e => onChange("percent_ecommerce", e.target.value)} onBlur={() => onBlur("percent_ecommerce")} hasError={!!getError("percent_ecommerce")} />
+        </Field>
+      </div>
+      <Divider label="Sales Mix (must total 100%)" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="B2C %" hint="Business-to-Consumer">
+          <NumberInput value={form.percent_b2c} onChange={e => onChange("percent_b2c", e.target.value)} />
+        </Field>
+        <Field label="B2B %" hint="Business-to-Business">
+          <NumberInput value={form.percent_b2b} onChange={e => onChange("percent_b2b", e.target.value)} />
+        </Field>
+      </div>
+      <Divider label="Additional" />
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <Field label="Website URL"><Input value={form.website_url} onChange={e => onChange("website_url", e.target.value)} placeholder="https://" /></Field>
+        <Field label="SIC/MCC Code"><Input value={form.sic_mcc_code} onChange={e => onChange("sic_mcc_code", e.target.value)} placeholder="MCC if known" /></Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── Owners & Banking ───
+
+interface OwnersBankingStepProps extends StepProps {
+  onPrincipalChange: (index: number, field: keyof PrincipalForm, value: string) => void;
+  addPrincipal: () => void;
+  removePrincipal: (index: number) => void;
+}
+
+function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError }: OwnersBankingStepProps) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Users className="w-5 h-5 text-primary" />
+          Principal Owners / Beneficial Owners
+        </div>
+        {form.principals.length < 5 && (
+          <button type="button" onClick={addPrincipal} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium">
+            <Plus className="w-3 h-3" /> Add Owner
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">At least 1 principal is required. Ownership percentages must total 100%.</p>
+
+      {form.principals.map((principal, idx) => (
+        <div key={idx} className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-foreground">Owner {idx + 1}</h4>
+            {form.principals.length > 1 && (
+              <button type="button" onClick={() => removePrincipal(idx)} className="text-destructive hover:text-destructive/80">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="First Name" required error={getError(`principal_first_name_${idx}`)}>
+              <Input value={principal.principal_first_name} onChange={e => onPrincipalChange(idx, "principal_first_name", e.target.value)} onBlur={() => onBlur(`principal_first_name_${idx}`)} hasError={!!getError(`principal_first_name_${idx}`)} />
+            </Field>
+            <Field label="Last Name" required error={getError(`principal_last_name_${idx}`)}>
+              <Input value={principal.principal_last_name} onChange={e => onPrincipalChange(idx, "principal_last_name", e.target.value)} onBlur={() => onBlur(`principal_last_name_${idx}`)} hasError={!!getError(`principal_last_name_${idx}`)} />
+            </Field>
+            <Field label="Title" required error={getError(`principal_title_${idx}`)}>
+              <Input value={principal.principal_title} onChange={e => onPrincipalChange(idx, "principal_title", e.target.value)} onBlur={() => onBlur(`principal_title_${idx}`)} placeholder="CEO, Owner, etc." hasError={!!getError(`principal_title_${idx}`)} />
+            </Field>
+            <Field label="Ownership %" required error={getError(`ownership_percent_${idx}`)}>
+              <NumberInput value={principal.ownership_percent} onChange={e => onPrincipalChange(idx, "ownership_percent", e.target.value)} onBlur={() => onBlur(`ownership_percent_${idx}`)} placeholder="100" hasError={!!getError(`ownership_percent_${idx}`)} />
+            </Field>
+            <Field label="Date of Birth" required error={getError(`date_of_birth_${idx}`)}>
+              <Input type="date" value={principal.date_of_birth} onChange={e => onPrincipalChange(idx, "date_of_birth", e.target.value)} onBlur={() => onBlur(`date_of_birth_${idx}`)} hasError={!!getError(`date_of_birth_${idx}`)} />
+            </Field>
+            <Field label="Full SSN" required hint="Encrypted at rest — purged after underwriting" error={getError(`ssn_full_${idx}`)}>
+              <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
+            </Field>
+            <Field label="Phone"><Input value={principal.principal_phone} onChange={e => onPrincipalChange(idx, "principal_phone", e.target.value)} /></Field>
+            <Field label="Email"><Input type="email" value={principal.principal_email} onChange={e => onPrincipalChange(idx, "principal_email", e.target.value)} /></Field>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="Address"><Input value={principal.principal_address_line1} onChange={e => onPrincipalChange(idx, "principal_address_line1", e.target.value)} /></Field>
+            <Field label="City"><Input value={principal.principal_city} onChange={e => onPrincipalChange(idx, "principal_city", e.target.value)} /></Field>
+            <Field label="State"><Input value={principal.principal_state} onChange={e => onPrincipalChange(idx, "principal_state", e.target.value)} /></Field>
+            <Field label="ZIP"><Input value={principal.principal_zip} onChange={e => onPrincipalChange(idx, "principal_zip", e.target.value)} /></Field>
+          </div>
+        </div>
+      ))}
+
+      <Divider label="Banking Information" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2">
+        <Landmark className="w-5 h-5 text-primary" />
+        Settlement Account
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field label="Bank Name" required error={getError("bank_name")}>
+          <Input value={form.bank_name} onChange={e => onChange("bank_name", e.target.value)} onBlur={() => onBlur("bank_name")} hasError={!!getError("bank_name")} />
+        </Field>
+        <Field label="Name on Account" required error={getError("account_holder_name")}>
+          <Input value={form.account_holder_name} onChange={e => onChange("account_holder_name", e.target.value)} onBlur={() => onBlur("account_holder_name")} hasError={!!getError("account_holder_name")} />
+        </Field>
+        <Field label="Routing Number" required hint="Encrypted — purged after underwriting" error={getError("routing_number")}>
+          <Input type="password" value={form.routing_number} onChange={e => onChange("routing_number", e.target.value)} onBlur={() => onBlur("routing_number")} placeholder="9 digits" maxLength={9} hasError={!!getError("routing_number")} />
+        </Field>
+        <Field label="Account Number" required hint="Encrypted — purged after underwriting" error={getError("account_number")}>
+          <Input type="password" value={form.account_number} onChange={e => onChange("account_number", e.target.value)} onBlur={() => onBlur("account_number")} placeholder="Account number" hasError={!!getError("account_number")} />
+        </Field>
+      </div>
+
+      <Divider label="Agreements" />
+      <div className="space-y-3">
+        <div className="flex items-start gap-2">
+          <input type="checkbox" id="beneficial_cert" checked={form.beneficial_owner_certification} onChange={e => onChange("beneficial_owner_certification", e.target.checked)} className="mt-1 rounded border-border" />
+          <label htmlFor="beneficial_cert" className="text-sm text-foreground">I certify that the information provided regarding beneficial ownership is true and accurate.</label>
+        </div>
+        <div className="flex items-start gap-2">
+          <input type="checkbox" id="bank_disclosure" checked={form.bank_disclosure_ack} onChange={e => onChange("bank_disclosure_ack", e.target.checked)} className="mt-1 rounded border-border" />
+          <label htmlFor="bank_disclosure" className="text-sm text-foreground">I acknowledge the bank disclosure and authorize debits/credits to the account provided.</label>
+        </div>
+      </div>
+
+      <Field label="Additional Notes">
+        <Textarea value={form.additional_notes} onChange={e => onChange("additional_notes", e.target.value)} placeholder="Any other information..." />
+      </Field>
+    </div>
+  );
+}
+
+// ─── Review & Submit ───
+
+function ReviewStep({ form, onSubmit, isSubmitting, progress }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number }) {
+  const allComplete = progress === 100;
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <CheckCircle2 className="w-5 h-5 text-primary" />
+        Application Review
+      </div>
+      {allComplete ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex items-start gap-2">
+          <CheckCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Ready to Submit!</p><p className="mt-1">Review your information below and click Submit.</p></div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-500 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Missing Required Information</p><p className="mt-1">Please go back and complete all required fields.</p></div>
+        </div>
+      )}
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Business Profile</h3>
+          <dl className="grid gap-2 text-sm md:grid-cols-2">
+            <DataItem label="DBA Name" value={form.dba_name} />
+            <DataItem label="Products/Services" value={form.product_description} />
+            <DataItem label="Nature of Business" value={form.nature_of_business} />
+            <DataItem label="Contact" value={`${form.dba_contact_first_name} ${form.dba_contact_last_name}`} />
+            <DataItem label="Email" value={form.dba_contact_email} />
+            <DataItem label="Phone" value={form.dba_contact_phone} />
+            <DataItem label="Address" value={[form.dba_address_line1, form.dba_address_line2, form.dba_city, form.dba_state, form.dba_zip].filter(Boolean).join(", ")} />
+          </dl>
+        </div>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Legal Information</h3>
+          <dl className="grid gap-2 text-sm md:grid-cols-2">
+            <DataItem label="Legal Entity" value={form.legal_entity_name} />
+            <DataItem label="Federal Tax ID" value={form.federal_tax_id ? "••••••" + form.federal_tax_id.slice(-4) : ""} />
+            <DataItem label="Ownership Type" value={form.ownership_type} />
+            <DataItem label="Formation Date" value={form.business_formation_date} />
+            <DataItem label="State Incorporated" value={form.state_incorporated} />
+          </dl>
+        </div>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Processing</h3>
+          <dl className="grid gap-2 text-sm md:grid-cols-3">
+            <DataItem label="Monthly Volume" value={form.monthly_volume ? `$${form.monthly_volume}` : ""} />
+            <DataItem label="Avg Transaction" value={form.average_transaction ? `$${form.average_transaction}` : ""} />
+            <DataItem label="High Ticket" value={form.high_ticket ? `$${form.high_ticket}` : ""} />
+            <DataItem label="Swiped/Keyed/MOTO/eCom" value={`${form.percent_swiped}/${form.percent_keyed}/${form.percent_moto}/${form.percent_ecommerce}%`} />
+          </dl>
+        </div>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Principals ({form.principals.length})</h3>
+          {form.principals.map((p, i) => (
+            <div key={i} className="text-sm mb-2">
+              <span className="font-medium">{p.principal_first_name} {p.principal_last_name}</span> — {p.principal_title} ({p.ownership_percent}%) • SSN: ••••{p.ssn_full.slice(-4)}
+            </div>
+          ))}
+        </div>
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Banking</h3>
+          <dl className="grid gap-2 text-sm md:grid-cols-2">
+            <DataItem label="Bank" value={form.bank_name} />
+            <DataItem label="Account Holder" value={form.account_holder_name} />
+            <DataItem label="Routing" value={form.routing_number ? "•••••" + form.routing_number.slice(-4) : ""} />
+            <DataItem label="Account" value={form.account_number ? "•••••" + form.account_number.slice(-4) : ""} />
+          </dl>
+        </div>
+      </div>
+      <div className="pt-4 border-t border-border">
+        <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting}>
+          {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Application</>}
+        </button>
+      </div>
     </div>
   );
 }
