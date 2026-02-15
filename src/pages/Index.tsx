@@ -15,88 +15,74 @@ import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 
+// Canonical snake_case wizard form matching normalized schema
 type WizardPrefillForm = {
-  dbaName: string;
-  products: string;
-  natureOfBusiness: string;
-  dbaContactFirst: string;
-  dbaContactLast: string;
-  dbaPhone: string;
-  dbaEmail: string;
-  dbaAddress: string;
-  dbaAddress2: string;
-  dbaCity: string;
-  dbaState: string;
-  dbaZip: string;
-  legalEntityName: string;
-  legalPhone: string;
-  legalEmail: string;
-  tin: string;
-  ownershipType: string;
-  formationDate: string;
-  stateIncorporated: string;
-  legalAddress: string;
-  legalAddress2: string;
-  legalCity: string;
-  legalState: string;
-  legalZip: string;
-  monthlyVolume: string;
-  avgTicket: string;
-  highTicket: string;
-  swipedPct: string;
-  keyedPct: string;
-  motoPct: string;
-  ecomPct: string;
-  b2cPct: string;
-  b2bPct: string;
-  sicMcc: string;
-  website: string;
+  dba_name: string;
+  product_description: string;
+  nature_of_business: string;
+  dba_contact_first_name: string;
+  dba_contact_last_name: string;
+  dba_contact_phone: string;
+  dba_contact_email: string;
+  dba_address_line1: string;
+  dba_address_line2: string;
+  dba_city: string;
+  dba_state: string;
+  dba_zip: string;
+  legal_entity_name: string;
+  federal_tax_id: string;
+  ownership_type: string;
+  business_formation_date: string;
+  state_incorporated: string;
+  legal_address_line1: string;
+  legal_address_line2: string;
+  legal_city: string;
+  legal_state: string;
+  legal_zip: string;
+  monthly_volume: string;
+  average_transaction: string;
+  high_ticket: string;
+  percent_swiped: string;
+  percent_keyed: string;
+  percent_moto: string;
+  percent_ecommerce: string;
+  percent_b2c: string;
+  percent_b2b: string;
+  sic_mcc_code: string;
+  website_url: string;
+  username: string;
+  current_processor: string;
   documents: unknown[];
   notes: string;
 };
 
 const WIZARD_REQUIRED_FIELDS: Record<
-  "business" | "legal" | "processing" | "documents",
+  "business" | "legal" | "processing" | "documents" | "gateway_business",
   (keyof WizardPrefillForm)[]
 > = {
   business: [
-    "dbaName",
-    "products",
-    "natureOfBusiness",
-    "dbaContactFirst",
-    "dbaContactLast",
-    "dbaPhone",
-    "dbaEmail",
-    "dbaAddress",
-    "dbaCity",
-    "dbaState",
-    "dbaZip",
+    "dba_name", "product_description", "nature_of_business",
+    "dba_contact_first_name", "dba_contact_last_name",
+    "dba_contact_phone", "dba_contact_email",
+    "dba_address_line1", "dba_city", "dba_state", "dba_zip",
   ],
   legal: [
-    "legalEntityName",
-    "legalPhone",
-    "legalEmail",
-    "tin",
-    "ownershipType",
-    "formationDate",
-    "stateIncorporated",
-    "legalAddress",
-    "legalCity",
-    "legalState",
-    "legalZip",
+    "legal_entity_name", "federal_tax_id", "ownership_type",
+    "business_formation_date", "state_incorporated",
+    "legal_address_line1", "legal_city", "legal_state", "legal_zip",
   ],
   processing: [
-    "monthlyVolume",
-    "avgTicket",
-    "highTicket",
-    "swipedPct",
-    "keyedPct",
-    "motoPct",
-    "ecomPct",
-    "b2cPct",
-    "b2bPct",
+    "monthly_volume", "average_transaction", "high_ticket",
+    "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
+    "percent_b2c", "percent_b2b",
   ],
   documents: ["documents"],
+  gateway_business: [
+    "dba_name", "dba_contact_first_name", "dba_contact_last_name",
+    "dba_contact_phone", "dba_contact_email",
+    "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+    "username", "current_processor",
+  ],
 };
 
 const createWizardFormFromOpportunity = (opportunity: Opportunity): WizardPrefillForm => {
@@ -104,55 +90,59 @@ const createWizardFormFromOpportunity = (opportunity: Opportunity): WizardPrefil
   const contact = opportunity.contact;
 
   return {
-    dbaName: account?.name || "",
-    products: "",
-    natureOfBusiness: "",
-    dbaContactFirst: contact?.first_name || "",
-    dbaContactLast: contact?.last_name || "",
-    dbaPhone: contact?.phone || "",
-    dbaEmail: contact?.email || "",
-    dbaAddress: account?.address1 || "",
-    dbaAddress2: account?.address2 || "",
-    dbaCity: account?.city || "",
-    dbaState: account?.state || "",
-    dbaZip: account?.zip || "",
-    legalEntityName: account?.name || "",
-    legalPhone: contact?.phone || "",
-    legalEmail: contact?.email || "",
-    tin: "",
-    ownershipType: "",
-    formationDate: "",
-    stateIncorporated: account?.state || "",
-    legalAddress: account?.address1 || "",
-    legalAddress2: account?.address2 || "",
-    legalCity: account?.city || "",
-    legalState: account?.state || "",
-    legalZip: account?.zip || "",
-    monthlyVolume: "",
-    avgTicket: "",
-    highTicket: "",
-    swipedPct: "",
-    keyedPct: "",
-    motoPct: "",
-    ecomPct: "",
-    b2cPct: "",
-    b2bPct: "",
-    sicMcc: "",
-    website: account?.website || "",
+    dba_name: account?.name || "",
+    product_description: "",
+    nature_of_business: "",
+    dba_contact_first_name: contact?.first_name || "",
+    dba_contact_last_name: contact?.last_name || "",
+    dba_contact_phone: contact?.phone || "",
+    dba_contact_email: contact?.email || "",
+    dba_address_line1: account?.address1 || "",
+    dba_address_line2: account?.address2 || "",
+    dba_city: account?.city || "",
+    dba_state: account?.state || "",
+    dba_zip: account?.zip || "",
+    legal_entity_name: account?.name || "",
+    federal_tax_id: "",
+    ownership_type: "",
+    business_formation_date: "",
+    state_incorporated: account?.state || "",
+    legal_address_line1: account?.address1 || "",
+    legal_address_line2: account?.address2 || "",
+    legal_city: account?.city || "",
+    legal_state: account?.state || "",
+    legal_zip: account?.zip || "",
+    monthly_volume: "",
+    average_transaction: "",
+    high_ticket: "",
+    percent_swiped: "",
+    percent_keyed: "",
+    percent_moto: "",
+    percent_ecommerce: "",
+    percent_b2c: "",
+    percent_b2b: "",
+    sic_mcc_code: "",
+    website_url: account?.website || "",
+    username: opportunity.username || "",
+    current_processor: "",
     documents: [],
     notes: "",
   };
 };
 
-const calculateWizardProgress = (form: WizardPrefillForm) => {
+const calculateWizardProgress = (form: WizardPrefillForm, isGatewayOnly: boolean) => {
   const getMissingFieldsForSection = (section: keyof typeof WIZARD_REQUIRED_FIELDS) =>
     WIZARD_REQUIRED_FIELDS[section].filter((field) => {
       const value = form[field];
-      if (Array.isArray(value)) {
-        return value.length === 0;
-      }
+      if (Array.isArray(value)) return value.length === 0;
       return `${value}`.trim() === "";
     });
+
+  if (isGatewayOnly) {
+    const gwMissing = getMissingFieldsForSection("gateway_business");
+    const total = WIZARD_REQUIRED_FIELDS.gateway_business.length;
+    return Math.round(((total - gwMissing.length) / total) * 100);
+  }
 
   const missingBySection = {
     business: getMissingFieldsForSection("business"),
@@ -164,8 +154,7 @@ const calculateWizardProgress = (form: WizardPrefillForm) => {
   const totalRequiredFields =
     WIZARD_REQUIRED_FIELDS.business.length +
     WIZARD_REQUIRED_FIELDS.legal.length +
-    WIZARD_REQUIRED_FIELDS.processing.length +
-    1;
+    WIZARD_REQUIRED_FIELDS.processing.length + 1;
 
   const completedRequiredFields =
     (WIZARD_REQUIRED_FIELDS.business.length - missingBySection.business.length) +
@@ -457,7 +446,7 @@ const Index = () => {
 
             return {
               opportunity_id: opportunity.id,
-              progress: calculateWizardProgress(formState),
+              progress: calculateWizardProgress(formState, getServiceType(opportunity) === 'gateway_only'),
               step_index: 0,
               form_state: formState,
             };

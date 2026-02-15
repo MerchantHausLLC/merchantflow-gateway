@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Contact, Account, TEAM_MEMBERS, STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
 import { AppLayout } from "@/components/AppLayout";
@@ -53,6 +54,7 @@ interface ContactWithAccount extends Contact {
   assigned_to?: string | null;
   stage?: string | null;
   opportunity_id?: string | null;
+  last_activity_at?: string | null;
 }
 
 interface AccountOption {
@@ -64,7 +66,7 @@ type ContactQueryResult = ContactWithAccount & {
   opportunities?: { id: string; assigned_to: string | null; stage: string | null }[];
 };
 
-type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage';
+type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage' | 'last_activity';
 type SortDirection = 'asc' | 'desc';
 
 const STAGE_LABELS: Record<string, string> = {
@@ -155,8 +157,37 @@ const Contacts = () => {
         ...contact,
         assigned_to: contact.opportunities?.[0]?.assigned_to || null,
         stage: contact.opportunities?.[0]?.stage || null,
-        opportunity_id: contact.opportunities?.[0]?.id || null
+        opportunity_id: contact.opportunities?.[0]?.id || null,
+        last_activity_at: null as string | null,
       }));
+
+      // Fetch last activity for each contact's opportunity
+      const oppIds = contactsWithAssignment
+        .map(c => c.opportunity_id)
+        .filter(Boolean) as string[];
+
+      if (oppIds.length > 0) {
+        const { data: activities } = await supabase
+          .from('activities')
+          .select('opportunity_id, created_at')
+          .in('opportunity_id', oppIds)
+          .order('created_at', { ascending: false });
+
+        if (activities) {
+          const lastActivityMap = new Map<string, string>();
+          for (const a of activities) {
+            if (!lastActivityMap.has(a.opportunity_id)) {
+              lastActivityMap.set(a.opportunity_id, a.created_at);
+            }
+          }
+          for (const contact of contactsWithAssignment) {
+            if (contact.opportunity_id) {
+              contact.last_activity_at = lastActivityMap.get(contact.opportunity_id) || null;
+            }
+          }
+        }
+      }
+
       setContacts(contactsWithAssignment as ContactWithAccount[]);
     }
     setLoading(false);
@@ -241,6 +272,9 @@ const Contacts = () => {
           break;
         case 'stage':
           comparison = (a.stage || 'zzz').localeCompare(b.stage || 'zzz');
+          break;
+        case 'last_activity':
+          comparison = (a.last_activity_at || '').localeCompare(b.last_activity_at || '');
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -704,6 +738,7 @@ const Contacts = () => {
                         <SortableTableHead field="account" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <SortableTableHead field="assigned_to" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Assigned To</SortableTableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
+                        <SortableTableHead field="last_activity" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Last Activity</SortableTableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -772,6 +807,11 @@ const Contacts = () => {
                                   <span className="text-muted-foreground text-sm">-</span>
                                 )}
                               </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {contact.last_activity_at
+                                  ? formatDistanceToNow(new Date(contact.last_activity_at), { addSuffix: true })
+                                  : '-'}
+                              </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -810,7 +850,7 @@ const Contacts = () => {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                             No contacts found
                           </TableCell>
                         </TableRow>
