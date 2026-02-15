@@ -97,6 +97,44 @@ export type Database = {
           },
         ]
       }
+      application_secrets: {
+        Row: {
+          account_enc: string | null
+          application_id: string
+          created_at: string
+          key_version: number | null
+          purged_at: string | null
+          routing_enc: string | null
+          ssn_enc: string | null
+        }
+        Insert: {
+          account_enc?: string | null
+          application_id: string
+          created_at?: string
+          key_version?: number | null
+          purged_at?: string | null
+          routing_enc?: string | null
+          ssn_enc?: string | null
+        }
+        Update: {
+          account_enc?: string | null
+          application_id?: string
+          created_at?: string
+          key_version?: number | null
+          purged_at?: string | null
+          routing_enc?: string | null
+          ssn_enc?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_secrets_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           accepted_cards: string | null
@@ -138,6 +176,8 @@ export type Database = {
           state: string | null
           state_of_incorporation: string | null
           status: string | null
+          submitted_at: string | null
+          underwriting_status: string | null
           updated_at: string
           website: string | null
           zip: string | null
@@ -182,6 +222,8 @@ export type Database = {
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null
+          submitted_at?: string | null
+          underwriting_status?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
@@ -226,11 +268,51 @@ export type Database = {
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null
+          submitted_at?: string | null
+          underwriting_status?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
         }
         Relationships: []
+      }
+      bank_accounts: {
+        Row: {
+          account_holder_name: string | null
+          account_last4: string | null
+          application_id: string
+          bank_name: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          account_last4?: string | null
+          application_id: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          account_last4?: string | null
+          application_id?: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_logs: {
         Row: {
@@ -634,6 +716,143 @@ export type Database = {
           },
         ]
       }
+      merchants: {
+        Row: {
+          application_id: string
+          average_transaction: string | null
+          business_formation_date: string | null
+          created_at: string
+          dba_address_line1: string | null
+          dba_address_line2: string | null
+          dba_city: string | null
+          dba_contact_email: string | null
+          dba_contact_first_name: string | null
+          dba_contact_last_name: string | null
+          dba_contact_phone: string | null
+          dba_country: string | null
+          dba_name: string | null
+          dba_state: string | null
+          dba_zip: string | null
+          federal_tax_id: string | null
+          high_ticket: string | null
+          id: string
+          legal_address_line1: string | null
+          legal_address_line2: string | null
+          legal_city: string | null
+          legal_country: string | null
+          legal_entity_name: string | null
+          legal_state: string | null
+          legal_zip: string | null
+          monthly_volume: string | null
+          nature_of_business: string | null
+          ownership_type: string | null
+          percent_b2b: string | null
+          percent_b2c: string | null
+          percent_ecommerce: string | null
+          percent_keyed: string | null
+          percent_moto: string | null
+          percent_swiped: string | null
+          product_description: string | null
+          sic_mcc_code: string | null
+          state_incorporated: string | null
+          tax_exempt: boolean | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          application_id: string
+          average_transaction?: string | null
+          business_formation_date?: string | null
+          created_at?: string
+          dba_address_line1?: string | null
+          dba_address_line2?: string | null
+          dba_city?: string | null
+          dba_contact_email?: string | null
+          dba_contact_first_name?: string | null
+          dba_contact_last_name?: string | null
+          dba_contact_phone?: string | null
+          dba_country?: string | null
+          dba_name?: string | null
+          dba_state?: string | null
+          dba_zip?: string | null
+          federal_tax_id?: string | null
+          high_ticket?: string | null
+          id?: string
+          legal_address_line1?: string | null
+          legal_address_line2?: string | null
+          legal_city?: string | null
+          legal_country?: string | null
+          legal_entity_name?: string | null
+          legal_state?: string | null
+          legal_zip?: string | null
+          monthly_volume?: string | null
+          nature_of_business?: string | null
+          ownership_type?: string | null
+          percent_b2b?: string | null
+          percent_b2c?: string | null
+          percent_ecommerce?: string | null
+          percent_keyed?: string | null
+          percent_moto?: string | null
+          percent_swiped?: string | null
+          product_description?: string | null
+          sic_mcc_code?: string | null
+          state_incorporated?: string | null
+          tax_exempt?: boolean | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          application_id?: string
+          average_transaction?: string | null
+          business_formation_date?: string | null
+          created_at?: string
+          dba_address_line1?: string | null
+          dba_address_line2?: string | null
+          dba_city?: string | null
+          dba_contact_email?: string | null
+          dba_contact_first_name?: string | null
+          dba_contact_last_name?: string | null
+          dba_contact_phone?: string | null
+          dba_country?: string | null
+          dba_name?: string | null
+          dba_state?: string | null
+          dba_zip?: string | null
+          federal_tax_id?: string | null
+          high_ticket?: string | null
+          id?: string
+          legal_address_line1?: string | null
+          legal_address_line2?: string | null
+          legal_city?: string | null
+          legal_country?: string | null
+          legal_entity_name?: string | null
+          legal_state?: string | null
+          legal_zip?: string | null
+          monthly_volume?: string | null
+          nature_of_business?: string | null
+          ownership_type?: string | null
+          percent_b2b?: string | null
+          percent_b2c?: string | null
+          percent_ecommerce?: string | null
+          percent_keyed?: string | null
+          percent_moto?: string | null
+          percent_swiped?: string | null
+          product_description?: string | null
+          sic_mcc_code?: string | null
+          state_incorporated?: string | null
+          tax_exempt?: boolean | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchants_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -812,6 +1031,77 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      principals: {
+        Row: {
+          application_id: string
+          created_at: string
+          date_of_birth: string | null
+          id: string
+          ownership_percent: number | null
+          principal_address_line1: string | null
+          principal_address_line2: string | null
+          principal_city: string | null
+          principal_country: string | null
+          principal_email: string | null
+          principal_first_name: string | null
+          principal_last_name: string | null
+          principal_phone: string | null
+          principal_state: string | null
+          principal_title: string | null
+          principal_zip: string | null
+          ssn_last4: string | null
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          date_of_birth?: string | null
+          id?: string
+          ownership_percent?: number | null
+          principal_address_line1?: string | null
+          principal_address_line2?: string | null
+          principal_city?: string | null
+          principal_country?: string | null
+          principal_email?: string | null
+          principal_first_name?: string | null
+          principal_last_name?: string | null
+          principal_phone?: string | null
+          principal_state?: string | null
+          principal_title?: string | null
+          principal_zip?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          date_of_birth?: string | null
+          id?: string
+          ownership_percent?: number | null
+          principal_address_line1?: string | null
+          principal_address_line2?: string | null
+          principal_city?: string | null
+          principal_country?: string | null
+          principal_email?: string | null
+          principal_first_name?: string | null
+          principal_last_name?: string | null
+          principal_phone?: string | null
+          principal_state?: string | null
+          principal_title?: string | null
+          principal_zip?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "principals_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
             referencedColumns: ["id"]
           },
         ]
