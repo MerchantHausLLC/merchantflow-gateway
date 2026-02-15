@@ -24,6 +24,41 @@ interface Section {
   owner: "Merchant" | "Internal";
 }
 
+// Map of snake_case field → legacy camelCase aliases
+const FIELD_ALIASES: Record<string, string[]> = {
+  dba_name: ["dbaName"],
+  product_description: ["products"],
+  nature_of_business: ["natureOfBusiness"],
+  dba_contact_first_name: ["dbaContactFirst"],
+  dba_contact_last_name: ["dbaContactLast"],
+  dba_contact_phone: ["dbaPhone"],
+  dba_contact_email: ["dbaEmail"],
+  dba_address_line1: ["dbaAddress"],
+  dba_city: ["dbaCity"],
+  dba_state: ["dbaState"],
+  dba_zip: ["dbaZip"],
+  legal_entity_name: ["legalEntityName"],
+  federal_tax_id: ["tin"],
+  ownership_type: ["ownershipType"],
+  business_formation_date: ["formationDate"],
+  state_incorporated: ["stateIncorporated"],
+  legal_address_line1: ["legalAddress"],
+  legal_city: ["legalCity"],
+  legal_state: ["legalState"],
+  legal_zip: ["legalZip"],
+  monthly_volume: ["monthlyVolume"],
+  average_transaction: ["avgTicket"],
+  high_ticket: ["highTicket"],
+  percent_swiped: ["swipedPct"],
+  percent_keyed: ["keyedPct"],
+  percent_moto: ["motoPct"],
+  percent_ecommerce: ["ecomPct"],
+  percent_b2c: ["b2cPct"],
+  percent_b2b: ["b2bPct"],
+  username: ["username"],
+  current_processor: ["current_processor"],
+};
+
 // Processing sections – full application
 const PROCESSING_SECTIONS: Section[] = [
   {
@@ -81,13 +116,19 @@ const GATEWAY_SECTIONS: Section[] = [
 ];
 
 const isFieldComplete = (formState: Record<string, unknown>, field: string): boolean => {
-  const value = formState[field];
-  if (field === "documents") {
-    return Array.isArray(value) && value.length > 0;
+  // Check the canonical snake_case key first, then fall back to legacy camelCase aliases
+  const keysToCheck = [field, ...(FIELD_ALIASES[field] ?? [])];
+  for (const key of keysToCheck) {
+    const value = formState[key];
+    if (field === "documents" || key === "documents") {
+      if (Array.isArray(value) && value.length > 0) return true;
+      continue;
+    }
+    if (value === undefined || value === null) continue;
+    if (typeof value === "string" && value.trim().length > 0) return true;
+    if (typeof value !== "string" && Boolean(value)) return true;
   }
-  if (value === undefined || value === null) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  return Boolean(value);
+  return false;
 };
 
 const getSectionStatus = (formState: Record<string, unknown>, fields: string[]): { status: SectionStatus; completed: number; total: number } => {
