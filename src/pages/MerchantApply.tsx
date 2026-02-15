@@ -857,7 +857,7 @@ function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-muted p-5 space-y-4">
-        <p className="text-sm text-foreground">Please prepare the following documents and send to <a href="mailto:onboarding@merchanthaus.io" className="text-primary font-medium hover:underline">onboarding@merchanthaus.io</a>:</p>
+        <p className="text-sm text-foreground">Please prepare the following documents and send to <a href="mailto:sales@merchanthaus.io" className="text-primary font-medium hover:underline">sales@merchanthaus.io</a>:</p>
         <ul className="space-y-3 text-sm">
           <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
             <FileText className="w-4 h-4 text-primary mt-0.5" />
