@@ -1023,6 +1023,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
         </Field>
       </div>
       <Divider label="Transaction Mix (must total 100%)" />
+      <p className="text-xs text-muted-foreground -mt-1 mb-1">All four fields must add up to 100%. Set any unused method to 0.</p>
       <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
         <Field label="Swiped %" required error={getError("percent_swiped")}>
           <NumberInput value={form.percent_swiped} onChange={e => onChange("percent_swiped", e.target.value)} onBlur={() => onBlur("percent_swiped")} hasError={!!getError("percent_swiped")} />
