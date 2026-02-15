@@ -679,7 +679,7 @@ export default function MerchantApply() {
                       <SectionStatus label="Business Profile" count={PROCESSING_REQUIRED.business.length - (missingBySection.business?.length ?? 0)} total={PROCESSING_REQUIRED.business.length} />
                       <SectionStatus label="Legal Info" count={PROCESSING_REQUIRED.legal.length - (missingBySection.legal?.length ?? 0)} total={PROCESSING_REQUIRED.legal.length} />
                       <SectionStatus label="Processing" count={PROCESSING_REQUIRED.processing.length - (missingBySection.processing?.length ?? 0)} total={PROCESSING_REQUIRED.processing.length} />
-                      <SectionStatus label="Owners & Banking" count={(missingBySection.owners_banking ? allRequiredFields.filter(f => f.includes("principal") || ["bank_name","account_holder_name","routing_number","account_number"].includes(f)).length - missingBySection.owners_banking.length : 0)} total={allRequiredFields.filter(f => f.includes("principal") || ["bank_name","account_holder_name","routing_number","account_number"].includes(f)).length} />
+                      <SectionStatus label="Owners & Banking" count={(() => { const obFields = [...form.principals.flatMap((_, i) => [`principal_first_name_${i}`,`principal_last_name_${i}`,`principal_title_${i}`,`ownership_percent_${i}`,`date_of_birth_${i}`,`ssn_full_${i}`]),"bank_name","account_holder_name","routing_number","account_number"]; return obFields.length - (missingBySection.owners_banking?.length ?? obFields.length); })()} total={form.principals.length * 6 + 4} />
                     </>
                   )}
                 </div>
