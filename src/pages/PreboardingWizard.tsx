@@ -364,7 +364,6 @@ export default function PreboardingWizard() {
     if (isGatewayOnly) {
       return {
         gateway_business: getMissingFieldsForSection("gateway_business"),
-        documents: getMissingFieldsForSection("documents"),
       };
     }
     return {
@@ -377,7 +376,7 @@ export default function PreboardingWizard() {
 
   const totalRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
-      return REQUIRED_FIELDS.gateway_business.length + 1;
+      return REQUIRED_FIELDS.gateway_business.length;
     }
     return REQUIRED_FIELDS.business.length + REQUIRED_FIELDS.legal.length + REQUIRED_FIELDS.processing.length + 1;
   }, [isGatewayOnly]);
@@ -385,8 +384,7 @@ export default function PreboardingWizard() {
   const completedRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
       const gwMissing = missingBySection.gateway_business?.length ?? 0;
-      return (REQUIRED_FIELDS.gateway_business.length - gwMissing) +
-        ((missingBySection.documents?.length ?? 1) === 0 ? 1 : 0);
+      return REQUIRED_FIELDS.gateway_business.length - gwMissing;
     }
     return (
       (REQUIRED_FIELDS.business.length - (missingBySection.business?.length ?? 0)) +

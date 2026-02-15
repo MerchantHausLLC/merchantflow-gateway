@@ -24,8 +24,8 @@ interface Section {
   owner: "Merchant" | "Internal";
 }
 
-// Canonical snake_case keys matching the normalized schema
-const SECTIONS: Section[] = [
+// Processing sections – full application
+const PROCESSING_SECTIONS: Section[] = [
   {
     key: "business",
     label: "Business Profile",
@@ -65,6 +65,21 @@ const SECTIONS: Section[] = [
   },
 ];
 
+// Gateway Only sections – simplified requirements
+const GATEWAY_SECTIONS: Section[] = [
+  {
+    key: "gateway_business",
+    label: "Business Details",
+    fields: [
+      "dba_name", "dba_contact_first_name", "dba_contact_last_name",
+      "dba_contact_phone", "dba_contact_email",
+      "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+      "username", "current_processor",
+    ],
+    owner: "Merchant",
+  },
+];
+
 const isFieldComplete = (formState: Record<string, unknown>, field: string): boolean => {
   const value = formState[field];
   if (field === "documents") {
@@ -91,19 +106,31 @@ const STATUS_ICON: Record<SectionStatus, React.ReactNode> = {
 };
 
 export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationProgressProps) => {
+  const isGatewayOnly = opportunity.service_type === "gateway_only";
+
   const formState = useMemo(
     () => (wizardState?.form_state as Record<string, unknown>) ?? {},
     [wizardState?.form_state]
   );
 
+  const sections = isGatewayOnly ? GATEWAY_SECTIONS : PROCESSING_SECTIONS;
+
   const sectionProgress = useMemo(() => {
-    return SECTIONS.map((section) => ({
+    return sections.map((section) => ({
       ...section,
       ...getSectionStatus(formState, section.fields),
     }));
-  }, [formState]);
+  }, [formState, sections]);
 
-  const overallProgress = wizardState?.progress ?? 0;
+  // Recalculate overall progress based on the relevant sections
+  const overallProgress = useMemo(() => {
+    const allFields = sections.flatMap(s => s.fields);
+    const total = allFields.length;
+    if (total === 0) return 0;
+    const completed = allFields.filter(f => isFieldComplete(formState, f)).length;
+    return Math.round((completed / total) * 100);
+  }, [formState, sections]);
+
   const lastUpdated = wizardState?.updated_at 
     ? formatDistanceToNow(new Date(wizardState.updated_at), { addSuffix: true })
     : null;
@@ -112,7 +139,7 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Application Progress
+          Application Progress {isGatewayOnly && <span className="text-xs ml-1">(Gateway Only)</span>}
         </h3>
         <Button
           variant="outline"
