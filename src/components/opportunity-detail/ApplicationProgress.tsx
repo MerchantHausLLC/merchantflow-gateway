@@ -24,23 +24,37 @@ interface Section {
   owner: "Merchant" | "Internal";
 }
 
+// Canonical snake_case keys matching the normalized schema
 const SECTIONS: Section[] = [
   {
     key: "business",
     label: "Business Profile",
-    fields: ["dbaName", "products", "natureOfBusiness", "dbaContactFirst", "dbaContactLast", "dbaPhone", "dbaEmail", "dbaAddress", "dbaCity", "dbaState", "dbaZip"],
+    fields: [
+      "dba_name", "product_description", "nature_of_business",
+      "dba_contact_first_name", "dba_contact_last_name",
+      "dba_contact_phone", "dba_contact_email",
+      "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+    ],
     owner: "Merchant",
   },
   {
     key: "legal",
     label: "Legal Info",
-    fields: ["legalEntityName", "legalPhone", "legalEmail", "tin", "ownershipType", "formationDate", "stateIncorporated", "legalAddress", "legalCity", "legalState", "legalZip"],
+    fields: [
+      "legal_entity_name", "federal_tax_id", "ownership_type",
+      "business_formation_date", "state_incorporated",
+      "legal_address_line1", "legal_city", "legal_state", "legal_zip",
+    ],
     owner: "Merchant",
   },
   {
     key: "processing",
     label: "Processing",
-    fields: ["monthlyVolume", "avgTicket", "highTicket", "swipedPct", "keyedPct", "motoPct", "ecomPct", "b2cPct", "b2bPct"],
+    fields: [
+      "monthly_volume", "average_transaction", "high_ticket",
+      "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
+      "percent_b2c", "percent_b2b",
+    ],
     owner: "Merchant",
   },
   {

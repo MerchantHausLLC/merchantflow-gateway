@@ -105,6 +105,7 @@ export default function WebSubmissions() {
     setIsConverting(app.id);
 
     try {
+      // 1. Create Account
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
@@ -122,6 +123,7 @@ export default function WebSubmissions() {
 
       if (accountError) throw accountError;
 
+      // 2. Create Contact
       const nameParts = app.full_name.trim().split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
@@ -140,6 +142,7 @@ export default function WebSubmissions() {
 
       if (contactError) throw contactError;
 
+      // 3. Create Opportunity
       const isGatewayOnly = app.service_type === "gateway_only" || app.business_type === "Gateway Only";
 
       const { data: opportunity, error: opportunityError } = await supabase
@@ -157,53 +160,58 @@ export default function WebSubmissions() {
 
       if (opportunityError) throw opportunityError;
 
-      // Pre-populate the onboarding wizard with all application data
-      const wizardFormState = {
-        dbaName: app.dba_name || app.company_name || "",
-        products: app.products || "",
-        natureOfBusiness: app.nature_of_business || "",
-        dbaContactFirst: firstName,
-        dbaContactLast: lastName,
-        dbaPhone: app.phone || "",
-        dbaEmail: app.email || "",
-        dbaAddress: app.address || "",
-        dbaAddress2: app.address2 || "",
-        dbaCity: app.city || "",
-        dbaState: app.state || "",
-        dbaZip: app.zip || "",
-        legalEntityName: app.legal_name || app.company_name || "",
-        legalPhone: app.phone || "",
-        legalEmail: app.email || "",
-        tin: app.federal_tax_id || "",
-        ownershipType: app.business_structure || "",
-        formationDate: app.date_established || "",
-        stateIncorporated: app.state_of_incorporation || "",
-        legalAddress: app.address || "",
-        legalAddress2: app.address2 || "",
-        legalCity: app.city || "",
-        legalState: app.state || "",
-        legalZip: app.zip || "",
-        monthlyVolume: app.monthly_volume || "",
-        avgTicket: app.avg_ticket || "",
-        highTicket: app.high_ticket || "",
-        swipedPct: app.in_person_percent || "",
-        keyedPct: app.keyed_percent || "",
-        ecomPct: app.ecommerce_percent || "",
-        website: app.website || "",
+      // 4. Pre-populate wizard state using CANONICAL snake_case keys
+      const wizardFormState: Record<string, unknown> = {
+        dba_name: app.dba_name || app.company_name || "",
+        product_description: app.products || "",
+        nature_of_business: app.nature_of_business || "",
+        dba_contact_first_name: firstName,
+        dba_contact_last_name: lastName,
+        dba_contact_phone: app.phone || "",
+        dba_contact_email: app.email || "",
+        dba_address_line1: app.address || "",
+        dba_address_line2: app.address2 || "",
+        dba_city: app.city || "",
+        dba_state: app.state || "",
+        dba_zip: app.zip || "",
+        legal_entity_name: app.legal_name || app.company_name || "",
+        federal_tax_id: app.federal_tax_id || "",
+        ownership_type: app.business_structure || "",
+        business_formation_date: app.date_established || "",
+        state_incorporated: app.state_of_incorporation || "",
+        legal_address_line1: app.address || "",
+        legal_address_line2: app.address2 || "",
+        legal_city: app.city || "",
+        legal_state: app.state || "",
+        legal_zip: app.zip || "",
+        monthly_volume: app.monthly_volume || "",
+        average_transaction: app.avg_ticket || "",
+        high_ticket: app.high_ticket || "",
+        percent_swiped: app.in_person_percent || "",
+        percent_keyed: app.keyed_percent || "",
+        percent_ecommerce: app.ecommerce_percent || "",
+        website_url: app.website || "",
         documents: [],
         notes: app.notes || app.message || "",
       };
 
-      // Calculate initial progress
+      // Calculate initial progress using canonical keys
       const requiredFields = [
-        "dbaName", "products", "natureOfBusiness", "dbaContactFirst", "dbaContactLast",
-        "dbaPhone", "dbaEmail", "dbaAddress", "dbaCity", "dbaState", "dbaZip",
-        "legalEntityName", "legalPhone", "legalEmail", "tin", "ownershipType",
-        "formationDate", "stateIncorporated", "legalAddress", "legalCity", "legalState", "legalZip",
-        "monthlyVolume", "avgTicket", "highTicket", "swipedPct", "keyedPct", "motoPct", "ecomPct",
-        "b2cPct", "b2bPct"
+        "dba_name", "product_description", "nature_of_business",
+        "dba_contact_first_name", "dba_contact_last_name",
+        "dba_contact_phone", "dba_contact_email",
+        "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+        "legal_entity_name", "federal_tax_id", "ownership_type",
+        "business_formation_date", "state_incorporated",
+        "legal_address_line1", "legal_city", "legal_state", "legal_zip",
+        "monthly_volume", "average_transaction", "high_ticket",
+        "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
+        "percent_b2c", "percent_b2b"
       ];
-      const filled = requiredFields.filter(f => !!(wizardFormState as any)[f]?.toString().trim()).length;
+      const filled = requiredFields.filter(f => {
+        const v = wizardFormState[f];
+        return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
+      }).length;
       const totalRequired = requiredFields.length + 1; // +1 for documents
       const progress = Math.round((filled / totalRequired) * 100);
 
@@ -216,7 +224,60 @@ export default function WebSubmissions() {
           form_state: wizardFormState,
         } as never, { onConflict: "opportunity_id" });
 
-      // Delete the application entry
+      // 5. Populate normalized tables from application data
+      // Insert merchant record
+      if (!isGatewayOnly) {
+        await supabase.from("merchants").insert({
+          application_id: app.id,
+          dba_name: app.dba_name || app.company_name || null,
+          nature_of_business: app.nature_of_business || null,
+          dba_contact_first_name: firstName,
+          dba_contact_last_name: lastName,
+          dba_contact_phone: app.phone || null,
+          dba_contact_email: app.email || null,
+          dba_address_line1: app.address || null,
+          dba_address_line2: app.address2 || null,
+          dba_city: app.city || null,
+          dba_state: app.state || null,
+          dba_zip: app.zip || null,
+          legal_entity_name: app.legal_name || null,
+          federal_tax_id: app.federal_tax_id || null,
+          ownership_type: app.business_structure || null,
+          business_formation_date: app.date_established || null,
+          state_incorporated: app.state_of_incorporation || null,
+          legal_address_line1: app.address || null,
+          legal_city: app.city || null,
+          legal_state: app.state || null,
+          legal_zip: app.zip || null,
+          monthly_volume: app.monthly_volume || null,
+          average_transaction: app.avg_ticket || null,
+          high_ticket: app.high_ticket || null,
+          percent_swiped: app.in_person_percent || null,
+          percent_keyed: app.keyed_percent || null,
+          percent_ecommerce: app.ecommerce_percent || null,
+          website_url: app.website || null,
+          product_description: app.products || null,
+        });
+
+        // Insert principal if owner data exists
+        if (app.owner_name) {
+          const ownerParts = app.owner_name.trim().split(" ");
+          await supabase.from("principals").insert({
+            application_id: app.id,
+            principal_first_name: ownerParts[0] || null,
+            principal_last_name: ownerParts.slice(1).join(" ") || null,
+            principal_title: app.owner_title || null,
+            date_of_birth: app.owner_dob || null,
+            ssn_last4: app.owner_ssn_last4 || null,
+            principal_address_line1: app.owner_address || null,
+            principal_city: app.owner_city || null,
+            principal_state: app.owner_state || null,
+            principal_zip: app.owner_zip || null,
+          });
+        }
+      }
+
+      // 6. Delete the application entry
       await supabase
         .from("applications")
         .delete()
