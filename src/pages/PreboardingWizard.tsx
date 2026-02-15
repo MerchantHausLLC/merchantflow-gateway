@@ -30,96 +30,96 @@ const GATEWAY_STEPS = [
 
 type SectionKey = "business" | "legal" | "processing" | "documents" | "gateway_business";
 
+// Canonical snake_case required fields matching normalized schema
 const REQUIRED_FIELDS: Record<string, string[]> = {
   business: [
-    "dbaName",
-    "products",
-    "natureOfBusiness",
-    "dbaContactFirst",
-    "dbaContactLast",
-    "dbaPhone",
-    "dbaEmail",
-    "dbaAddress",
-    "dbaCity",
-    "dbaState",
-    "dbaZip"
+    "dba_name",
+    "product_description",
+    "nature_of_business",
+    "dba_contact_first_name",
+    "dba_contact_last_name",
+    "dba_contact_phone",
+    "dba_contact_email",
+    "dba_address_line1",
+    "dba_city",
+    "dba_state",
+    "dba_zip"
   ],
   legal: [
-    "legalEntityName",
-    "legalPhone",
-    "legalEmail",
-    "tin",
-    "ownershipType",
-    "formationDate",
-    "stateIncorporated",
-    "legalAddress",
-    "legalCity",
-    "legalState",
-    "legalZip"
+    "legal_entity_name",
+    "federal_tax_id",
+    "ownership_type",
+    "business_formation_date",
+    "state_incorporated",
+    "legal_address_line1",
+    "legal_city",
+    "legal_state",
+    "legal_zip"
   ],
   processing: [
-    "monthlyVolume",
-    "avgTicket",
-    "highTicket",
-    "swipedPct",
-    "keyedPct",
-    "motoPct",
-    "ecomPct",
-    "b2cPct",
-    "b2bPct"
+    "monthly_volume",
+    "average_transaction",
+    "high_ticket",
+    "percent_swiped",
+    "percent_keyed",
+    "percent_moto",
+    "percent_ecommerce",
+    "percent_b2c",
+    "percent_b2b"
   ],
   documents: ["documents"],
   gateway_business: [
-    "dbaName", "dbaContactFirst", "dbaContactLast", "dbaPhone", "dbaEmail",
-    "dbaAddress", "dbaCity", "dbaState", "dbaZip", "username", "currentProcessor"
+    "dba_name", "dba_contact_first_name", "dba_contact_last_name",
+    "dba_contact_phone", "dba_contact_email",
+    "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+    "username", "current_processor"
   ]
 };
 
+// Canonical snake_case form interface
 interface PreboardingForm {
   // business
-  dbaName: string;
-  products: string;
-  natureOfBusiness: string;
-  dbaContactFirst: string;
-  dbaContactLast: string;
-  dbaPhone: string;
-  dbaEmail: string;
-  dbaAddress: string;
-  dbaAddress2: string;
-  dbaCity: string;
-  dbaState: string;
-  dbaZip: string;
+  dba_name: string;
+  product_description: string;
+  nature_of_business: string;
+  dba_contact_first_name: string;
+  dba_contact_last_name: string;
+  dba_contact_phone: string;
+  dba_contact_email: string;
+  dba_address_line1: string;
+  dba_address_line2: string;
+  dba_city: string;
+  dba_state: string;
+  dba_zip: string;
 
   // legal
-  legalEntityName: string;
-  legalPhone: string;
-  legalEmail: string;
-  tin: string;
-  ownershipType: string;
-  formationDate: string;
-  stateIncorporated: string;
-  legalAddress: string;
-  legalAddress2: string;
-  legalCity: string;
-  legalState: string;
-  legalZip: string;
+  legal_entity_name: string;
+  federal_tax_id: string;
+  ownership_type: string;
+  business_formation_date: string;
+  state_incorporated: string;
+  legal_address_line1: string;
+  legal_address_line2: string;
+  legal_city: string;
+  legal_state: string;
+  legal_zip: string;
 
   // processing
-  monthlyVolume: string;
-  avgTicket: string;
-  highTicket: string;
-  swipedPct: string;
-  keyedPct: string;
-  motoPct: string;
-  ecomPct: string;
-  b2cPct: string;
-  b2bPct: string;
-  sicMcc: string;
-  website: string;
+  monthly_volume: string;
+  average_transaction: string;
+  high_ticket: string;
+  percent_swiped: string;
+  percent_keyed: string;
+  percent_moto: string;
+  percent_ecommerce: string;
+  percent_b2c: string;
+  percent_b2b: string;
+  sic_mcc_code: string;
+  website_url: string;
 
   // gateway-only fields
   username: string;
-  currentProcessor: string;
+  current_processor: string;
 
   // docs
   documents: File[];
@@ -127,43 +127,41 @@ interface PreboardingForm {
 }
 
 const initialState: PreboardingForm = {
-  dbaName: "",
-  products: "",
-  natureOfBusiness: "",
-  dbaContactFirst: "",
-  dbaContactLast: "",
-  dbaPhone: "",
-  dbaEmail: "",
-  dbaAddress: "",
-  dbaAddress2: "",
-  dbaCity: "",
-  dbaState: "",
-  dbaZip: "",
-  legalEntityName: "",
-  legalPhone: "",
-  legalEmail: "",
-  tin: "",
-  ownershipType: "",
-  formationDate: "",
-  stateIncorporated: "",
-  legalAddress: "",
-  legalAddress2: "",
-  legalCity: "",
-  legalState: "",
-  legalZip: "",
-  monthlyVolume: "",
-  avgTicket: "",
-  highTicket: "",
-  swipedPct: "",
-  keyedPct: "",
-  motoPct: "",
-  ecomPct: "",
-  b2cPct: "",
-  b2bPct: "",
-  sicMcc: "",
-  website: "",
+  dba_name: "",
+  product_description: "",
+  nature_of_business: "",
+  dba_contact_first_name: "",
+  dba_contact_last_name: "",
+  dba_contact_phone: "",
+  dba_contact_email: "",
+  dba_address_line1: "",
+  dba_address_line2: "",
+  dba_city: "",
+  dba_state: "",
+  dba_zip: "",
+  legal_entity_name: "",
+  federal_tax_id: "",
+  ownership_type: "",
+  business_formation_date: "",
+  state_incorporated: "",
+  legal_address_line1: "",
+  legal_address_line2: "",
+  legal_city: "",
+  legal_state: "",
+  legal_zip: "",
+  monthly_volume: "",
+  average_transaction: "",
+  high_ticket: "",
+  percent_swiped: "",
+  percent_keyed: "",
+  percent_moto: "",
+  percent_ecommerce: "",
+  percent_b2c: "",
+  percent_b2b: "",
+  sic_mcc_code: "",
+  website_url: "",
   username: "",
-  currentProcessor: "",
+  current_processor: "",
   documents: [],
   notes: ""
 };
@@ -207,25 +205,23 @@ const createFormFromOpportunity = (opportunity?: OpportunityWithRelations | null
 
   return {
     ...initialState,
-    dbaName: account?.name || "",
-    dbaContactFirst: contact?.first_name || "",
-    dbaContactLast: contact?.last_name || "",
-    dbaPhone: contact?.phone || "",
-    dbaEmail: contact?.email || "",
-    dbaAddress: account?.address1 || "",
-    dbaAddress2: account?.address2 || "",
-    dbaCity: account?.city || "",
-    dbaState: account?.state || "",
-    dbaZip: account?.zip || "",
-    website: account?.website || "",
-    legalEntityName: account?.name || "",
-    legalPhone: contact?.phone || "",
-    legalEmail: contact?.email || "",
-    legalAddress: account?.address1 || "",
-    legalAddress2: account?.address2 || "",
-    legalCity: account?.city || "",
-    legalState: account?.state || "",
-    legalZip: account?.zip || "",
+    dba_name: account?.name || "",
+    dba_contact_first_name: contact?.first_name || "",
+    dba_contact_last_name: contact?.last_name || "",
+    dba_contact_phone: contact?.phone || "",
+    dba_contact_email: contact?.email || "",
+    dba_address_line1: account?.address1 || "",
+    dba_address_line2: account?.address2 || "",
+    dba_city: account?.city || "",
+    dba_state: account?.state || "",
+    dba_zip: account?.zip || "",
+    website_url: account?.website || "",
+    legal_entity_name: account?.name || "",
+    legal_address_line1: account?.address1 || "",
+    legal_address_line2: account?.address2 || "",
+    legal_city: account?.city || "",
+    legal_state: account?.state || "",
+    legal_zip: account?.zip || "",
   };
 };
 
@@ -277,7 +273,6 @@ export default function PreboardingWizard() {
       return;
     }
 
-    // Fetch service_type separately to avoid type issues with generated types
     const ids = (data || []).map(d => d.id);
     const { data: serviceTypes } = ids.length > 0
       ? await supabase.from('opportunities').select('id, service_type').in('id', ids)
@@ -310,7 +305,6 @@ export default function PreboardingWizard() {
       toast({ title: "Could not load account", description: opportunityError.message, variant: "destructive" });
     }
 
-    // Fetch service_type separately
     const { data: oppServiceType } = await supabase
       .from('opportunities')
       .select('service_type')
@@ -383,7 +377,7 @@ export default function PreboardingWizard() {
 
   const totalRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
-      return REQUIRED_FIELDS.gateway_business.length + 1; // +1 for documents
+      return REQUIRED_FIELDS.gateway_business.length + 1;
     }
     return REQUIRED_FIELDS.business.length + REQUIRED_FIELDS.legal.length + REQUIRED_FIELDS.processing.length + 1;
   }, [isGatewayOnly]);
@@ -716,7 +710,7 @@ function OutstandingSummary({ progress, missingBySection }: { progress: number; 
           {Object.entries(missingBySection).map(([section, fields]) =>
             fields.length ? (
               <li key={section}>
-                <span className="font-medium capitalize text-white">{section}:</span> {fields.join(", ")}
+                <span className="font-medium capitalize text-white">{section.replace(/_/g, " ")}:</span> {fields.join(", ")}
               </li>
             ) : null
           )}
@@ -738,10 +732,10 @@ function GatewayBusinessStep({ form, onChange }: { form: PreboardingForm; onChan
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="DBA Name" required>
-          <Input value={form.dbaName} onChange={e => onChange("dbaName", e.target.value)} />
+          <Input value={form.dba_name} onChange={e => onChange("dba_name", e.target.value)} />
         </Field>
         <Field label="Current Processor" required>
-          <Input value={form.currentProcessor} onChange={e => onChange("currentProcessor", e.target.value)} placeholder="e.g. Stripe, Square" />
+          <Input value={form.current_processor} onChange={e => onChange("current_processor", e.target.value)} placeholder="e.g. Stripe, Square" />
         </Field>
         <Field label="Preferred NMI Username" required>
           <Input value={form.username} onChange={e => onChange("username", e.target.value)} placeholder="Desired NMI login username" />
@@ -749,33 +743,33 @@ function GatewayBusinessStep({ form, onChange }: { form: PreboardingForm; onChan
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Contact First Name" required>
-          <Input value={form.dbaContactFirst} onChange={e => onChange("dbaContactFirst", e.target.value)} />
+          <Input value={form.dba_contact_first_name} onChange={e => onChange("dba_contact_first_name", e.target.value)} />
         </Field>
         <Field label="Contact Last Name" required>
-          <Input value={form.dbaContactLast} onChange={e => onChange("dbaContactLast", e.target.value)} />
+          <Input value={form.dba_contact_last_name} onChange={e => onChange("dba_contact_last_name", e.target.value)} />
         </Field>
         <Field label="Phone" required>
-          <Input value={form.dbaPhone} onChange={e => onChange("dbaPhone", e.target.value)} placeholder="+1 (555) 555-5555" />
+          <Input value={form.dba_contact_phone} onChange={e => onChange("dba_contact_phone", e.target.value)} placeholder="+1 (555) 555-5555" />
         </Field>
         <Field label="Email" required>
-          <Input type="email" value={form.dbaEmail} onChange={e => onChange("dbaEmail", e.target.value)} />
+          <Input type="email" value={form.dba_contact_email} onChange={e => onChange("dba_contact_email", e.target.value)} />
         </Field>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Address" required>
-          <Input value={form.dbaAddress} onChange={e => onChange("dbaAddress", e.target.value)} />
+          <Input value={form.dba_address_line1} onChange={e => onChange("dba_address_line1", e.target.value)} />
         </Field>
         <Field label="Address Line 2">
-          <Input value={form.dbaAddress2} onChange={e => onChange("dbaAddress2", e.target.value)} />
+          <Input value={form.dba_address_line2} onChange={e => onChange("dba_address_line2", e.target.value)} />
         </Field>
         <Field label="City" required>
-          <Input value={form.dbaCity} onChange={e => onChange("dbaCity", e.target.value)} />
+          <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} />
         </Field>
         <Field label="State / Province" required>
-          <Input value={form.dbaState} onChange={e => onChange("dbaState", e.target.value)} />
+          <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} />
         </Field>
         <Field label="ZIP / Postal" required>
-          <Input value={form.dbaZip} onChange={e => onChange("dbaZip", e.target.value)} />
+          <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} />
         </Field>
       </div>
       <Field label="Notes" hint="Any additional details (voided check instructions, VAR sheet, etc.)">
@@ -794,85 +788,46 @@ function BusinessProfileStep({ form, onChange }: { form: PreboardingForm; onChan
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="DBA name (doing business as)" required>
-          <Input
-            value={form.dbaName}
-            onChange={e => onChange("dbaName", e.target.value)}
-          />
+          <Input value={form.dba_name} onChange={e => onChange("dba_name", e.target.value)} />
         </Field>
         <Field label="Describe products / services" required>
-          <Input
-            value={form.products}
-            onChange={e => onChange("products", e.target.value)}
-          />
+          <Input value={form.product_description} onChange={e => onChange("product_description", e.target.value)} />
         </Field>
         <Field label="Nature of business" required>
-          <Input
-            value={form.natureOfBusiness}
-            onChange={e => onChange("natureOfBusiness", e.target.value)}
-            placeholder="e.g. Retail, eCommerce, Medical"
-          />
+          <Input value={form.nature_of_business} onChange={e => onChange("nature_of_business", e.target.value)} placeholder="e.g. Retail, eCommerce, Medical" />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="DBA contact first name" required>
-          <Input
-            value={form.dbaContactFirst}
-            onChange={e => onChange("dbaContactFirst", e.target.value)}
-          />
+          <Input value={form.dba_contact_first_name} onChange={e => onChange("dba_contact_first_name", e.target.value)} />
         </Field>
         <Field label="DBA contact last name" required>
-          <Input
-            value={form.dbaContactLast}
-            onChange={e => onChange("dbaContactLast", e.target.value)}
-          />
+          <Input value={form.dba_contact_last_name} onChange={e => onChange("dba_contact_last_name", e.target.value)} />
         </Field>
         <Field label="DBA contact phone" required>
-          <Input
-            value={form.dbaPhone}
-            onChange={e => onChange("dbaPhone", e.target.value)}
-            placeholder="+1 (555) 555-5555"
-          />
+          <Input value={form.dba_contact_phone} onChange={e => onChange("dba_contact_phone", e.target.value)} placeholder="+1 (555) 555-5555" />
         </Field>
         <Field label="DBA contact email" required>
-          <Input
-            type="email"
-            value={form.dbaEmail}
-            onChange={e => onChange("dbaEmail", e.target.value)}
-          />
+          <Input type="email" value={form.dba_contact_email} onChange={e => onChange("dba_contact_email", e.target.value)} />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="DBA address" required>
-          <Input
-            value={form.dbaAddress}
-            onChange={e => onChange("dbaAddress", e.target.value)}
-          />
+          <Input value={form.dba_address_line1} onChange={e => onChange("dba_address_line1", e.target.value)} />
         </Field>
         <Field label="Address line 2">
-          <Input
-            value={form.dbaAddress2}
-            onChange={e => onChange("dbaAddress2", e.target.value)}
-          />
+          <Input value={form.dba_address_line2} onChange={e => onChange("dba_address_line2", e.target.value)} />
         </Field>
         <Field label="City" required>
-          <Input
-            value={form.dbaCity}
-            onChange={e => onChange("dbaCity", e.target.value)}
-          />
+          <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} />
         </Field>
         <Field label="State / Province" required>
-          <Input
-            value={form.dbaState}
-            onChange={e => onChange("dbaState", e.target.value)}
-          />
+          <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} />
         </Field>
         <Field label="ZIP / Postal" required>
-          <Input
-            value={form.dbaZip}
-            onChange={e => onChange("dbaZip", e.target.value)}
-          />
+          <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} />
         </Field>
       </div>
     </div>
@@ -888,82 +843,37 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Legal entity name" required>
-          <Input
-            value={form.legalEntityName}
-            onChange={e => onChange("legalEntityName", e.target.value)}
-          />
-        </Field>
-        <Field label="Business phone" required>
-          <Input
-            value={form.legalPhone}
-            onChange={e => onChange("legalPhone", e.target.value)}
-          />
-        </Field>
-        <Field label="Business email" required>
-          <Input
-            type="email"
-            value={form.legalEmail}
-            onChange={e => onChange("legalEmail", e.target.value)}
-          />
+          <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} />
         </Field>
         <Field label="Federal tax ID (TIN)" required>
-          <Input
-            value={form.tin}
-            onChange={e => onChange("tin", e.target.value)}
-          />
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} />
         </Field>
         <Field label="Business / ownership type" required>
-          <Input
-            value={form.ownershipType}
-            onChange={e => onChange("ownershipType", e.target.value)}
-            placeholder="e.g. LLC, Sole Prop, Corp"
-          />
+          <Input value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} placeholder="e.g. LLC, Sole Prop, Corp" />
         </Field>
         <Field label="Business formation date" required>
-          <Input
-            type="date"
-            value={form.formationDate}
-            onChange={e => onChange("formationDate", e.target.value)}
-          />
+          <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} />
         </Field>
         <Field label="State incorporated" required>
-          <Input
-            value={form.stateIncorporated}
-            onChange={e => onChange("stateIncorporated", e.target.value)}
-          />
+          <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Legal address" required>
-          <Input
-            value={form.legalAddress}
-            onChange={e => onChange("legalAddress", e.target.value)}
-          />
+          <Input value={form.legal_address_line1} onChange={e => onChange("legal_address_line1", e.target.value)} />
         </Field>
         <Field label="Address line 2">
-          <Input
-            value={form.legalAddress2}
-            onChange={e => onChange("legalAddress2", e.target.value)}
-          />
+          <Input value={form.legal_address_line2} onChange={e => onChange("legal_address_line2", e.target.value)} />
         </Field>
         <Field label="City" required>
-          <Input
-            value={form.legalCity}
-            onChange={e => onChange("legalCity", e.target.value)}
-          />
+          <Input value={form.legal_city} onChange={e => onChange("legal_city", e.target.value)} />
         </Field>
         <Field label="State / Province" required>
-          <Input
-            value={form.legalState}
-            onChange={e => onChange("legalState", e.target.value)}
-          />
+          <Input value={form.legal_state} onChange={e => onChange("legal_state", e.target.value)} />
         </Field>
         <Field label="ZIP / Postal" required>
-          <Input
-            value={form.legalZip}
-            onChange={e => onChange("legalZip", e.target.value)}
-          />
+          <Input value={form.legal_zip} onChange={e => onChange("legal_zip", e.target.value)} />
         </Field>
       </div>
     </div>
@@ -979,78 +889,43 @@ function ProcessingStep({ form, onChange }: { form: PreboardingForm; onChange: <
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Monthly volume ($)" required>
-          <NumberInput
-            value={form.monthlyVolume}
-            onChange={e => onChange("monthlyVolume", e.target.value)}
-          />
+          <NumberInput value={form.monthly_volume} onChange={e => onChange("monthly_volume", e.target.value)} />
         </Field>
         <Field label="Average ticket ($)" required>
-          <NumberInput
-            value={form.avgTicket}
-            onChange={e => onChange("avgTicket", e.target.value)}
-          />
+          <NumberInput value={form.average_transaction} onChange={e => onChange("average_transaction", e.target.value)} />
         </Field>
         <Field label="High ticket ($)" required>
-          <NumberInput
-            value={form.highTicket}
-            onChange={e => onChange("highTicket", e.target.value)}
-          />
+          <NumberInput value={form.high_ticket} onChange={e => onChange("high_ticket", e.target.value)} />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Swiped %" required>
-          <NumberInput
-            value={form.swipedPct}
-            onChange={e => onChange("swipedPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_swiped} onChange={e => onChange("percent_swiped", e.target.value)} />
         </Field>
         <Field label="Keyed %" required>
-          <NumberInput
-            value={form.keyedPct}
-            onChange={e => onChange("keyedPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_keyed} onChange={e => onChange("percent_keyed", e.target.value)} />
         </Field>
         <Field label="MOTO %" required>
-          <NumberInput
-            value={form.motoPct}
-            onChange={e => onChange("motoPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_moto} onChange={e => onChange("percent_moto", e.target.value)} />
         </Field>
         <Field label="eCommerce %" required>
-          <NumberInput
-            value={form.ecomPct}
-            onChange={e => onChange("ecomPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_ecommerce} onChange={e => onChange("percent_ecommerce", e.target.value)} />
         </Field>
         <Field label="B2C sales %" required>
-          <NumberInput
-            value={form.b2cPct}
-            onChange={e => onChange("b2cPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_b2c} onChange={e => onChange("percent_b2c", e.target.value)} />
         </Field>
         <Field label="B2B sales %" required>
-          <NumberInput
-            value={form.b2bPct}
-            onChange={e => onChange("b2bPct", e.target.value)}
-          />
+          <NumberInput value={form.percent_b2b} onChange={e => onChange("percent_b2b", e.target.value)} />
         </Field>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Website">
-          <Input
-            value={form.website}
-            onChange={e => onChange("website", e.target.value)}
-            placeholder="https://"
-          />
+          <Input value={form.website_url} onChange={e => onChange("website_url", e.target.value)} placeholder="https://" />
         </Field>
         <Field label="SIC / MCC lookup">
-          <Input
-            value={form.sicMcc}
-            onChange={e => onChange("sicMcc", e.target.value)}
-            placeholder="Capture MCC if known"
-          />
+          <Input value={form.sic_mcc_code} onChange={e => onChange("sic_mcc_code", e.target.value)} placeholder="Capture MCC if known" />
         </Field>
       </div>
     </div>
@@ -1115,30 +990,30 @@ function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missing
 
       <div className="grid gap-4 md:grid-cols-2">
         <SummaryCard title="Business Profile">
-          <SummaryItem label="DBA name" value={form.dbaName} />
-          <SummaryItem label="Products / services" value={form.products} />
-          <SummaryItem label="Nature of business" value={form.natureOfBusiness} />
-          <SummaryItem label="Contact" value={`${form.dbaContactFirst} ${form.dbaContactLast}`.trim()} />
-          <SummaryItem label="Phone" value={form.dbaPhone} />
-          <SummaryItem label="Email" value={form.dbaEmail} />
+          <SummaryItem label="DBA name" value={form.dba_name} />
+          <SummaryItem label="Products / services" value={form.product_description} />
+          <SummaryItem label="Nature of business" value={form.nature_of_business} />
+          <SummaryItem label="Contact" value={`${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim()} />
+          <SummaryItem label="Phone" value={form.dba_contact_phone} />
+          <SummaryItem label="Email" value={form.dba_contact_email} />
         </SummaryCard>
 
         <SummaryCard title="Legal Info">
-          <SummaryItem label="Legal entity" value={form.legalEntityName} />
-          <SummaryItem label="TIN" value={form.tin} />
-          <SummaryItem label="Ownership type" value={form.ownershipType} />
-          <SummaryItem label="Formation date" value={form.formationDate} />
-          <SummaryItem label="State incorporated" value={form.stateIncorporated} />
+          <SummaryItem label="Legal entity" value={form.legal_entity_name} />
+          <SummaryItem label="TIN" value={form.federal_tax_id} />
+          <SummaryItem label="Ownership type" value={form.ownership_type} />
+          <SummaryItem label="Formation date" value={form.business_formation_date} />
+          <SummaryItem label="State incorporated" value={form.state_incorporated} />
         </SummaryCard>
 
         <SummaryCard title="Processing">
-          <SummaryItem label="Monthly volume" value={form.monthlyVolume} />
-          <SummaryItem label="Avg ticket" value={form.avgTicket} />
-          <SummaryItem label="High ticket" value={form.highTicket} />
-          <SummaryItem label="Swiped / Keyed" value={`${form.swipedPct}% / ${form.keyedPct}%`} />
-          <SummaryItem label="MOTO" value={`${form.motoPct}%`} />
-          <SummaryItem label="eCom" value={`${form.ecomPct}%`} />
-          <SummaryItem label="B2C / B2B" value={`${form.b2cPct}% / ${form.b2bPct}%`} />
+          <SummaryItem label="Monthly volume" value={form.monthly_volume} />
+          <SummaryItem label="Avg ticket" value={form.average_transaction} />
+          <SummaryItem label="High ticket" value={form.high_ticket} />
+          <SummaryItem label="Swiped / Keyed" value={`${form.percent_swiped}% / ${form.percent_keyed}%`} />
+          <SummaryItem label="MOTO" value={`${form.percent_moto}%`} />
+          <SummaryItem label="eCom" value={`${form.percent_ecommerce}%`} />
+          <SummaryItem label="B2C / B2B" value={`${form.percent_b2c}% / ${form.percent_b2b}%`} />
         </SummaryCard>
 
         <SummaryCard title="Documents & Notes">
