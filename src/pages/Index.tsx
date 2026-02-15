@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
-import { getServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -198,6 +198,7 @@ const Index = () => {
         contact_id,
         stage,
         status,
+        service_type,
         referral_source,
         username,
         processing_services,
@@ -223,6 +224,7 @@ const Index = () => {
     const typedOpportunity: Opportunity = {
       ...data,
       stage: migrateStage(data.stage) as OpportunityStage,
+      service_type: data.service_type as ServiceType | undefined,
       status: data.status as 'active' | 'dead' | undefined,
       sla_status: data.sla_status as 'green' | 'amber' | 'red' | null | undefined,
       account: data.account ? {
@@ -387,6 +389,7 @@ const Index = () => {
         contact_id,
         stage,
         status,
+        service_type,
         referral_source,
         username,
         processing_services,
@@ -417,6 +420,7 @@ const Index = () => {
       ...item,
       // Apply stage migration: 'opportunities' -> 'application_prep'
       stage: migrateStage(item.stage) as OpportunityStage,
+      service_type: item.service_type as ServiceType | undefined,
       status: item.status as 'active' | 'dead' | undefined,
       sla_status: item.sla_status as 'green' | 'amber' | 'red' | null | undefined,
       account: item.account ? {
