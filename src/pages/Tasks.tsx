@@ -70,6 +70,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
 
 // Lightweight types for linking
 interface LightweightOpportunity {
@@ -131,6 +132,7 @@ const Tasks = () => {
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [dueAt, setDueAt] = useState<string>("");
   const [showNewModal, setShowNewModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [relatedOpportunityId, setRelatedOpportunityId] = useState<string>("");
   const [relatedContactId, setRelatedContactId] = useState<string>("");
 
@@ -723,11 +725,12 @@ const Tasks = () => {
                           <TableRow 
                             key={task.id} 
                             className={cn(
-                              "hover:bg-muted/50",
+                              "hover:bg-muted/50 cursor-pointer",
                               dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
                               dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
                               dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
                             )}
+                            onClick={() => setSelectedTask(task)}
                           >
                             <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell>
@@ -772,7 +775,7 @@ const Tasks = () => {
                                 <span className="text-sm">{task.assignee || 'Unassigned'}</span>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={task.status}
                                 onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
@@ -815,7 +818,7 @@ const Tasks = () => {
                               </div>
                             </TableCell>
                             {isAdmin && (
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
@@ -866,11 +869,12 @@ const Tasks = () => {
                         <Card 
                           key={task.id} 
                           className={cn(
-                            "p-3",
+                            "p-3 cursor-pointer hover:shadow-md transition-shadow",
                             dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5",
                             dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5",
                             dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5"
                           )}
+                          onClick={() => setSelectedTask(task)}
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
@@ -999,6 +1003,11 @@ const Tasks = () => {
             </div>
           </div>
         </div>
+        <TaskDetailModal
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
+        />
     </AppLayout>
   );
 };
