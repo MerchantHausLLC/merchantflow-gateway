@@ -1232,6 +1232,39 @@ export type Database = {
           },
         ]
       }
+      terminal_updates: {
+        Row: {
+          created_at: string
+          description: string
+          icon_name: string
+          id: string
+          published_date: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon_name?: string
+          id?: string
+          published_date?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon_name?: string
+          id?: string
+          published_date?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
