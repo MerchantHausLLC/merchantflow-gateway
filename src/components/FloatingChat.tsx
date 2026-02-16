@@ -1602,14 +1602,14 @@ const FloatingChat: React.FC = () => {
           <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900 relative">
             {/* Unified Contacts/Channels View */}
             {view === "contacts" && (
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input placeholder="Search..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
                   </div>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="p-2">
                     {/* Channels section */}
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5">Channels</p>
