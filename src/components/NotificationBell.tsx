@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, GitCommitVertical, UserPlus, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +31,7 @@ export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [hasAvatar, setHasAvatar] = useState(true);
+  const [trueUnreadCount, setTrueUnreadCount] = useState(0);
 
   // Check if user has uploaded a profile picture
   useEffect(() => {
@@ -45,7 +46,6 @@ export const NotificationBell = () => {
     };
     checkAvatar();
 
-    // Listen for profile updates
     const channel = supabase
       .channel('bell-profile-avatar')
       .on('postgres_changes', {
@@ -62,6 +62,62 @@ export const NotificationBell = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Fetch the TRUE unread count from the database (not limited to 10)
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    if (!error && count !== null) {
+      setTrueUnreadCount(count);
+    }
+  }, [user]);
+
+  // Fetch recent notifications for the dropdown
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (data) setNotifications(data);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchNotifications();
+    fetchUnreadCount();
+
+    // Subscribe to new notifications for this user
+    const channel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchNotifications();
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchNotifications, fetchUnreadCount]);
+
   // Build combined notifications list with persistent profile setup prompt
   const allNotifications: Notification[] = [
     ...(!hasAvatar ? [{
@@ -77,7 +133,8 @@ export const NotificationBell = () => {
     ...notifications,
   ];
 
-  const unreadCount = allNotifications.filter(n => !n.read).length;
+  // Use the true count from DB + avatar prompt
+  const unreadCount = trueUnreadCount + (hasAvatar ? 0 : 1);
   const stageChangeCount = notifications.filter(n => !n.read && (n.notification_category === 'stage_change' || n.title?.toLowerCase().includes('stage'))).length;
   const taskAssignmentCount = notifications.filter(n => !n.read && (n.notification_category === 'task_assignment' || n.title?.toLowerCase().includes('task') || n.title?.toLowerCase().includes('assigned'))).length;
 
@@ -85,59 +142,24 @@ export const NotificationBell = () => {
     if (notification._isProfileSetup) {
       return <Camera className="h-4 w-4 text-amber-500" />;
     }
-    const category = notification.notification_category;
     const titleLower = notification.title?.toLowerCase() || '';
 
-    if (category === 'stage_change' || titleLower.includes('stage')) {
+    if (notification.notification_category === 'stage_change' || titleLower.includes('stage')) {
       return <GitCommitVertical className="h-4 w-4 text-blue-500" />;
     }
-    if (category === 'task_assignment' || titleLower.includes('task') || titleLower.includes('assigned')) {
+    if (notification.notification_category === 'task_assignment' || titleLower.includes('task') || titleLower.includes('assigned')) {
       return <UserPlus className="h-4 w-4 text-purple-500" />;
     }
     return null;
   };
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchNotifications = async () => {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (data) setNotifications(data);
-    };
-
-    fetchNotifications();
-
-    // Subscribe to new notifications for this user
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => fetchNotifications()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   const markAsRead = async (id: string) => {
     await supabase
       .from('notifications')
       .update({ read: true })
       .eq('id', id);
+    // Immediately update count
+    setTrueUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -151,11 +173,14 @@ export const NotificationBell = () => {
   const markAllAsRead = async () => {
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
-    
+
     await supabase
       .from('notifications')
       .update({ read: true })
       .in('id', unreadIds);
+
+    // Re-fetch the true count after marking all read
+    fetchUnreadCount();
   };
 
   return (
@@ -168,15 +193,14 @@ export const NotificationBell = () => {
           )} />
           {unreadCount > 0 && (
             <span className={cn(
-              "absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs flex items-center justify-center animate-pulse",
+              "absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full text-xs flex items-center justify-center animate-pulse",
               stageChangeCount > 0 || taskAssignmentCount > 0
                 ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
                 : "bg-destructive text-destructive-foreground"
             )}>
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
-          {/* Secondary indicator for stage changes and task assignments */}
           {(stageChangeCount > 0 || taskAssignmentCount > 0) && (
             <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
