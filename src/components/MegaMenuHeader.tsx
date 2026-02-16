@@ -12,7 +12,7 @@ import {
   Wrench,
   Calculator,
   Activity,
-  
+  Sparkles,
   LogOut,
   ClipboardList,
   ListChecks,
@@ -110,6 +110,7 @@ const toolsItems: NavItem[] = [
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
   { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
   { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
+  { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest CRM changes & features" },
   { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
 ];
 
