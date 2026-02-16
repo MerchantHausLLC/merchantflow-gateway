@@ -32,6 +32,7 @@ import Opportunities from "./pages/Opportunities";
 import OpportunityDetail from "./pages/OpportunityDetail";
 
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
+import TerminalUpdates from "./pages/TerminalUpdates";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
 import LiveBilling from "./pages/LiveBilling";
@@ -88,6 +89,7 @@ const App = () => (
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
+                <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>
