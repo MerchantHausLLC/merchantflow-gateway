@@ -171,16 +171,17 @@ export const NotificationBell = () => {
   };
 
   const markAllAsRead = async () => {
-    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-    if (unreadIds.length === 0) return;
+    if (!user) return;
 
+    // Mark ALL unread notifications as read in the database (not just the visible 20)
     await supabase
       .from('notifications')
       .update({ read: true })
-      .in('id', unreadIds);
+      .eq('user_id', user.id)
+      .eq('read', false);
 
-    // Re-fetch the true count after marking all read
-    fetchUnreadCount();
+    setTrueUnreadCount(0);
+    fetchNotifications();
   };
 
   return (
