@@ -1,5 +1,7 @@
+import { useCallback } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -16,6 +18,7 @@ import {
   Users,
   FileText,
   Phone,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
@@ -184,14 +187,39 @@ const changelog: DayBlock[] = [
 ];
 
 export default function TerminalUpdates() {
+  const downloadMarkdown = useCallback(() => {
+    const lines: string[] = ["# Terminal Updates\n"];
+    changelog.forEach((day) => {
+      lines.push(`## ${format(day.date, "EEEE, MMMM d, yyyy")}\n`);
+      day.updates.forEach((u) => {
+        const tag = typeConfig[u.type].label.toUpperCase();
+        lines.push(`- **[${tag}] ${u.title}** — ${u.description}`);
+      });
+      lines.push("");
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `terminal-updates-${format(new Date(), "yyyy-MM-dd")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Terminal Updates</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            What's new, fixed, and improved — updated daily.
-          </p>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Terminal Updates</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              What's new, fixed, and improved — updated daily.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={downloadMarkdown} className="gap-1.5">
+            <Download className="h-4 w-4" />
+            Download .md
+          </Button>
         </div>
 
         {changelog.map((day, i) => (
