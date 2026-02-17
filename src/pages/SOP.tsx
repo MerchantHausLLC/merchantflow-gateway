@@ -373,7 +373,7 @@ Sales Support`,
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>1.1</strong> — Foreword: The Four Agreements
+                          <a href="#principles" className="hover:text-primary transition-colors cursor-pointer"><strong>1.1</strong> — Foreword: The Four Agreements</a>
                         </li>
                       </ul>
 
@@ -382,23 +382,19 @@ Sales Support`,
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>2.1</strong> — Step 1: Intro & Discovery
-                          (Email Templates)
+                          <a href="#step1" className="hover:text-primary transition-colors cursor-pointer"><strong>2.1</strong> — Step 1: Intro & Discovery (Email Templates)</a>
                         </li>
                         <li>
-                          <strong>2.2</strong> — Step 1.2: Call Scheduling
-                          (Email Template)
+                          <a href="#step1-2" className="hover:text-primary transition-colors cursor-pointer"><strong>2.2</strong> — Step 1.2: Call Scheduling (Email Template)</a>
                         </li>
                         <li>
-                          <strong>2.3</strong> — Step 2: Request for Documents
-                          (Email Templates)
+                          <a href="#step2" className="hover:text-primary transition-colors cursor-pointer"><strong>2.3</strong> — Step 2: Request for Documents (Email Templates)</a>
                         </li>
                         <li>
-                          <strong>2.4</strong> — Step 3: Application In Process
-                          (Email Template)
+                          <a href="#step3" className="hover:text-primary transition-colors cursor-pointer"><strong>2.4</strong> — Step 3: Application In Process (Email Template)</a>
                         </li>
                         <li>
-                          <strong>2.5</strong> — Pre-Underwriting Checklist
+                          <a href="#underwriting-checklist" className="hover:text-primary transition-colors cursor-pointer"><strong>2.5</strong> — Pre-Underwriting Checklist</a>
                         </li>
                       </ul>
                     </div>
@@ -408,16 +404,16 @@ Sales Support`,
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>3.1</strong> — PS Terminal Usage Guide
+                          <a href="#ps-terminal" className="hover:text-primary transition-colors cursor-pointer"><strong>3.1</strong> — PS Terminal Usage Guide</a>
                         </li>
                         <li>
-                          <strong>3.2</strong> — NMI Microsite Application Process
+                          <a href="#microsite-application" className="hover:text-primary transition-colors cursor-pointer"><strong>3.2</strong> — NMI Microsite Application Process</a>
                         </li>
                         <li>
-                          <strong>3.3</strong> — Processing & Gateway Setup
+                          <a href="#step4" className="hover:text-primary transition-colors cursor-pointer"><strong>3.3</strong> — Processing & Gateway Setup</a>
                         </li>
                         <li>
-                          <strong>3.4</strong> — Action Items & Industry Standards
+                          <a href="#action-items" className="hover:text-primary transition-colors cursor-pointer"><strong>3.4</strong> — Action Items & Industry Standards</a>
                         </li>
                       </ul>
 
@@ -426,10 +422,10 @@ Sales Support`,
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>4.1</strong> — MerchantHaus Services Overview
+                          <a href="#services-overview" className="hover:text-primary transition-colors cursor-pointer"><strong>4.1</strong> — MerchantHaus Services Overview</a>
                         </li>
                         <li>
-                          <strong>4.2</strong> — Pricing Tiers & Features
+                          <a href="#services-overview" className="hover:text-primary transition-colors cursor-pointer"><strong>4.2</strong> — Pricing Tiers & Features</a>
                         </li>
                       </ul>
 
@@ -438,10 +434,10 @@ Sales Support`,
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>5.1</strong> — SOP Structure & Best Practices
+                          <a href="#appendix" className="hover:text-primary transition-colors cursor-pointer"><strong>5.1</strong> — SOP Structure & Best Practices</a>
                         </li>
                         <li>
-                          <strong>5.2</strong> — Development Reference
+                          <a href="#tech-stack" className="hover:text-primary transition-colors cursor-pointer"><strong>5.2</strong> — Development Reference</a>
                         </li>
                         <li>
                           <strong>5.3</strong> — Service Providers & SaaS Stack
