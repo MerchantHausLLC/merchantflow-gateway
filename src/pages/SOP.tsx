@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
 import {
   MessageSquare,
   Shield,
@@ -295,6 +296,12 @@ Sales Support`,
                 >
                   Stage Management Guide
                 </a>
+                <a
+                  href="#underwriting-checklist"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                >
+                  2.5 Pre-Underwriting Checklist
+                </a>
 
                 <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Internal Ops
@@ -389,6 +396,9 @@ Sales Support`,
                         <li>
                           <strong>2.4</strong> — Step 3: Application In Process
                           (Email Template)
+                        </li>
+                        <li>
+                          <strong>2.5</strong> — Pre-Underwriting Checklist
                         </li>
                       </ul>
                     </div>
@@ -680,6 +690,9 @@ Sales Support`,
                     </section>
                   );
                 })}
+
+                {/* Pre-Underwriting Checklist */}
+                <UnderwritingChecklist />
 
                 {/* Pipeline Stage Management Guide */}
                 <section
