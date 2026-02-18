@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
 import {
   MessageSquare,
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppLayout } from "@/components/AppLayout";
 
 const SOP = () => {
@@ -240,118 +242,106 @@ Sales Support`,
       <div className="flex-1 flex min-h-0">
             {/* SOP Navigation Sidebar */}
             <aside className="w-64 border-r border-border bg-card hidden lg:block overflow-y-auto">
-              <div className="p-4 border-b border-border">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Quick Navigation
-                </p>
-              </div>
               <nav className="p-4 space-y-1">
                 <a
                   href="#index"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors"
                 >
                   Document Index
                 </a>
                 <a
                   href="#principles"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors"
                 >
                   1. Principles
                 </a>
 
-                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Sales Ops
-                </div>
-                <a
-                  href="#step1"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  2.1 Intro & Discovery (Email Templates)
-                </a>
-                <a
-                  href="#step1-2"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  2.2 Call Scheduling (Email Template)
-                </a>
-                <a
-                  href="#step2"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  2.3 Request for Documents (Email Templates)
-                </a>
-                <a
-                  href="#step3"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  2.4 Application in Process (Email Template)
-                </a>
+                {/* Sales Ops - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Sales Ops <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#step1" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        2.1 Intro & Discovery
+                      </a>
+                      <a href="#step1-2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        2.2 Call Scheduling
+                      </a>
+                      <a href="#step2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        2.3 Request for Documents
+                      </a>
+                      <a href="#step3" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        2.4 Application in Process
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
-                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Pipeline Stages
-                </div>
-                <a
-                  href="#pipeline-stages"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  Stage Management Guide
-                </a>
-                <a
-                  href="#underwriting-checklist"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  2.5 Pre-Underwriting Checklist
-                </a>
+                {/* Pipeline Stages - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Pipeline Stages <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#pipeline-stages" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        Stage Management Guide
+                      </a>
+                      <a href="#underwriting-checklist" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        2.5 Pre-Underwriting Checklist
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
-                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Internal Ops
-                </div>
-                <a
-                  href="#ps-terminal"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  3.1 PS Terminal Usage Guide
-                </a>
-                <a
-                  href="#microsite-application"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  3.2 NMI Microsite Application
-                </a>
-                <a
-                  href="#step4"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  3.3 Processing & Gateway Setup
-                </a>
-                <a
-                  href="#action-items"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  3.4 Action Items & Standards
-                </a>
+                {/* Internal Ops - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Internal Ops <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#ps-terminal" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        3.1 PS Terminal Usage Guide
+                      </a>
+                      <a href="#microsite-application" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        3.2 NMI Microsite Application
+                      </a>
+                      <a href="#step4" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        3.3 Processing & Gateway Setup
+                      </a>
+                      <a href="#action-items" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        3.4 Action Items & Standards
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
-                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Reference
-                </div>
-                <a
-                  href="#services-overview"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  4. Services Overview
-                </a>
-                <a
-                  href="#appendix"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  5. Appendices
-                </a>
-                <a
-                  href="#tech-stack"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  6. Systems & Tech Stack
-                </a>
+                {/* Reference - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Reference <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#services-overview" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        4. Services Overview
+                      </a>
+                      <a href="#appendix" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        5. Appendices
+                      </a>
+                      <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                        6. Systems & Tech Stack
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </nav>
             </aside>
 
