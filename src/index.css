@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap");
 @import url("https://fonts.cdnfonts.com/css/general-sans");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -53,7 +54,14 @@ All colors MUST be HSL.
     --input: 217 33% 25%;
     --ring: 348 83% 47%;
 
-    --radius: 0.875rem;
+    --radius: 0.125rem;
+
+    /* Merchant Haus Architectural Tokens */
+    --gold: 43 51% 58%;
+    --gold-foreground: 0 0% 100%;
+    --haus-charcoal: 240 6% 10%;
+    --bone-white: 0 0% 99%;
+    --canvas-border: 240 6% 96%;
 
     /* Team member colors - Chakra spectrum */
     --team-wesley: 0 84% 60%;      /* Red - Root */
@@ -156,7 +164,15 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 174 72% 56%;
     --sidebar-border: 217 33% 30%;
     --sidebar-ring: 174 72% 46%;
-    --radius: 0.875rem;
+    --radius: 0.125rem;
+
+    /* Merchant Haus Architectural Tokens */
+    --gold: 43 51% 58%;
+    --gold-foreground: 0 0% 100%;
+    --haus-charcoal: 240 6% 10%;
+    --bone-white: 0 0% 99%;
+    --canvas-border: 240 6% 96%;
+
     --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
@@ -399,7 +415,15 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 47%;
     --sidebar-border: 220 13% 84%;
     --sidebar-ring: 348 83% 47%;
-    --radius: 0.875rem;
+    --radius: 0.125rem;
+
+    /* Merchant Haus Architectural Tokens */
+    --gold: 43 51% 58%;
+    --gold-foreground: 240 6% 10%;
+    --haus-charcoal: 240 6% 10%;
+    --bone-white: 0 0% 99%;
+    --canvas-border: 240 6% 96%;
+
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -644,7 +668,7 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-sans antialiased tracking-tight;
   }
 
-  /* Typography refinements */
+  /* Typography refinements — Architectural Manifesto */
   h1, h2, h3 {
     @apply font-display tracking-tighter;
   }
@@ -653,9 +677,20 @@ All colors MUST be HSL.
     @apply tracking-tight;
   }
 
-  /* Small caps and labels */
+  /* Prestige serif for display names & institutional headings */
+  .haus-prestige {
+    @apply font-serif font-medium;
+  }
+
+  /* Manifesto metadata labels: 10px, bold, uppercase, 0.3em tracking */
   .label-caps {
-    @apply uppercase tracking-caps text-xs font-medium;
+    @apply uppercase text-[10px] font-bold;
+    letter-spacing: 0.3em;
+  }
+
+  /* Gold slash separator used in labels */
+  .label-slash {
+    color: hsl(var(--gold));
   }
 
   /* Dark mode: use background image (except mono) */
