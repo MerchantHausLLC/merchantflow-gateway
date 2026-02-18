@@ -1427,19 +1427,19 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         </Button>
       </div>
 
-      {/* Upload Dialog */}
-      <AlertDialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Select Document Type</AlertDialogTitle>
-            <AlertDialogDescription>
-              Choose a document type for {pendingFiles.length} file{pendingFiles.length > 1 ? 's' : ''}: {pendingFiles.map((f) => f.name).join(', ')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="doc-type">Document Type</Label>
+      {/* Inline Upload Panel — avoids nested dialog focus trap issues */}
+      {showUploadDialog && pendingFiles.length > 0 && (
+        <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium">Select Document Type</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {pendingFiles.length} file{pendingFiles.length > 1 ? 's' : ''}: {pendingFiles.map((f) => f.name).join(', ')}
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="doc-type-inline">Document Type</Label>
             <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger id="doc-type" className="mt-2">
+              <SelectTrigger id="doc-type-inline" className="mt-1">
                 <SelectValue placeholder="Select document type" />
               </SelectTrigger>
               <SelectContent>
@@ -1451,12 +1451,12 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
               </SelectContent>
             </Select>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelUpload}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmUpload}>Upload</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={cancelUpload}>Cancel</Button>
+            <Button size="sm" onClick={confirmUpload}>Upload</Button>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-2">
