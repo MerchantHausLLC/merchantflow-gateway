@@ -196,7 +196,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-haus-charcoal text-white">
       <div className="flex h-14 items-center px-4 lg:px-6 gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
@@ -210,7 +210,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               if (item.items) {
                 return (
                   <NavigationMenuItem key={item.title}>
-                    <NavigationMenuTrigger className="bg-transparent">
+                    <NavigationMenuTrigger className="bg-transparent text-white/90 hover:text-white hover:bg-white/10 data-[state=open]:bg-white/10">
                       <item.icon className="h-4 w-4 mr-2" />
                       {item.title}
                     </NavigationMenuTrigger>
@@ -266,7 +266,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                       className={({ isActive }) =>
                         cn(
                           navigationMenuTriggerStyle(),
-                          "bg-transparent flex items-center",
+                          "bg-transparent text-white/90 hover:text-white hover:bg-white/10 flex items-center",
                           isActive && "bg-accent text-accent-foreground"
                         )
                       }
@@ -288,7 +288,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                className="bg-gold text-gold-foreground hover:bg-gold/90 transition-opacity rounded-none"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline">New</span>
@@ -318,7 +318,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="h-9 w-9"
+            className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -330,7 +330,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 pl-1">
+              <Button variant="ghost" size="sm" className="gap-2 pl-1 text-white/90 hover:text-white hover:bg-white/10">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">

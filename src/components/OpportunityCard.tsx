@@ -224,10 +224,10 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
-        'hover:shadow-lg rounded-md overflow-hidden',
+        'hover:shadow-md overflow-hidden rounded-none',
         isLive
           ? 'border border-amber-400/60 dark:border-amber-500/50 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 shadow-[0_0_8px_rgba(217,170,0,0.12)]'
-          : cn('border border-border/50 border-l-2', teamColors.border, progressBg)
+          : cn('bg-card border border-haus-canvas border-l-[3px]', teamColors.border, progressBg)
       )}
     >
       <CardContent className={cn(

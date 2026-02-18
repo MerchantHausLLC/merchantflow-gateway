@@ -187,7 +187,7 @@ export const NotificationBell = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative text-white/70 hover:text-white hover:bg-white/10">
           <Bell className={cn(
             "h-5 w-5 transition-colors",
             unreadCount > 0 && "text-primary"

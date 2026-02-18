@@ -62,6 +62,7 @@ export default {
           'sans-serif'
         ],
         serif: [
+          'Playfair Display',
           'ui-serif',
           'Georgia',
           'Cambria',
@@ -166,6 +167,15 @@ export default {
           taryn: 'hsl(var(--team-taryn))',
           yaseen: 'hsl(var(--team-yaseen))',
           sales: 'hsl(var(--team-sales))'
+        },
+        gold: {
+          DEFAULT: 'hsl(var(--gold))',
+          foreground: 'hsl(var(--gold-foreground))'
+        },
+        haus: {
+          charcoal: 'hsl(var(--haus-charcoal))',
+          bone: 'hsl(var(--bone-white))',
+          canvas: 'hsl(var(--canvas-border))'
         },
         // Legacy merchant colors - now using HSL for consistency
         merchant: {

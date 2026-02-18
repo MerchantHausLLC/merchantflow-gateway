@@ -67,10 +67,10 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/30 overflow-hidden snap-start",
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/20 overflow-hidden snap-start rounded-none",
         isCompact 
-          ? "rounded-md w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" 
-          : "rounded-lg w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]"
+          ? "w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" 
+          : "w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]"
       )}
       data-stage={stage}
       onDragOver={onDragOver}
