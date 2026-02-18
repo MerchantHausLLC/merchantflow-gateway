@@ -236,8 +236,10 @@ const DualPipelineBoard = ({
     if (targetIsGateway !== sourceIsGateway) {
       if (targetIsGateway) {
         updates.processing_services = [];
+        updates.service_type = 'gateway_only';
       } else {
         updates.processing_services = opportunity.processing_services?.length ? opportunity.processing_services : ['Credit Card'];
+        updates.service_type = 'processing';
       }
     }
     if (opportunity.stage !== stage || targetIsGateway !== sourceIsGateway) {
@@ -306,8 +308,10 @@ const DualPipelineBoard = ({
       if (targetIsGateway !== sourceIsGateway) {
         if (targetIsGateway) {
           updates.processing_services = [];
+          updates.service_type = 'gateway_only';
         } else {
           updates.processing_services = draggedOpportunity.processing_services?.length ? draggedOpportunity.processing_services : ['Credit Card'];
+          updates.service_type = 'processing';
         }
       }
       if (draggedOpportunity.stage !== stage || targetIsGateway !== sourceIsGateway) {
