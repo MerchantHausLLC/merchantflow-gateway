@@ -1,0 +1,345 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown, GripVertical } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+
+interface ActionItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_by: string;
+  created_by_email: string;
+  assigned_to: string[];
+  created_at: string;
+  completed_at: string | null;
+  sort_order: number;
+}
+
+interface Profile {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+}
+
+export function ActionItemsWidget() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<ActionItem[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const [completedCollapsed, setCompletedCollapsed] = useState(true);
+
+  // Draggable icon position
+  const [iconPos, setIconPos] = useState(() => {
+    const saved = localStorage.getItem("action-items-pos");
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return { x: 20, y: window.innerHeight - 100 };
+  });
+  const dragging = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  // Fetch items
+  const fetchItems = useCallback(async () => {
+    const { data } = await supabase
+      .from("action_items")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (data) setItems(data as ActionItem[]);
+  }, []);
+
+  // Fetch profiles for tagging
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
+      if (data) setProfiles(data);
+    });
+  }, [user]);
+
+  // Subscribe to realtime
+  useEffect(() => {
+    if (!user) return;
+    fetchItems();
+    const channel = supabase
+      .channel("action-items-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "action_items" }, () => {
+        fetchItems();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchItems]);
+
+  // Drag handlers
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragging.current = true;
+    dragOffset.current = { x: e.clientX - iconPos.x, y: e.clientY - iconPos.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const newX = Math.max(0, Math.min(window.innerWidth - 56, e.clientX - dragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 56, e.clientY - dragOffset.current.y));
+    setIconPos({ x: newX, y: newY });
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const moved = Math.abs(e.clientX - (iconPos.x + dragOffset.current.x)) > 5 ||
+                  Math.abs(e.clientY - (iconPos.y + dragOffset.current.y)) > 5;
+    dragging.current = false;
+    localStorage.setItem("action-items-pos", JSON.stringify(iconPos));
+    if (!moved) setIsOpen((o) => !o);
+  };
+
+  // Add item
+  const addItem = async () => {
+    if (!newTitle.trim() || !user) return;
+    const { error } = await supabase.from("action_items").insert({
+      title: newTitle.trim(),
+      created_by: user.id,
+      created_by_email: user.email || "",
+      assigned_to: selectedUsers,
+    });
+    if (error) {
+      toast.error("Failed to add action item");
+    } else {
+      setNewTitle("");
+      setSelectedUsers([]);
+      setShowUserPicker(false);
+    }
+  };
+
+  // Toggle completion
+  const toggleItem = async (item: ActionItem) => {
+    await supabase.from("action_items").update({
+      completed: !item.completed,
+      completed_at: !item.completed ? new Date().toISOString() : null,
+    }).eq("id", item.id);
+  };
+
+  // Delete item
+  const deleteItem = async (id: string) => {
+    await supabase.from("action_items").delete().eq("id", id);
+  };
+
+  const toggleUser = (email: string) => {
+    setSelectedUsers((prev) =>
+      prev.includes(email) ? prev.filter((u) => u !== email) : [...prev, email]
+    );
+  };
+
+  const activeItems = items.filter((i) => !i.completed);
+  const completedItems = items.filter((i) => i.completed);
+
+  const getDisplayName = (email: string) => {
+    const p = profiles.find((pr) => pr.email === email);
+    return p?.full_name || email.split("@")[0];
+  };
+
+  if (!user) return null;
+
+  const unreadCount = activeItems.length;
+
+  return (
+    <>
+      {/* Floating draggable icon */}
+      <div
+        className="fixed z-[60] select-none touch-none"
+        style={{ left: iconPos.x, top: iconPos.y }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+        <div className={cn(
+          "w-12 h-12 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg transition-colors",
+          "bg-haus-charcoal text-white hover:bg-foreground"
+        )}>
+          <ClipboardCheck className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed z-[61] bg-card border border-border shadow-2xl flex flex-col"
+            style={{
+              width: "min(380px, calc(100vw - 32px))",
+              maxHeight: "min(520px, calc(100vh - 100px))",
+              left: Math.min(iconPos.x, window.innerWidth - 400),
+              bottom: Math.max(20, window.innerHeight - iconPos.y + 16),
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4 text-gold" />
+                <span className="label-caps text-foreground">Action Items</span>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Add new item */}
+            <div className="px-4 py-3 border-b border-border space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Add action item…"
+                  className="flex-1 text-sm border-b border-haus-canvas"
+                  onKeyDown={(e) => e.key === "Enter" && addItem()}
+                />
+                <Button size="sm" onClick={addItem} disabled={!newTitle.trim()} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Tag users */}
+              <div>
+                <button
+                  onClick={() => setShowUserPicker(!showUserPicker)}
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                >
+                  Tag users {selectedUsers.length > 0 && `(${selectedUsers.length})`}
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", showUserPicker && "rotate-180")} />
+                </button>
+                {showUserPicker && (
+                  <div className="mt-2 max-h-28 overflow-y-auto space-y-1">
+                    {profiles.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 py-1 px-1 hover:bg-muted/50 cursor-pointer text-xs">
+                        <Checkbox
+                          checked={selectedUsers.includes(p.email || "")}
+                          onCheckedChange={() => toggleUser(p.email || "")}
+                        />
+                        <span className="truncate">{p.full_name || p.email}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Items list */}
+            <div className="flex-1 overflow-y-auto">
+              {activeItems.length === 0 && completedItems.length === 0 && (
+                <div className="p-6 text-center text-muted-foreground text-sm">
+                  No action items yet
+                </div>
+              )}
+
+              {activeItems.map((item) => (
+                <ActionItemRow
+                  key={item.id}
+                  item={item}
+                  onToggle={toggleItem}
+                  onDelete={deleteItem}
+                  getDisplayName={getDisplayName}
+                  canDelete={item.created_by === user.id}
+                />
+              ))}
+
+              {completedItems.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setCompletedCollapsed(!completedCollapsed)}
+                    className="w-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground flex items-center gap-1 border-t border-border"
+                  >
+                    Completed ({completedItems.length})
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", !completedCollapsed && "rotate-180")} />
+                  </button>
+                  {!completedCollapsed && completedItems.map((item) => (
+                    <ActionItemRow
+                      key={item.id}
+                      item={item}
+                      onToggle={toggleItem}
+                      onDelete={deleteItem}
+                      getDisplayName={getDisplayName}
+                      canDelete={item.created_by === user.id}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+function ActionItemRow({
+  item,
+  onToggle,
+  onDelete,
+  getDisplayName,
+  canDelete,
+}: {
+  item: ActionItem;
+  onToggle: (item: ActionItem) => void;
+  onDelete: (id: string) => void;
+  getDisplayName: (email: string) => string;
+  canDelete: boolean;
+}) {
+  return (
+    <div className={cn(
+      "flex items-start gap-2 px-4 py-2.5 border-b border-border/50 group hover:bg-muted/30 transition-colors",
+      item.completed && "opacity-60"
+    )}>
+      <Checkbox
+        checked={item.completed}
+        onCheckedChange={() => onToggle(item)}
+        className="mt-0.5"
+      />
+      <div className="flex-1 min-w-0">
+        <p className={cn("text-sm leading-tight", item.completed && "line-through text-muted-foreground")}>
+          {item.title}
+        </p>
+        <div className="flex items-center gap-1 mt-1 flex-wrap">
+          <span className="text-[10px] text-muted-foreground">
+            {getDisplayName(item.created_by_email)}
+          </span>
+          {item.assigned_to?.length > 0 && (
+            <>
+              <span className="text-[10px] text-gold">→</span>
+              {item.assigned_to.map((email) => (
+                <Badge key={email} variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-normal">
+                  {getDisplayName(email)}
+                </Badge>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+      {canDelete && (
+        <button
+          onClick={() => onDelete(item.id)}
+          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
