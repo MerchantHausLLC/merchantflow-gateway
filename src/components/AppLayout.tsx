@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -38,6 +39,7 @@ export function AppLayout({
       </main>
       <MobileBottomNav />
       <FloatingChat />
+      <ActionItemsWidget />
     </div>
   );
 }

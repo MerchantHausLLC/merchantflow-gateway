@@ -59,6 +59,42 @@ export type Database = {
         }
         Relationships: []
       }
+      action_items: {
+        Row: {
+          assigned_to: string[]
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          created_by_email: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          assigned_to?: string[]
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          created_by_email: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          assigned_to?: string[]
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_email?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           created_at: string
