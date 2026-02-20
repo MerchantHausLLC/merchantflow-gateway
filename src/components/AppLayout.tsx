@@ -3,6 +3,7 @@ import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
+import { BroadcastPopup } from "@/components/BroadcastPopup";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -40,6 +41,7 @@ export function AppLayout({
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
+      <BroadcastPopup />
     </div>
   );
 }
