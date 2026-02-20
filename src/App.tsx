@@ -38,6 +38,7 @@ import MerchantApply from "./pages/MerchantApply";
 import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
 import SupportedProcessors from "./pages/SupportedProcessors";
+import Analytics from "./pages/Analytics";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -82,8 +83,8 @@ const App = () => (
                 <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
                 
-                {/* ADMIN ROUTE */}
                 <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
+                <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
