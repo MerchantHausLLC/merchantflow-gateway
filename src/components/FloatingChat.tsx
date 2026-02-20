@@ -916,6 +916,7 @@ const FloatingChat: React.FC = () => {
   };
 
   const handleSendMessage = () => {
+    playSentSound();
     if (view === "dm") handleSendDirectMessage();
     else handleSendChannelMessage();
   };
