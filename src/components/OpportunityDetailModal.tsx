@@ -1,169 +1,25 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { IconRail, IconRailItem } from "./opportunity-detail/IconRail";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTasks } from "@/contexts/TasksContext";
-import { sendOpportunityAssignmentEmail, sendStageChangeEmail } from "@/hooks/useEmailNotifications";
-import ActivitiesTab from "./ActivitiesTab";
+import * as React from "react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAutoSave } from "@/hooks/useAutoSave";
-import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { StatusBlockerPanel } from "./opportunity-detail/StatusBlockerPanel";
-import { StagePath } from "./opportunity-detail/StagePath";
-import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
-import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
-import { NotesSection } from "./opportunity-detail/NotesSection";
-import GameSplash from "./GameSplash";
-import CommentsTab from "./CommentsTab";
-import { Task } from "@/types/task";
-import liveBadge from "@/assets/live-badge.webp";
+  PROCESSING_PIPELINE_STAGES,
+  GATEWAY_ONLY_PIPELINE_STAGES,
+  STAGE_CONFIG,
+  getServiceType,
+  migrateStage,
+  type Opportunity,
+  type OpportunityStage,
+} from "@/types/opportunity";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { X, ArrowLeftRight, Skull, Trash2, Save } from "lucide-react";
 
-interface Document {
-  id: string;
-  opportunity_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  content_type: string | null;
-  uploaded_by: string | null;
-  created_at: string;
-  document_type: string | null;
-}
-
-const DOCUMENT_TYPE_OPTIONS = [
-  "Passport/Drivers License",
-  "Bank Statement",
-  "Transaction History",
-  "Articles of Organisation",
-  "Voided Check / Bank Confirmation Letter",
-  "EIN",
-  "SSN",
-  "Unassigned",
-];
-
-const wizardBadgeClasses = (value: number) => {
-  if (value >= 100) return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/40";
-  if (value >= 10) return "bg-amber-500/10 text-amber-500 border border-amber-500/40";
-  return "bg-destructive/10 text-destructive border border-destructive/40";
-};
-
-const wizardProgressColor = (value: number) => {
-  if (value >= 100) return "bg-emerald-500";
-  if (value >= 10) return "bg-amber-500";
-  return "bg-destructive";
-};
-
-type WizardSectionKey = "business" | "legal" | "processing" | "documents";
-
-const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] }[] = [
-  {
-    key: "business",
-    label: "Business profile",
-    fields: [
-      "dbaName",
-      "products",
-      "natureOfBusiness",
-      "dbaContactFirst",
-      "dbaContactLast",
-      "dbaPhone",
-      "dbaEmail",
-      "dbaAddress",
-      "dbaCity",
-      "dbaState",
-      "dbaZip",
-    ],
-  },
-  {
-    key: "legal",
-    label: "Legal info",
-    fields: [
-      "legalEntityName",
-      "legalPhone",
-      "legalEmail",
-      "tin",
-      "ownershipType",
-      "formationDate",
-      "stateIncorporated",
-      "legalAddress",
-      "legalCity",
-      "legalState",
-      "legalZip",
-    ],
-  },
-  {
-    key: "processing",
-    label: "Processing",
-    fields: [
-      "monthlyVolume",
-      "avgTicket",
-      "highTicket",
-      "swipedPct",
-      "keyedPct",
-      "motoPct",
-      "ecomPct",
-      "b2cPct",
-      "b2bPct",
-    ],
-  },
-  {
-    key: "documents",
-    label: "Documents",
-    fields: ["documents"],
-  },
-];
-
-const isWizardFieldComplete = (formState: Record<string, unknown>, field: string) => {
-  const value = formState[field];
-
-  if (field === "documents") {
-    return Array.isArray(value) && value.length > 0;
-  }
-
-  if (value === undefined || value === null) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  return Boolean(value);
-};
-
-const computeWizardSectionProgress = (formState: Record<string, unknown>) =>
-  WIZARD_SECTIONS.map((section) => {
-    const completed = section.fields.filter((field) => isWizardFieldComplete(formState, field)).length;
-    const total = section.fields.length;
-    const percent = Math.round((completed / total) * 100);
-
-    return {
-      ...section,
-      completed,
-      total,
-      percent,
-      done: completed === total,
-    };
-  });
-
-interface OpportunityDetailModalProps {
+type Props = {
   opportunity: Opportunity | null;
   onClose: () => void;
   onUpdate: (updates: Partial<Opportunity>) => void;
@@ -172,1395 +28,323 @@ interface OpportunityDetailModalProps {
   onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
   onMoveToProcessing?: (opportunity: Opportunity) => Promise<void> | void;
   hasGatewayOpportunity?: boolean;
+};
+
+function safeLabel(v: unknown, fallback = "—") {
+  if (v === null || v === undefined) return fallback;
+  if (typeof v === "string" && v.trim() === "") return fallback;
+  return String(v);
 }
 
-const MODAL_SECTIONS = ['overview', 'tasks', 'notes', 'documents', 'details', 'activity'] as const;
-type ModalSection = typeof MODAL_SECTIONS[number];
+// Neo-brutalist helpers (intentionally loud)
+const NB = {
+  shell:
+    "border-4 border-black bg-[#F8F7F2] text-black shadow-[10px_10px_0_0_#000] rounded-none p-0 overflow-hidden",
+  topbar:
+    "flex items-start justify-between gap-3 border-b-4 border-black bg-[#FFD400] p-4",
+  title:
+    "font-black tracking-tight text-xl sm:text-2xl leading-none uppercase",
+  sub: "text-sm font-semibold opacity-90",
+  chip:
+    "inline-flex items-center gap-2 border-2 border-black bg-white px-2 py-1 text-xs font-extrabold uppercase",
+  section:
+    "border-t-4 border-black p-4 sm:p-5 bg-white/70",
+  sectionTitle:
+    "text-xs font-black uppercase tracking-wider mb-2",
+  input:
+    "w-full border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none focus:shadow-[4px_4px_0_0_#000] focus:translate-x-[-1px] focus:translate-y-[-1px] transition",
+  textarea:
+    "w-full min-h-[110px] border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none focus:shadow-[4px_4px_0_0_#000] focus:translate-x-[-1px] focus:translate-y-[-1px] transition resize-y",
+  divider:
+    "h-2 border-y-4 border-black bg-[#00D4FF]",
+  actionRow:
+    "flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between",
+  ctaRow:
+    "flex flex-wrap gap-2 justify-end",
+};
 
-const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
-  const { isAdmin } = useUserRole();
-  const { user } = useAuth();
-  const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isConverting, setIsConverting] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDeadDialog, setShowDeadDialog] = useState(false);
-  const [showMoveDialog, setShowMoveDialog] = useState(false);
-  const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
-  const [showDeathSplash, setShowDeathSplash] = useState(false);
-  const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
-  const [activeSection, setActiveSection] = useState<ModalSection>('overview');
-  const isMobile = useIsMobile();
-  // Keyboard shortcuts for section navigation
-  useEffect(() => {
-    if (!opportunity) return;
+export default function OpportunityDetailModal({
+  opportunity,
+  onClose,
+  onUpdate,
+  onMarkAsDead,
+  onDelete,
+  onConvertToGateway,
+  onMoveToProcessing,
+  hasGatewayOpportunity,
+}: Props) {
+  const open = !!opportunity;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
-      const currentIndex = MODAL_SECTIONS.indexOf(activeSection);
-      
-      // Arrow keys or [ ] for section navigation
-      if (e.key === 'ArrowLeft' || e.key === '[') {
-        e.preventDefault();
-        const newIndex = currentIndex > 0 ? currentIndex - 1 : MODAL_SECTIONS.length - 1;
-        setActiveSection(MODAL_SECTIONS[newIndex]);
-      } else if (e.key === 'ArrowRight' || e.key === ']') {
-        e.preventDefault();
-        const newIndex = currentIndex < MODAL_SECTIONS.length - 1 ? currentIndex + 1 : 0;
-        setActiveSection(MODAL_SECTIONS[newIndex]);
-      }
-      
-      // Number keys 1-6 for direct section access
-      if (e.key >= '1' && e.key <= '6') {
-        e.preventDefault();
-        const idx = parseInt(e.key) - 1;
-        if (idx < MODAL_SECTIONS.length) {
-          setActiveSection(MODAL_SECTIONS[idx]);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [opportunity, activeSection]);
-  
-  // Account fields
-  const [accountName, setAccountName] = useState("");
-  const [website, setWebsite] = useState("");
-  const [address1, setAddress1] = useState("");
-  const [address2, setAddress2] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zip, setZip] = useState("");
-  const [country, setCountry] = useState("");
-  
-  // Contact fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [fax, setFax] = useState("");
-  
-  // Opportunity fields
-  const [username, setUsername] = useState("");
-  const [referralSource, setReferralSource] = useState("");
-  const [timezone, setTimezone] = useState("");
-  const [language, setLanguage] = useState("");
-
-  // Combined form data for auto-save
-  const formData = useMemo(() => ({
-    accountName, website, address1, address2, city, state, zip, country,
-    firstName, lastName, email, phone, fax,
-    username, referralSource, timezone, language,
-  }), [accountName, website, address1, address2, city, state, zip, country,
-      firstName, lastName, email, phone, fax, username, referralSource, timezone, language]);
-
-  const account = opportunity?.account;
-  const contact = opportunity?.contact;
-  const stageConfig = opportunity ? STAGE_CONFIG[opportunity.stage] : STAGE_CONFIG.application_started;
-  const wizardState = opportunity?.wizard_state;
-  const wizardFormState = useMemo(
-    () => (wizardState?.form_state as Record<string, unknown> | undefined) ?? {},
-    [wizardState?.form_state],
-  );
-  const wizardSectionProgress = useMemo(
-    () => computeWizardSectionProgress(wizardFormState),
-    [wizardFormState],
-  );
-  const relatedTasks = useMemo(
-    () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),
-    [getTasksForOpportunity, opportunity],
-  );
-  const assigneeOptions = useMemo(
-    () =>
-      Array.from(
-        new Set([opportunity?.assigned_to, user?.email, "Onboarding", "Operations", "Support", "Unassigned"].filter(Boolean)),
-      ) as string[],
-    [opportunity?.assigned_to, user?.email],
-  );
-
-  // Icon rail items for section navigation
-  const iconRailItems: IconRailItem[] = useMemo(() => {
-    const openTaskCount = relatedTasks.filter(t => t.status !== 'done').length;
-    return [
-      { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      { id: 'tasks', icon: <ListChecks className="h-4 w-4" />, label: 'Tasks', badge: openTaskCount || undefined, badgeVariant: openTaskCount > 0 ? 'default' as const : undefined },
-      { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
-      { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
-      { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
-      { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
-    ];
-  }, [relatedTasks]);
-
-  const handleSectionSelect = useCallback((id: string) => {
-    setActiveSection(id as ModalSection);
-  }, []);
-
-  const startEditing = () => {
-    // Populate form with current values
-    setAccountName(account?.name || "");
-    setWebsite(account?.website || "");
-    setAddress1(account?.address1 || "");
-    setAddress2(account?.address2 || "");
-    setCity(account?.city || "");
-    setState(account?.state || "");
-    setZip(account?.zip || "");
-    setCountry(account?.country || "");
-    
-    setFirstName(contact?.first_name || "");
-    setLastName(contact?.last_name || "");
-    setEmail(contact?.email || "");
-    setPhone(contact?.phone || "");
-    setFax(contact?.fax || "");
-    
-    setUsername(opportunity.username || "");
-    setReferralSource(opportunity.referral_source || "");
-    setTimezone(opportunity.timezone || "");
-    setLanguage(opportunity.language || "");
-    
-    setIsEditing(true);
-  };
-
-  const cancelEditing = () => {
-    setIsEditing(false);
-  };
-
-  const handleConvertToGateway = async () => {
-    if (!opportunity || !onConvertToGateway || hasGatewayOpportunity) return;
-    setIsConverting(true);
-    try {
-      await onConvertToGateway(opportunity);
-    } catch (error) {
-      console.error('Error converting opportunity to gateway:', error);
-      toast.error("Failed to create gateway card");
-    }
-    setIsConverting(false);
-  };
-
-  const handleMoveToProcessing = async () => {
-    if (!opportunity || !onMoveToProcessing) return;
-    setIsConverting(true);
-    try {
-      await onMoveToProcessing(opportunity);
-      toast.success("Moved to Processing pipeline");
-    } catch (error) {
-      console.error('Error moving opportunity to processing:', error);
-      toast.error("Failed to move to processing");
-    }
-    setIsConverting(false);
-  };
-
-  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
-
-  // Auto-save callback
-  const handleAutoSave = useCallback(async (data: typeof formData) => {
-    if (!opportunity) return;
-    
-    // Update account
-    if (account) {
-      const { error: accountError } = await supabase
-        .from('accounts')
-        .update({
-          name: data.accountName,
-          website: data.website || null,
-          address1: data.address1 || null,
-          address2: data.address2 || null,
-          city: data.city || null,
-          state: data.state || null,
-          zip: data.zip || null,
-          country: data.country || null,
-        })
-        .eq('id', account.id);
-      
-      if (accountError) throw accountError;
-    }
-
-    // Update contact
-    if (contact) {
-      const { error: contactError } = await supabase
-        .from('contacts')
-        .update({
-          first_name: data.firstName || null,
-          last_name: data.lastName || null,
-          email: data.email || null,
-          phone: data.phone || null,
-          fax: data.fax || null,
-        })
-        .eq('id', contact.id);
-      
-      if (contactError) throw contactError;
-    }
-
-    // Update opportunity
-    const { error: oppError } = await supabase
-      .from('opportunities')
-      .update({
-        username: data.username || null,
-        referral_source: data.referralSource || null,
-        timezone: data.timezone || null,
-        language: data.language || null,
-      })
-      .eq('id', opportunity.id);
-    
-    if (oppError) throw oppError;
-
-    // Update local state
-    onUpdate({
-      ...opportunity,
-      username: data.username || undefined,
-      referral_source: data.referralSource || undefined,
-      timezone: data.timezone || undefined,
-      language: data.language || undefined,
-      account: account ? {
-        ...account,
-        name: data.accountName,
-        website: data.website || undefined,
-        address1: data.address1 || undefined,
-        address2: data.address2 || undefined,
-        city: data.city || undefined,
-        state: data.state || undefined,
-        zip: data.zip || undefined,
-        country: data.country || undefined,
-      } : undefined,
-      contact: contact ? {
-        ...contact,
-        first_name: data.firstName || undefined,
-        last_name: data.lastName || undefined,
-        email: data.email || undefined,
-        phone: data.phone || undefined,
-        fax: data.fax || undefined,
-      } : undefined,
-    });
-  }, [opportunity, account, contact, onUpdate]);
-
-  const { status: saveStatus, resetInitialData } = useAutoSave({
-    data: formData,
-    onSave: handleAutoSave,
-    delay: 800,
-    enabled: isEditing && !!opportunity,
-  });
-
-  // Reset auto-save state when entering edit mode
-  useEffect(() => {
-    if (isEditing) {
-      resetInitialData();
-    }
-  }, [isEditing, resetInitialData]);
-
-  const performOwnerUpdate = async (value: string, isReactivation: boolean) => {
-    if (!opportunity) return;
-    const newAssignee = value === "unassigned" ? null : value;
-
-    const updatePayload: { assigned_to: string | null; status?: string } = {
-      assigned_to: newAssignee,
-    };
-
-    if (isReactivation && newAssignee) {
-      updatePayload.status = 'active';
-    }
-
-    const { error } = await supabase
-      .from('opportunities')
-      .update(updatePayload)
-      .eq('id', opportunity.id);
-
-    if (error) {
-      toast.error("Failed to update owner");
-      return;
-    }
-
-    // Log activity
-    await supabase.from('activities').insert({
-      opportunity_id: opportunity.id,
-      type: isReactivation ? 'reactivated' : 'assignment_change',
-      description: isReactivation
-        ? `Reactivated and assigned to ${newAssignee}`
-        : `Reassigned to ${newAssignee || 'Unassigned'}`,
-      user_id: user?.id,
-      user_email: user?.email,
-    });
-
-    // Send email notification for opportunity assignment
-    if (newAssignee) {
-      sendOpportunityAssignmentEmail(
-        newAssignee,
-        account?.name || 'Unknown Account',
-        contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : undefined,
-        opportunity.stage
-      ).catch(err => console.error("Failed to send assignment email:", err));
-    }
-
-    onUpdate({
-      ...opportunity,
-      assigned_to: newAssignee || undefined,
-      ...(isReactivation ? { status: 'active' } : {}),
-    });
-
-    toast.success(
-      isReactivation
-        ? `Reactivated and assigned to ${newAssignee}`
-        : `Assigned to ${newAssignee || 'Unassigned'}`
-    );
-  };
-
-  const confirmReactivation = () => {
-    if (!reactivateConfirm) return;
-    performOwnerUpdate(reactivateConfirm.assignee, true);
-    setReactivateConfirm(null);
-  };
-
-  const handleMarkAsDead = async () => {
-    try {
-      const { error } = await supabase
-        .from('opportunities')
-        .update({ status: 'dead', stage: 'closed_lost' })
-        .eq('id', opportunity.id);
-
-      if (!error) {
-        // Also mark the account as dead
-        await supabase
-          .from('accounts')
-          .update({ status: 'dead' })
-          .eq('id', opportunity.account_id);
-      }
-
-      if (error) throw error;
-
-      // Log activity
-      await supabase.from('activities').insert({
-        opportunity_id: opportunity.id,
-        type: 'status_change',
-        description: 'Marked as Dead/Archived',
-        user_id: user?.id,
-        user_email: user?.email,
-      });
-
-      setShowDeadDialog(false);
-      setShowDeathSplash(true);
-      
-      // Show splash for 2 seconds then close
-      setTimeout(() => {
-        setShowDeathSplash(false);
-        onMarkAsDead?.(opportunity.id);
-        onClose();
-      }, 2000);
-    } catch (error) {
-      console.error('Error marking as dead:', error);
-      toast.error("Failed to mark as dead");
-      setShowDeadDialog(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('opportunities')
-        .delete()
-        .eq('id', opportunity.id);
-
-      if (error) throw error;
-
-      toast.success("Opportunity deleted permanently");
-      onDelete?.(opportunity.id);
-      onClose();
-    } catch (error) {
-      console.error('Error deleting opportunity:', error);
-      toast.error("Failed to delete opportunity");
-    }
-    setShowDeleteDialog(false);
-  };
-
-  const handleRequestDeletion = async () => {
-    try {
-      const { error } = await supabase.from('deletion_requests').insert({
-        requester_id: user?.id,
-        requester_email: user?.email || '',
-        entity_type: 'opportunity',
-        entity_id: opportunity.id,
-        entity_name: account?.name || 'Unknown Opportunity',
-      });
-
-      if (error) throw error;
-
-      toast.success("Deletion request sent to admin");
-      onClose();
-    } catch (error) {
-      console.error('Error requesting deletion:', error);
-      toast.error("Failed to send deletion request");
-    }
-  };
+  const [draft, setDraft] = React.useState<Partial<Opportunity>>({});
+  React.useEffect(() => {
+    // Reset draft when changing records
+    if (opportunity) setDraft({});
+  }, [opportunity?.id]);
 
   if (!opportunity) return null;
 
+  const serviceType = getServiceType(opportunity); // your helper
+  const isGateway = serviceType === "gateway" || serviceType === "gateway_only";
+  const stages = (isGateway ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES) as OpportunityStage[];
+
+  const currentStage = (draft.stage ?? opportunity.stage) as OpportunityStage;
+  const stageCfg = STAGE_CONFIG[currentStage] ?? { label: currentStage, color: "hsl(var(--primary))" };
+
+  const headline =
+    // Try common names without assuming too hard
+    (opportunity as any).company_name ||
+    (opportunity as any).merchant_name ||
+    (opportunity as any).name ||
+    (opportunity as any).business_name ||
+    `Opportunity #${safeLabel(opportunity.id)}`;
+
+  const contactLine = [
+    (opportunity as any).contact_name,
+    (opportunity as any).email,
+    (opportunity as any).phone,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  const stagePillStyle: React.CSSProperties = {
+    // keep your config color but make it brutalist
+    borderColor: "#000",
+    background: "#fff",
+  };
+
+  const commit = () => {
+    if (Object.keys(draft).length === 0) return;
+    onUpdate(draft);
+    setDraft({});
+  };
+
+  const setField = <K extends keyof Opportunity>(key: K, value: Opportunity[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+  };
+
   return (
-    <>
-      <Dialog open={!!opportunity} onOpenChange={onClose}>
-        <DialogContent 
-          className={cn(
-            "flex flex-col transition-all duration-200",
-            isMaximized 
-              ? "sm:max-w-[95vw] h-[95vh]" 
-              : "sm:max-w-2xl h-[90vh]"
-          )}
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded",
-                  opportunity.stage === 'live_activated'
-                    ? "bg-amber-500/10 text-amber-600"
-                    : "bg-primary/10 text-primary"
-                )}>
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
-                    <span className={cn(
-                      "flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
-                      getServiceType(opportunity) === 'gateway_only' 
-                        ? "bg-teal/10 text-teal" 
-                        : "bg-primary/10 text-primary"
-                    )}>
-                      {getServiceType(opportunity) === 'gateway_only' ? (
-                        <>
-                          <Zap className="h-3 w-3" />
-                          Gateway
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-3 w-3" />
-                          Processing
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {/* Editable Stage Dropdown */}
-                    <Select
-                      value={opportunity.stage}
-                      onValueChange={async (value) => {
-                        const newStage = value as OpportunityStage;
-                        const oldStage = opportunity.stage;
-                        
-                        const { error } = await supabase
-                          .from('opportunities')
-                          .update({ stage: newStage })
-                          .eq('id', opportunity.id);
-                        
-                        if (error) {
-                          toast.error("Failed to update stage");
-                          return;
-                        }
-                        
-                        // Log activity
-                        await supabase.from('activities').insert({
-                          opportunity_id: opportunity.id,
-                          type: 'stage_change',
-                          description: `Moved from ${STAGE_CONFIG[oldStage].label} to ${STAGE_CONFIG[newStage].label}`,
-                          user_id: user?.id,
-                          user_email: user?.email,
-                        });
-                        
-                        // Send email notification
-                        if (opportunity.assigned_to) {
-                          sendStageChangeEmail(
-                            opportunity.assigned_to,
-                            account?.name || 'Unknown Account',
-                            oldStage,
-                            newStage,
-                            user?.email
-                          ).catch(err => console.error("Failed to send stage change email:", err));
-                        }
-                        
-                        onUpdate({ ...opportunity, stage: newStage });
-                        toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
-                      }}
-                    >
-                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1">
-                        <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                          <SelectItem key={stage} value={stage} className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
-                              {STAGE_CONFIG[stage].label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {opportunity.status === 'dead' && (
-                      <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded">
-                        Archived
-                      </span>
-                    )}
-                    <span className="text-muted-foreground">•</span>
-                    {/* Primary Owner Dropdown */}
-                    <Select
-                      value={opportunity.assigned_to || "unassigned"}
-                      onValueChange={(value) => {
-                        const newAssignee = value === "unassigned" ? null : value;
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent
+        className={cn(
+          "max-w-[860px] p-0 border-0 bg-transparent shadow-none",
+        )}
+      >
+        <div className={NB.shell}>
+          {/* TOP BAR */}
+          <div className={NB.topbar}>
+            <div className="min-w-0">
+              <DialogHeader>
+                <DialogTitle className={NB.title}>
+                  {safeLabel(headline)}
+                </DialogTitle>
+                <DialogDescription className={cn(NB.sub, "truncate")}>
+                  {contactLine ? contactLine : "No contact details yet."}
+                </DialogDescription>
+              </DialogHeader>
 
-                        if (opportunity.status === 'dead' && newAssignee) {
-                          setReactivateConfirm({ assignee: value });
-                          return;
-                        }
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className={NB.chip} style={stagePillStyle}>
+                  <span
+                    className="inline-block h-2.5 w-2.5 border-2 border-black"
+                    style={{ background: stageCfg.color || "#000" }}
+                  />
+                  {safeLabel(stageCfg.label, safeLabel(currentStage))}
+                </span>
 
-                        performOwnerUpdate(value, false);
-                      }}
-                    >
-                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs font-medium">
-                        <User className="h-3 w-3 mr-1" />
-                        <SelectValue placeholder="Assign owner" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                        {TEAM_MEMBERS.map((member) => (
-                          <SelectItem key={member} value={member} className="text-xs">
-                            {member}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                {isEditing ? (
-                  <>
-                    <AutoSaveIndicator status={saveStatus} />
-                    <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                      <X className="h-4 w-4 mr-1" />
-                      Close
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={startEditing}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
-                    
-                    {/* Pipeline toggle button - Lightning bolt for conversion */}
-                    {isGatewayCard ? (
-                      onMoveToProcessing && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={() => setShowMoveDialog(true)}
-                              disabled={isConverting}
-                            >
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Move to Processing</TooltipContent>
-                        </Tooltip>
-                      )
-                    ) : (
-                      onConvertToGateway && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={handleConvertToGateway}
-                              disabled={isConverting || hasGatewayOpportunity}
-                            >
-                              <Zap className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}
-                          </TooltipContent>
-                        </Tooltip>
-                      )
-                    )}
-                    
-                    {/* Mark as Dead - Skull icon */}
-                    {opportunity.status !== 'dead' && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-[hsl(var(--toxic))] border-[hsl(var(--toxic))] hover:bg-[hsl(var(--toxic))]/10"
-                            onClick={() => setShowDeadDialog(true)}
-                          >
-                            <Skull className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Mark as Dead</TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    {/* Delete - admin only, Request Deletion for others */}
-                    {isAdmin ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setShowDeleteDialog(true)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Permanently</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10"
-                            onClick={() => setShowRequestDeleteDialog(true)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Request Deletion</TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    {/* Maximize/Minimize */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setIsMaximized(!isMaximized)}
-                        >
-                          {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isMaximized ? 'Minimize' : 'Maximize'}</TooltipContent>
-                    </Tooltip>
-                  </>
+                <span className={cn(NB.chip, "bg-[#00D4FF]")}>
+                  {isGateway ? "Gateway" : "Payments"}
+                </span>
+
+                {hasGatewayOpportunity && !isGateway && (
+                  <span className={cn(NB.chip, "bg-[#FF4DCA]")}>
+                    Has gateway opp
+                  </span>
                 )}
               </div>
             </div>
-          </DialogHeader>
 
-          {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
-          {opportunity.stage === 'live_activated' && (
-            <div className="relative flex justify-center -mt-14 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
-              <img 
-                src={liveBadge} 
-                alt="Live Account" 
-                className="h-40 w-auto drop-shadow-2xl animate-ribbon-drop" 
-                style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
-              />
-            </div>
-          )}
-
-          {/* Compact status strip */}
-          <div className="mt-2 space-y-2 flex-shrink-0">
-            {opportunity.stage === 'live_activated' ? (
-              <div className="rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20 py-4 px-4">
-                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm text-center">
-                  Live Account
-                </h3>
-              </div>
-            ) : (
-              <>
-                <StatusBlockerPanel 
-                  opportunity={opportunity} 
-                  wizardProgress={wizardState?.progress ?? 0}
-                  onUpdate={onUpdate}
-                />
-                <StagePath opportunity={opportunity} />
-              </>
-            )}
-          </div>
-
-          {/* Icon Rail + Dynamic Panel Layout */}
-          <div className={cn(
-            "flex-1 min-h-0 flex mt-2",
-            isMobile ? "flex-col" : "flex-row"
-          )}>
-            {/* Desktop: vertical icon rail on left */}
-            {!isMobile && (
-              <IconRail
-                items={iconRailItems}
-                activeId={activeSection}
-                onSelect={handleSectionSelect}
-              />
-            )}
-
-            {/* Primary Panel - takes full remaining space */}
-            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-3 py-2">
-              {activeSection === 'overview' && (
-                <ApplicationProgress 
-                  opportunity={opportunity} 
-                  wizardState={wizardState ? {
-                    progress: wizardState.progress,
-                    step_index: wizardState.step_index,
-                    form_state: wizardState.form_state as Record<string, unknown>,
-                    updated_at: wizardState.updated_at
-                  } : null}
-                />
-              )}
-
-              {activeSection === 'tasks' && (
-                <OpportunityTasks 
-                  opportunityId={opportunity.id} 
-                  tasks={relatedTasks}
-                />
-              )}
-
-              {activeSection === 'notes' && (
-                <NotesSection opportunityId={opportunity.id} />
-              )}
-
-              {activeSection === 'documents' && (
-                <DocumentsTab opportunityId={opportunity.id} />
-              )}
-
-              {activeSection === 'details' && (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Account
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="Company Name" value={accountName} onChange={setAccountName} />
-                        <EditField label="Website" value={website} onChange={setWebsite} />
-                        <EditField label="Address" value={address1} onChange={setAddress1} />
-                        <EditField label="Address 2" value={address2} onChange={setAddress2} />
-                        <EditField label="City" value={city} onChange={setCity} />
-                        <EditField label="State" value={state} onChange={setState} />
-                        <EditField label="Zip" value={zip} onChange={setZip} />
-                        <EditField label="Country" value={country} onChange={setCountry} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Company Name" value={account?.name} />
-                        <InfoItem label="Website" value={account?.website} />
-                        <InfoItem label="Address" value={account?.address1} />
-                        <InfoItem label="Address 2" value={account?.address2} />
-                        <InfoItem label="City" value={account?.city} />
-                        <InfoItem label="State" value={account?.state} />
-                        <InfoItem label="Zip" value={account?.zip} />
-                        <InfoItem label="Country" value={account?.country} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Contact
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="First Name" value={firstName} onChange={setFirstName} />
-                        <EditField label="Last Name" value={lastName} onChange={setLastName} />
-                        <EditField label="Email" value={email} onChange={setEmail} type="email" />
-                        <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
-                        <EditField label="Fax" value={fax} onChange={setFax} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="First Name" value={contact?.first_name} />
-                        <InfoItem label="Last Name" value={contact?.last_name} />
-                        <InfoItem label="Email" value={contact?.email} />
-                        <InfoItem label="Phone" value={contact?.phone} />
-                        <InfoItem label="Fax" value={contact?.fax} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Opportunity
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Stage" value={stageConfig.label} />
-                        <EditField label="Username" value={username} onChange={setUsername} />
-                        <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
-                        <EditField label="Timezone" value={timezone} onChange={setTimezone} />
-                        <EditField label="Language" value={language} onChange={setLanguage} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Stage" value={stageConfig.label} />
-                        <InfoItem label="Username" value={opportunity.username} />
-                        <InfoItem label="Referral Source" value={opportunity.referral_source} />
-                        <InfoItem label="Timezone" value={opportunity.timezone} />
-                        <InfoItem label="Language" value={opportunity.language} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'activity' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      Activity Feed
-                    </h3>
-                  </div>
-                  <ActivitiesTab opportunityId={opportunity.id} />
-                </div>
-              )}
-            </div>
-
-            {/* Mobile: horizontal icon rail at bottom */}
-            {isMobile && (
-              <IconRail
-                items={iconRailItems}
-                activeId={activeSection}
-                onSelect={handleSectionSelect}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reactivation Confirmation */}
-      <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-primary" />
-              Reactivate Archived Opportunity?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Assigning will reactivate this opportunity and return it to the pipeline.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmReactivation}>
-              Reactivate &amp; Assign to {reactivateConfirm?.assignee}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Mark as Dead Confirmation */}
-      <AlertDialog open={showDeadDialog} onOpenChange={setShowDeadDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Skull className="h-5 w-5 text-[hsl(var(--toxic))]" />
-              Mark as Dead?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This will archive the opportunity and remove it from the active pipeline view.
-              You can still view it in the All Accounts and Contacts sections.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkAsDead} className="bg-[hsl(var(--toxic))] hover:bg-[hsl(120,100%,30%)]">
-              Mark as Dead
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* YOU DIED! Splash Screen */}
-      <GameSplash
-        type="death"
-        show={showDeathSplash}
-        onComplete={() => setShowDeathSplash(false)}
-      />
-
-      {/* Delete Confirmation (Admin Only) */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Permanently Delete?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the opportunity
-              and all associated data including documents, comments, and activities.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete Permanently
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Move to Processing Confirmation */}
-      <AlertDialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Move to Processing Pipeline?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This will move the opportunity from the Gateway pipeline to the Processing pipeline.
-              The opportunity will be assigned default processing services (Credit Card).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { handleMoveToProcessing(); setShowMoveDialog(false); }}>
-              Move to Processing
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Request Deletion Confirmation */}
-      <AlertDialog open={showRequestDeleteDialog} onOpenChange={setShowRequestDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Request Deletion?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This will send a deletion request to the admin for review. 
-              The admin will be notified and can approve or reject the request.
-              You will be notified once a decision is made.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { handleRequestDeletion(); setShowRequestDeleteDialog(false); }} className="bg-destructive hover:bg-destructive/90">
-              Request Deletion
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-};
-
-const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
-  <div>
-    <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
-    <p className="text-sm mt-0.5">{value || '-'}</p>
-  </div>
-);
-
-const EditField = ({ 
-  label, 
-  value, 
-  onChange, 
-  type = "text" 
-}: { 
-  label: string; 
-  value: string; 
-  onChange: (value: string) => void;
-  type?: string;
-}) => (
-  <div className="space-y-1">
-    <Label className="text-xs text-muted-foreground uppercase tracking-wide">{label}</Label>
-    <Input 
-      type={type}
-      value={value} 
-      onChange={(e) => onChange(e.target.value)}
-      className="h-9"
-    />
-  </div>
-);
-
-const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [selectedDocType, setSelectedDocType] = useState("Unassigned");
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  /** Sync document list into the wizard's form_state so ApplicationProgress stays accurate */
-  const syncDocsToWizard = async (docs: Document[]) => {
-    const docRefs = docs.map((d) => ({ id: d.id, file_name: d.file_name, document_type: (d as any).document_type ?? 'Unassigned' }));
-    const { data: ws } = await supabase
-      .from('onboarding_wizard_states')
-      .select('id, form_state')
-      .eq('opportunity_id', opportunityId)
-      .maybeSingle();
-    if (!ws) return;
-    const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
-    await supabase
-      .from('onboarding_wizard_states')
-      .update({ form_state: { ...currentForm, documents: docRefs }, updated_at: new Date().toISOString() } as never)
-      .eq('id', ws.id);
-  };
-
-  useEffect(() => {
-    fetchDocuments();
-  }, [opportunityId]);
-
-  const fetchDocuments = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('documents')
-      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
-      .eq('opportunity_id', opportunityId)
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setDocuments(data);
-    }
-    setIsLoading(false);
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setPendingFiles(Array.from(files));
-    setSelectedDocType("Unassigned");
-    setShowUploadDialog(true);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const confirmUpload = async () => {
-    if (pendingFiles.length === 0) return;
-    setIsUploading(true);
-    setShowUploadDialog(false);
-    
-    for (const file of pendingFiles) {
-      const filePath = `${opportunityId}/${Date.now()}_${file.name}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('opportunity-documents')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        toast.error(`Failed to upload ${file.name}`);
-        continue;
-      }
-
-      const { error: dbError } = await supabase
-        .from('documents')
-        .insert({
-          opportunity_id: opportunityId,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          content_type: file.type,
-          document_type: selectedDocType,
-        });
-
-      if (dbError) {
-        toast.error(`Failed to save ${file.name}`);
-      }
-    }
-
-    toast.success('Documents uploaded');
-    // Re-fetch and sync with wizard
-    const { data: updatedDocs } = await supabase
-      .from('documents')
-      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
-      .eq('opportunity_id', opportunityId)
-      .order('created_at', { ascending: false });
-    if (updatedDocs) {
-      setDocuments(updatedDocs);
-      syncDocsToWizard(updatedDocs);
-    }
-    setIsUploading(false);
-    setPendingFiles([]);
-  };
-
-  const cancelUpload = () => {
-    setShowUploadDialog(false);
-    setPendingFiles([]);
-  };
-
-  const handleUpdateDocType = async (docId: string, newType: string) => {
-    const { error } = await supabase
-      .from('documents')
-      .update({ document_type: newType })
-      .eq('id', docId);
-
-    if (error) {
-      toast.error('Failed to update document type');
-      return;
-    }
-
-    setDocuments((prev) =>
-      prev.map((doc) => (doc.id === docId ? { ...doc, document_type: newType } : doc))
-    );
-    toast.success('Document type updated');
-  };
-
-  const handleDelete = async (doc: Document) => {
-    const { error: storageError } = await supabase.storage
-      .from('opportunity-documents')
-      .remove([doc.file_path]);
-
-    if (storageError) {
-      toast.error('Failed to delete file');
-      return;
-    }
-
-    const { error: dbError } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', doc.id);
-
-    if (!dbError) {
-      toast.success('Document deleted');
-      const { data: updatedDocs } = await supabase
-        .from('documents')
-        .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
-        .eq('opportunity_id', opportunityId)
-        .order('created_at', { ascending: false });
-      if (updatedDocs) {
-        setDocuments(updatedDocs);
-        syncDocsToWizard(updatedDocs);
-      } else {
-        fetchDocuments();
-      }
-    }
-  };
-
-  const handlePreview = async (doc: Document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('opportunity-documents')
-        .download(doc.file_path);
-
-      if (error || !data) {
-        toast.error('Unable to open file');
-        return;
-      }
-
-      const contentType = doc.content_type || 'application/octet-stream';
-      const blob = new Blob([data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch {
-      toast.error('Unable to open file');
-    }
-  };
-
-  const handleDownload = async (doc: Document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('opportunity-documents')
-        .download(doc.file_path);
-
-      if (error || !data) {
-        toast.error('Unable to download file');
-        return;
-      }
-
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = doc.file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error('Unable to download file');
-    }
-  };
-
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-
-  const handleDownloadAll = async () => {
-    if (documents.length === 0) return;
-    setIsDownloadingAll(true);
-
-    for (const doc of documents) {
-      try {
-        const { data, error } = await supabase.storage
-          .from('opportunity-documents')
-          .download(doc.file_path);
-
-        if (error || !data) {
-          toast.error(`Failed to download ${doc.file_name}`);
-          continue;
-        }
-
-        const url = URL.createObjectURL(data);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = doc.file_name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        await new Promise((r) => setTimeout(r, 300));
-      } catch {
-        toast.error(`Failed to download ${doc.file_name}`);
-      }
-    }
-
-    setIsDownloadingAll(false);
-    toast.success('Downloads complete');
-  };
-
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        {documents.length > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDownloadAll}
-            disabled={isDownloadingAll}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            {isDownloadingAll ? 'Downloading...' : 'Download all'}
-          </Button>
-        )}
-        <Button
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-        >
-          <Upload className="h-4 w-4 mr-1" />
-          {isUploading ? 'Uploading...' : 'Upload'}
-        </Button>
-      </div>
-
-      {/* Inline Upload Panel — avoids nested dialog focus trap issues */}
-      {showUploadDialog && pendingFiles.length > 0 && (
-        <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 space-y-3">
-          <div>
-            <p className="text-sm font-medium">Select Document Type</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {pendingFiles.length} file{pendingFiles.length > 1 ? 's' : ''}: {pendingFiles.map((f) => f.name).join(', ')}
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="doc-type-inline">Document Type</Label>
-            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger id="doc-type-inline" className="mt-1">
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={cancelUpload}>Cancel</Button>
-            <Button size="sm" onClick={confirmUpload}>Upload</Button>
-          </div>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2">
-              <div className="flex items-center gap-3 flex-1">
-                <Skeleton className="h-8 w-8 rounded" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              </div>
-              <Skeleton className="h-8 w-24" />
-            </div>
-          ))}
-        </div>
-      ) : documents.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No documents yet</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {documents.map((doc) => (
-            <div 
-              key={doc.id} 
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2"
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onClose}
+              className="h-10 w-10 rounded-none border-4 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
             >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(doc.file_size)}
-                  </p>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className={NB.divider} />
+
+          {/* BODY */}
+          <div className="grid grid-cols-1 lg:grid-cols-5">
+            {/* LEFT: Editable core */}
+            <div className="lg:col-span-3">
+              <div className={NB.section}>
+                <div className={NB.sectionTitle}>Stage</div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    className={NB.input}
+                    value={currentStage}
+                    onChange={(e) => {
+                      const next = e.target.value as OpportunityStage;
+                      // migrateStage is your helper, in case pipeline changes need mapping
+                      const migrated = migrateStage(opportunity, next);
+                      setField("stage" as any, migrated as any);
+                    }}
+                  >
+                    {stages.map((s) => (
+                      <option key={s} value={s}>
+                        {safeLabel(STAGE_CONFIG[s]?.label, s)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="flex items-center gap-2">
+                    <span className={cn(NB.chip, "bg-white")}>
+                      ID: {safeLabel(opportunity.id)}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <Select
-                value={doc.document_type || "Unassigned"}
-                onValueChange={(value) => handleUpdateDocType(doc.id, value)}
-              >
-                <SelectTrigger className="w-[180px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} title="Preview">
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download">
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+
+              <div className={NB.section}>
+                <div className={NB.sectionTitle}>Notes</div>
+                <textarea
+                  className={NB.textarea}
+                  value={safeLabel((draft as any).notes ?? (opportunity as any).notes, "")}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value as any }))}
+                  placeholder="Drop the gritty details… objections, next steps, key dates."
+                />
+              </div>
+
+              <div className={NB.section}>
+                <div className={NB.sectionTitle}>Quick fields</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    className={NB.input}
+                    value={safeLabel((draft as any).contact_name ?? (opportunity as any).contact_name, "")}
+                    onChange={(e) => setDraft((d) => ({ ...d, contact_name: e.target.value as any }))}
+                    placeholder="Contact name"
+                  />
+                  <input
+                    className={NB.input}
+                    value={safeLabel((draft as any).email ?? (opportunity as any).email, "")}
+                    onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value as any }))}
+                    placeholder="Email"
+                  />
+                  <input
+                    className={NB.input}
+                    value={safeLabel((draft as any).phone ?? (opportunity as any).phone, "")}
+                    onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value as any }))}
+                    placeholder="Phone"
+                  />
+                  <input
+                    className={NB.input}
+                    value={safeLabel((draft as any).company_name ?? (opportunity as any).company_name ?? (opportunity as any).merchant_name, "")}
+                    onChange={(e) => setDraft((d) => ({ ...d, company_name: e.target.value as any }))}
+                    placeholder="Company / Merchant"
+                  />
+                </div>
+
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDraft({})}
+                    className="rounded-none border-4 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                    disabled={Object.keys(draft).length === 0}
+                  >
+                    Reset
+                  </Button>
+
+                  <Button
+                    onClick={commit}
+                    className="rounded-none border-4 border-black bg-[#00D4FF] text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                    disabled={Object.keys(draft).length === 0}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save changes
+                  </Button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
-export default OpportunityDetailModal;
+            {/* RIGHT: Actions / meta */}
+            <div className="lg:col-span-2 border-t-4 lg:border-t-0 lg:border-l-4 border-black bg-[#F8F7F2]">
+              <div className={NB.section}>
+                <div className={NB.sectionTitle}>Actions</div>
+
+                <div className={NB.actionRow}>
+                  <div className="text-sm font-semibold">
+                    Keep it moving. No excuses. 😈
+                  </div>
+                  <div className={NB.ctaRow}>
+                    {!isGateway && onConvertToGateway && (
+                      <Button
+                        variant="outline"
+                        onClick={() => onConvertToGateway(opportunity)}
+                        className="rounded-none border-4 border-black bg-[#FF4DCA] text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                        disabled={!!hasGatewayOpportunity}
+                        title={hasGatewayOpportunity ? "Already has a gateway opportunity" : "Convert to gateway"}
+                      >
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        Convert → Gateway
+                      </Button>
+                    )}
+
+                    {isGateway && onMoveToProcessing && (
+                      <Button
+                        variant="outline"
+                        onClick={() => onMoveToProcessing(opportunity)}
+                        className="rounded-none border-4 border-black bg-[#FFD400] text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        Move → Payments
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className={NB.section}>
+                <div className={NB.sectionTitle}>Danger zone</div>
+
+                <div className="flex flex-col gap-2">
+                  {onMarkAsDead && (
+                    <Button
+                      variant="outline"
+                      onClick={() => onMarkAsDead(opportunity.id)}
+                      className="justify-start rounded-none border-4 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                    >
+                      <Skull className="h-4 w-4 mr-2" />
+                      Mark as dead
+                    </Button>
+                  )}
+
+                  {onDelete && (
+                    <Button
+                      variant="outline"
+                      onClick={() => onDelete(opportunity.id)}
+                      className="justify-start rounded-none border-4 border-black bg-[#FF3B30] text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0_0_#000] transition"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete opportunity
+                    </Button>
+                  )}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold">
+                  Tip: brutalist UI works best when actions are **obvious** and **fast**.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FOOTER STRIP */}
+          <div className="border-t-4 border-black bg-black text-white px-4 py-2 text-xs font-black uppercase tracking-widest">
+            Built for speed • zero fluff • maximum signal
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
