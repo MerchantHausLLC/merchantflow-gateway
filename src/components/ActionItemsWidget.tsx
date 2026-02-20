@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
 
 interface ActionItem {
   id: string;
@@ -86,6 +87,7 @@ export function ActionItemsWidget() {
     if (error) {
       toast.error("Failed to add action item");
     } else {
+      playNoticeBoardSound();
       setNewTitle("");
       setSelectedUsers([]);
       setShowUserPicker(false);
@@ -98,6 +100,7 @@ export function ActionItemsWidget() {
       completed: !item.completed,
       completed_at: !item.completed ? new Date().toISOString() : null,
     }).eq("id", item.id);
+    playNoticeBoardSound();
   };
 
   // Delete item
