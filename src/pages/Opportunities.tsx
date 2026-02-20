@@ -16,7 +16,7 @@ import {
   PROCESSING_PIPELINE_STAGES,
   GATEWAY_ONLY_PIPELINE_STAGES
 } from "@/types/opportunity";
-import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendStageChangeEmail, sendUnderwritingApprovalRequest } from "@/hooks/useEmailNotifications";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -261,6 +261,84 @@ const Opportunities = () => {
 
   const navigateToOpportunity = (opp: Opportunity) => {
     navigate(`/opportunities/${opp.id}`);
+  };
+
+  const handleStageChange = async (opp: Opportunity, newStage: OpportunityStage) => {
+    const oldStage = opp.stage;
+    const isAdmin = user?.email?.toLowerCase() === 'admin@merchanthaus.io';
+
+    // Underwriting gate: non-admin users requesting underwriting_review
+    if (
+      newStage === 'underwriting_review' &&
+      opp.stage !== 'underwriting_review' &&
+      !isAdmin
+    ) {
+      const { error: pendingError } = await supabase
+        .from('opportunities')
+        .update({ sla_status: 'pending_underwriting' })
+        .eq('id', opp.id);
+
+      if (pendingError) {
+        toast({ title: "Failed to request underwriting approval", variant: "destructive" });
+        return;
+      }
+
+      await supabase.from('activities').insert({
+        opportunity_id: opp.id,
+        type: 'underwriting_approval_requested',
+        description: `Underwriting approval requested by ${user?.email || 'unknown'} — pending admin review`,
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+
+      sendUnderwritingApprovalRequest(
+        opp.account?.name || 'Unknown Account',
+        opp.id,
+        user?.email,
+        opp.stage
+      ).catch(err => console.error("Failed to send underwriting approval request:", err));
+
+      toast({ title: "Underwriting Approval Requested", description: "Admin has been notified. The card will show as PENDING until approved." });
+      return;
+    }
+
+    // Build updates - clear pending status if admin approves underwriting
+    const updatePayload: Record<string, unknown> = { stage: newStage };
+    if (newStage === 'underwriting_review' && isAdmin && opp.sla_status === 'pending_underwriting') {
+      updatePayload.sla_status = null;
+    }
+
+    const { error } = await supabase
+      .from('opportunities')
+      .update(updatePayload)
+      .eq('id', opp.id);
+
+    if (error) {
+      toast({ title: "Failed to update stage", variant: "destructive" });
+      return;
+    }
+
+    // Log activity
+    await supabase.from('activities').insert({
+      opportunity_id: opp.id,
+      type: 'stage_change',
+      description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+
+    // Send email notification
+    if (opp.assigned_to) {
+      sendStageChangeEmail(
+        opp.assigned_to,
+        opp.account?.name || 'Unknown Account',
+        oldStage,
+        newStage,
+        user?.email
+      ).catch(err => console.error("Failed to send stage change email:", err));
+    }
+
+    toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
   };
 
   const handleAssignmentChange = (opp: Opportunity, newAssignee: string) => {
@@ -527,42 +605,7 @@ const Opportunities = () => {
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={opp.stage}
-                                onValueChange={async (value) => {
-                                  const newStage = value as OpportunityStage;
-                                  const oldStage = opp.stage;
-                                  
-                                  const { error } = await supabase
-                                    .from('opportunities')
-                                    .update({ stage: newStage })
-                                    .eq('id', opp.id);
-                                  
-                                  if (error) {
-                                    toast({ title: "Failed to update stage", variant: "destructive" });
-                                    return;
-                                  }
-                                  
-                                  // Log activity
-                                  await supabase.from('activities').insert({
-                                    opportunity_id: opp.id,
-                                    type: 'stage_change',
-                                    description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
-                                    user_id: user?.id,
-                                    user_email: user?.email,
-                                  });
-                                  
-                                  // Send email notification
-                                  if (opp.assigned_to) {
-                                    sendStageChangeEmail(
-                                      opp.assigned_to,
-                                      opp.account?.name || 'Unknown Account',
-                                      oldStage,
-                                      newStage,
-                                      user?.email
-                                    ).catch(err => console.error("Failed to send stage change email:", err));
-                                  }
-                                  
-                                  toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
-                                }}
+                                onValueChange={(value) => handleStageChange(opp, value as OpportunityStage)}
                               >
                                 <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
                                   <div 
@@ -707,40 +750,7 @@ const Opportunities = () => {
                             <div onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={opp.stage}
-                                onValueChange={async (value) => {
-                                  const newStage = value as OpportunityStage;
-                                  const oldStage = opp.stage;
-                                  
-                                  const { error } = await supabase
-                                    .from('opportunities')
-                                    .update({ stage: newStage })
-                                    .eq('id', opp.id);
-                                  
-                                  if (error) {
-                                    toast({ title: "Failed to update stage", variant: "destructive" });
-                                    return;
-                                  }
-                                  
-                                  await supabase.from('activities').insert({
-                                    opportunity_id: opp.id,
-                                    type: 'stage_change',
-                                    description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
-                                    user_id: user?.id,
-                                    user_email: user?.email,
-                                  });
-                                  
-                                  if (opp.assigned_to) {
-                                    sendStageChangeEmail(
-                                      opp.assigned_to,
-                                      opp.account?.name || 'Unknown Account',
-                                      oldStage,
-                                      newStage,
-                                      user?.email
-                                    ).catch(err => console.error("Failed to send stage change email:", err));
-                                  }
-                                  
-                                  toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
-                                }}
+                                onValueChange={(value) => handleStageChange(opp, value as OpportunityStage)}
                               >
                                 <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
                                   <div 

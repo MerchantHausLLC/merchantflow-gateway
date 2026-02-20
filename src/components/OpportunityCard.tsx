@@ -63,6 +63,7 @@ const OpportunityCard = ({
     : { border: 'border-l-muted-foreground/30', bg: 'bg-muted', text: 'text-muted-foreground' };
 
   const isLive = opportunity.stage === 'live_activated';
+  const isPendingUnderwriting = opportunity.sla_status === 'pending_underwriting';
 
   // Wizard completion progress background color
   const wizardProgress = opportunity.wizard_state?.progress ?? 0;
@@ -224,12 +225,24 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
-        'hover:shadow-lg rounded-md overflow-hidden',
+        'hover:shadow-lg rounded-md overflow-hidden relative',
         isLive
           ? 'border border-amber-400/60 dark:border-amber-500/50 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 shadow-[0_0_8px_rgba(217,170,0,0.12)]'
-          : cn('border border-border/50 border-l-2', teamColors.border, progressBg)
+          : isPendingUnderwriting
+            ? cn('border-2 border-amber-500/70 dark:border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/40', teamColors.border)
+            : cn('border border-border/50 border-l-2', teamColors.border, progressBg)
       )}
     >
+      {/* PENDING diagonal overlay */}
+      {isPendingUnderwriting && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 whitespace-nowrap text-amber-600/25 dark:text-amber-400/20 font-black text-lg md:text-xl lg:text-2xl tracking-[0.2em] uppercase select-none"
+          >
+            PENDING
+          </div>
+        </div>
+      )}
       <CardContent className={cn(
         "p-1.5 md:p-2.5 lg:p-3 space-y-0.5 md:space-y-1 lg:space-y-1.5",
         "landscape:p-1.5 landscape:space-y-0.5",

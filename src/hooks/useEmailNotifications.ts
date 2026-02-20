@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type NotificationType = "stage_change" | "task_assignment" | "opportunity_assignment";
+type NotificationType = "stage_change" | "task_assignment" | "opportunity_assignment" | "underwriting_approval_request";
 
 interface EmailNotificationData {
   type: NotificationType;
@@ -128,6 +128,26 @@ export const sendOpportunityAssignmentEmail = async (
       accountName,
       contactName,
       stage,
+    },
+  });
+};
+
+// Send underwriting approval request to admin
+export const sendUnderwritingApprovalRequest = async (
+  accountName: string,
+  opportunityId: string,
+  requestedBy?: string,
+  currentStage?: string
+): Promise<boolean> => {
+  return sendEmailNotification({
+    type: "underwriting_approval_request",
+    recipientEmail: "admin@merchanthaus.io",
+    recipientName: "Jamie",
+    data: {
+      accountName,
+      opportunityId,
+      requestedBy,
+      currentStage,
     },
   });
 };

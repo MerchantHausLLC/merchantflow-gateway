@@ -114,6 +114,8 @@ interface MerchantForm {
   // Agreements
   beneficial_owner_certification: boolean;
   bank_disclosure_ack: boolean;
+  nmi_authorization: boolean;
+  terms_and_conditions: boolean;
 
   // Notes
   additional_notes: string;
@@ -144,6 +146,7 @@ const initialState: MerchantForm = {
   bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
 
   beneficial_owner_certification: false, bank_disclosure_ack: false,
+  nmi_authorization: false, terms_and_conditions: false,
 
   additional_notes: "",
   username: "", current_processor: "",
@@ -363,6 +366,18 @@ export default function MerchantApply() {
     if (missing.length > 0) {
       toast({ variant: "destructive", title: "Please complete all required fields", description: `${missing.length} field(s) need attention.` });
       return;
+    }
+
+    // Validate agreement checkboxes for processing applications
+    if (!isGatewayOnly) {
+      if (!form.nmi_authorization) {
+        toast({ variant: "destructive", title: "Authorization Required", description: "Please authorize submission of your information to NMI Payments for Merchant Services." });
+        return;
+      }
+      if (!form.terms_and_conditions) {
+        toast({ variant: "destructive", title: "Terms & Conditions Required", description: "Please accept the MerchantHaus Terms & Conditions and Privacy Policy to continue." });
+        return;
+      }
     }
 
     // Validate percentage rules for processing
@@ -688,9 +703,12 @@ export default function MerchantApply() {
               <div className="bg-info/10 rounded-xl md:rounded-2xl border border-info/20 p-3 md:p-5">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-info-foreground">Security Notice</p>
-                    <p className="text-xs text-info/80 mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-info-foreground">Security & Compliance</p>
+                    <p className="text-xs text-info/80">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
+                    <p className="text-xs text-info/80">By submitting this application, you agree to the <a href="https://merchanthaus.io/terms" target="_blank" rel="noopener noreferrer" className="underline font-medium text-info hover:text-info/70">MerchantHaus Terms &amp; Conditions</a> and acknowledge our <a href="https://merchanthaus.io/privacy" target="_blank" rel="noopener noreferrer" className="underline font-medium text-info hover:text-info/70">Privacy Policy</a>.</p>
+                    <p className="text-xs text-info/80">Your information will be shared with NMI Payments and its sponsoring Acquiring Bank(s) for underwriting, compliance verification, and payment processing purposes. MerchantHaus acts as a payment technology provider and does not hold, control, or have custody of settlement or reserve funds.</p>
+                    <p className="text-xs text-info/80">MerchantHaus maintains PCI DSS compliance as a service provider. You are responsible for your own PCI DSS compliance and must not store sensitive cardholder data in an unsecure manner.</p>
                   </div>
                 </div>
               </div>
@@ -1150,6 +1168,19 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
         <div className="flex items-start gap-2">
           <input type="checkbox" id="bank_disclosure" checked={form.bank_disclosure_ack} onChange={e => onChange("bank_disclosure_ack", e.target.checked)} className="mt-1 rounded border-border" />
           <label htmlFor="bank_disclosure" className="text-sm text-foreground">I acknowledge the bank disclosure and authorize debits/credits to the account provided.</label>
+        </div>
+        <div className="flex items-start gap-2">
+          <input type="checkbox" id="nmi_authorization" checked={form.nmi_authorization} onChange={e => onChange("nmi_authorization", e.target.checked)} className="mt-1 rounded border-border" />
+          <label htmlFor="nmi_authorization" className="text-sm text-foreground">I authorize MerchantHaus to submit my application information to NMI Payments and its sponsoring Acquiring Bank(s) for the purposes of merchant account underwriting, approval, and payment processing services.</label>
+        </div>
+        <div className="flex items-start gap-2">
+          <input type="checkbox" id="terms_conditions" checked={form.terms_and_conditions} onChange={e => onChange("terms_and_conditions", e.target.checked)} className="mt-1 rounded border-border" />
+          <label htmlFor="terms_conditions" className="text-sm text-foreground">
+            I have read and agree to the{" "}
+            <a href="https://merchanthaus.io/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">MerchantHaus Terms &amp; Conditions</a>
+            {" "}and{" "}
+            <a href="https://merchanthaus.io/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Privacy Policy</a>.
+          </label>
         </div>
       </div>
 

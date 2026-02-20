@@ -13,7 +13,7 @@ import { User } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
-import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendStageChangeEmail, sendUnderwritingApprovalRequest } from "@/hooks/useEmailNotifications";
 
 // Canonical snake_case wizard form matching normalized schema
 type WizardPrefillForm = {
@@ -627,11 +627,66 @@ const Index = () => {
   };
   const handleUpdateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
     const opportunity = opportunities.find(o => o.id === id);
+
+    // ── Underwriting gate: non-admin users requesting underwriting_review ──
+    const isAdmin = user?.email?.toLowerCase() === 'admin@merchanthaus.io';
+    if (
+      updates.stage === 'underwriting_review' &&
+      opportunity &&
+      opportunity.stage !== 'underwriting_review' &&
+      !isAdmin
+    ) {
+      // Set pending_underwriting status instead of moving the stage
+      const { error: pendingError } = await supabase
+        .from('opportunities')
+        .update({ sla_status: 'pending_underwriting' })
+        .eq('id', id);
+
+      if (pendingError) {
+        toast({ title: "Error", description: "Failed to request underwriting approval", variant: "destructive" });
+        return;
+      }
+
+      // Log the approval request
+      await supabase.from('activities').insert({
+        opportunity_id: id,
+        type: 'underwriting_approval_requested',
+        description: `Underwriting approval requested by ${user?.email || 'unknown'} — pending admin review`,
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+
+      // Send email notification to admin
+      sendUnderwritingApprovalRequest(
+        opportunity.account?.name || 'Unknown Account',
+        id,
+        user?.email,
+        opportunity.stage
+      ).catch(err => console.error("Failed to send underwriting approval request:", err));
+
+      // Update local state to reflect pending
+      setOpportunities(opportunities.map(o =>
+        o.id === id ? { ...o, sla_status: 'pending_underwriting' } : o
+      ));
+
+      toast({
+        title: "Underwriting Approval Requested",
+        description: "Admin has been notified. The card will show as PENDING until approved.",
+      });
+      return;
+    }
+
     const dbUpdates: Record<string, unknown> = {};
     if (updates.stage) dbUpdates.stage = updates.stage;
     if (updates.service_type) dbUpdates.service_type = updates.service_type;
     if (updates.processing_services !== undefined) dbUpdates.processing_services = updates.processing_services;
     if (updates.value_services !== undefined) dbUpdates.value_services = updates.value_services;
+
+    // If admin is approving the underwriting move, also clear the pending status
+    if (updates.stage === 'underwriting_review' && isAdmin && opportunity?.sla_status === 'pending_underwriting') {
+      dbUpdates.sla_status = null;
+    }
+
     const {
       error
     } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
@@ -689,7 +744,9 @@ const Index = () => {
     }
     setOpportunities(opportunities.map(o => o.id === id ? {
       ...o,
-      ...updates
+      ...updates,
+      // Clear pending_underwriting when admin approves the move
+      ...(updates.stage === 'underwriting_review' && o.sla_status === 'pending_underwriting' ? { sla_status: null } : {})
     } : o));
   };
   const handleAssignmentChange = (opportunityId: string, assignedTo: string | null) => {
@@ -701,7 +758,7 @@ const Index = () => {
   const handleSlaStatusChange = (opportunityId: string, slaStatus: string | null) => {
     setOpportunities(opportunities.map(o => o.id === opportunityId ? {
       ...o,
-      sla_status: slaStatus as 'green' | 'amber' | 'red' | null
+      sla_status: slaStatus as 'green' | 'amber' | 'red' | 'pending_underwriting' | null
     } : o));
   };
   const handleMarkAsDead = (id: string) => {
