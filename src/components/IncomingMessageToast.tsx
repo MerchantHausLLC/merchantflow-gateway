@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { MessageCircle } from 'lucide-react';
+import { playNotificationSound, wasMessageSoundPlayed, markMessageSoundPlayed } from '@/hooks/useNotificationSound';
 
 /**
  * Listens for new chat_messages and direct_messages via realtime
@@ -40,6 +41,14 @@ export function IncomingMessageToast() {
 
           // Don't show toast for own messages
           if (msg.user_id === userIdRef.current) return;
+
+          const msgId = (payload.new as any).id;
+
+          // Skip sound if FloatingChat already played it
+          if (!wasMessageSoundPlayed(msgId)) {
+            markMessageSoundPlayed(msgId);
+            playNotificationSound('message');
+          }
 
           const senderName = msg.user_name || msg.user_email?.split('@')[0] || 'Someone';
           const preview = msg.content?.length > 80 ? msg.content.slice(0, 80) + '…' : msg.content;
@@ -86,6 +95,14 @@ export function IncomingMessageToast() {
 
           if (profile) {
             senderName = profile.full_name || profile.email?.split('@')[0] || 'Someone';
+          }
+
+          const dmId = (payload.new as any).id;
+
+          // Skip sound if already played
+          if (!wasMessageSoundPlayed(dmId)) {
+            markMessageSoundPlayed(dmId);
+            playNotificationSound('message');
           }
 
           const preview = msg.content?.length > 80 ? msg.content.slice(0, 80) + '…' : msg.content;

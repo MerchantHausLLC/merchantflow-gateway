@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { playNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Notification {
   id: string;
@@ -106,9 +107,13 @@ export const NotificationBell = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
           fetchNotifications();
           fetchUnreadCount();
+          // Play sound on new notification if popover is closed
+          if (payload.eventType === 'INSERT' && !open) {
+            playNotificationSound('notification');
+          }
         }
       )
       .subscribe();
