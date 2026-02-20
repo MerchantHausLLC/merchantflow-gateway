@@ -224,10 +224,11 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
-        'hover:shadow-md overflow-hidden rounded-none',
+        'overflow-hidden rounded-none',
+        'shadow-[3px_3px_0px_0px_rgba(0,0,0,0.65)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] hover:-translate-y-px',
         isLive
-          ? 'border border-amber-400/60 dark:border-amber-500/50 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 shadow-[0_0_8px_rgba(217,170,0,0.12)]'
-          : cn('bg-card border border-haus-canvas border-l-[3px]', teamColors.border, progressBg)
+          ? 'border-2 border-amber-400/80 dark:border-amber-500/70 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 shadow-[3px_3px_0px_0px_rgba(180,140,0,0.45)]'
+          : cn('bg-card border border-foreground/20 border-l-[4px]', teamColors.border, progressBg)
       )}
     >
       <CardContent className={cn(
@@ -238,7 +239,7 @@ const OpportunityCard = ({
         {/* Account Name + Pipeline Type */}
         <div className="flex items-center justify-center gap-0.5 md:gap-1">
           <div className="flex items-center justify-center gap-1 min-w-0 flex-1">
-            <h3 className="font-semibold text-[10px] md:text-xs lg:text-sm landscape:text-[10px] text-foreground truncate leading-tight text-center">
+            <h3 className="font-black text-[10px] md:text-xs lg:text-sm landscape:text-[10px] text-foreground truncate leading-tight text-center">
               {account?.name || 'Unknown'}
             </h3>
             {!isCollapsed && (
@@ -274,7 +275,7 @@ const OpportunityCard = ({
 
         {/* Footer: Date + SLA + Assignment Avatar - hidden when collapsed */}
         {!isCollapsed && (
-          <div className="flex items-center justify-between pt-0.5 md:pt-1 border-t border-border/30">
+          <div className="flex items-center justify-between pt-0.5 md:pt-1 border-t-2 border-foreground/10">
             {/* Date Created + SLA Indicator */}
             <TooltipProvider>
               <Tooltip>
@@ -286,7 +287,7 @@ const OpportunityCard = ({
                     {!slaInfo.hidden && (
                       <span 
                         className={cn(
-                          "flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] md:text-[10px] landscape:text-[8px] font-medium",
+                          "flex items-center gap-0.5 px-1 py-0.5 rounded-none text-[8px] md:text-[10px] landscape:text-[8px] font-bold",
                           slaInfo.status === 'red' && "bg-red-500/20 text-red-500",
                           slaInfo.status === 'amber' && "bg-amber-500/20 text-amber-500",
                           slaInfo.status === 'green' && "bg-green-500/20 text-green-500"

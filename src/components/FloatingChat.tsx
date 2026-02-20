@@ -987,12 +987,12 @@ const FloatingChat: React.FC = () => {
     if (msg.read_at) {
       return (
         <Tooltip>
-          <TooltipTrigger asChild><CheckCheck className="h-3 w-3 text-blue-400 inline-block ml-1" /></TooltipTrigger>
+          <TooltipTrigger asChild><CheckCheck className="h-3 w-3 text-primary/80 inline-block ml-1" /></TooltipTrigger>
           <TooltipContent>Read {formatDistanceToNow(new Date(msg.read_at), { addSuffix: true })}</TooltipContent>
         </Tooltip>
       );
     }
-    return <Check className="h-3 w-3 text-slate-400 inline-block ml-1" />;
+    return <Check className="h-3 w-3 text-muted-foreground inline-block ml-1" />;
   };
 
   // Render attachment in message
@@ -1053,8 +1053,8 @@ const FloatingChat: React.FC = () => {
           <Tooltip key={emoji}>
             <TooltipTrigger asChild>
               <button onClick={() => handleReaction(messageId, emoji, messageType)}
-                className={cn("text-xs px-1.5 py-0.5 rounded-full border transition-all",
-                  data.hasOwn ? "bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+                className={cn("text-xs px-1.5 py-0.5 rounded-none border transition-all",
+                  data.hasOwn ? "bg-primary/15 border-primary/50 text-primary" : "bg-muted border-foreground/20 hover:bg-muted/80"
                 )}
               >{emoji} {data.count}</button>
             </TooltipTrigger>
@@ -1160,9 +1160,9 @@ const FloatingChat: React.FC = () => {
         </div>
         {!isOwn && (
           <button type="button" onClick={() => setProfileModalUserId(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-            <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
+            <Avatar className="h-8 w-8 border-2 border-foreground/30 rounded-none">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-xs")}>{getInitials(displayName, email)}</AvatarFallback>
+              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-xs rounded-none")}>{getInitials(displayName, email)}</AvatarFallback>
             </Avatar>
           </button>
         )}
@@ -1176,36 +1176,37 @@ const FloatingChat: React.FC = () => {
             <button
               type="button"
               className={cn(
-                "text-xs px-2 py-1 mb-1 rounded-md border-l-2 border-blue-400 bg-slate-100 dark:bg-slate-800 w-full text-left cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors",
+                "text-xs px-2 py-1 mb-1 rounded-none border-l-4 border-primary bg-muted/50 w-full text-left cursor-pointer hover:bg-muted/80 transition-colors",
                 isOwn && "ml-auto"
               )}
               onClick={() => {
-                // Scroll to the original message
                 const replyEl = document.getElementById(`msg-${replyMessage.id}`);
                 if (replyEl) {
                   replyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  replyEl.classList.add('ring-2', 'ring-blue-400', 'ring-opacity-75');
-                  setTimeout(() => replyEl.classList.remove('ring-2', 'ring-blue-400', 'ring-opacity-75'), 2000);
+                  replyEl.classList.add('ring-2', 'ring-primary', 'ring-opacity-75');
+                  setTimeout(() => replyEl.classList.remove('ring-2', 'ring-primary', 'ring-opacity-75'), 2000);
                 }
               }}
             >
-              <span className="font-medium text-blue-600 dark:text-blue-400">
+              <span className="font-bold text-primary">
                 {replySourceName}
               </span>
-              <p className="text-slate-500 truncate">{replyMessage.content}</p>
+              <p className="text-muted-foreground truncate">{replyMessage.content}</p>
             </button>
           )}
           <div
             id={`msg-${msg.id}`}
             className={cn(
-              "p-3 rounded-2xl group relative break-words overflow-hidden transition-all duration-300",
-              isOwn ? "bg-blue-600 text-white rounded-br-md" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700"
+              "p-3 rounded-none group relative break-words overflow-hidden transition-all duration-300",
+              isOwn 
+                ? "bg-primary text-primary-foreground border-2 border-primary shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]" 
+                : "bg-muted text-foreground border-l-4 border-foreground/30 border border-foreground/15 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)]"
             )}
             style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
             onDoubleClick={() => setReplyTo(msg)}
           >
             {!isOwn && (
-              <button type="button" onClick={() => setProfileModalUserId(senderId)} className="text-xs font-semibold mb-1 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block">
+              <button type="button" onClick={() => setProfileModalUserId(senderId)} className="text-xs font-black mb-1 text-primary hover:underline cursor-pointer block">
                 {displayName}
               </button>
             )}
@@ -1225,7 +1226,7 @@ const FloatingChat: React.FC = () => {
             )}
             {renderAttachment(msg)}
             <div className="flex items-center gap-1 mt-1.5">
-              <span className={cn("text-[10px]", isOwn ? "text-blue-200" : "text-slate-400")}>{formatTime(msg.created_at)}</span>
+              <span className={cn("text-[10px]", isOwn ? "text-primary-foreground/70" : "text-muted-foreground")}>{formatTime(msg.created_at)}</span>
               {msg.edited_at && <span className="text-[10px] text-slate-400">(edited)</span>}
               {!isChannel && renderReadReceipt(msg as DirectMessage)}
             </div>
@@ -1234,13 +1235,13 @@ const FloatingChat: React.FC = () => {
             {/* Message actions */}
             <div className={cn(
               "absolute -top-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
-              "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-1",
+              "bg-background border-2 border-foreground/30 rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] p-1",
               isOwn ? "left-0" : "right-0"
             )}>
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors" title="React">
-                    <Smile className="h-3.5 w-3.5 text-slate-500" />
+                  <button className="p-1.5 hover:bg-muted rounded-none transition-colors" title="React">
+                    <Smile className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2" align="end">
@@ -1251,13 +1252,13 @@ const FloatingChat: React.FC = () => {
                   </div>
                 </PopoverContent>
               </Popover>
-              <button onClick={() => setReplyTo(msg)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors" title="Reply">
-                <Reply className="h-3.5 w-3.5 text-slate-500" />
+              <button onClick={() => setReplyTo(msg)} className="p-1.5 hover:bg-muted rounded-none transition-colors" title="Reply">
+                <Reply className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               {isOwn && (
                 <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors" title="Edit">
-                  <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                  className="p-1.5 hover:bg-muted rounded-none transition-colors" title="Edit">
+                  <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               )}
             </div>
@@ -1269,20 +1270,20 @@ const FloatingChat: React.FC = () => {
 
   // Render input area (shared between channel and DM views)
   const renderInputArea = () => (
-    <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div className="p-3 border-t-2 border-foreground/20 bg-background">
       {/* Pending attachment preview */}
       {pendingAttachment && (
-        <div className="flex items-center gap-2 mb-2 p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
+        <div className="flex items-center gap-2 mb-2 p-2 bg-muted border border-foreground/20 rounded-none">
           {pendingAttachment.file.type.startsWith('image/') ? (
-            <img src={pendingAttachment.url} alt="" className="h-12 w-12 rounded object-cover" />
+            <img src={pendingAttachment.url} alt="" className="h-12 w-12 rounded-none object-cover border border-foreground/20" />
           ) : (
             <File className="h-8 w-8 text-slate-500 shrink-0" />
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium truncate">{pendingAttachment.file.name}</p>
-            <p className="text-[10px] text-slate-500">{formatFileSize(pendingAttachment.file.size)}</p>
+            <p className="text-xs font-bold truncate">{pendingAttachment.file.name}</p>
+            <p className="text-[10px] text-muted-foreground">{formatFileSize(pendingAttachment.file.size)}</p>
           </div>
-          <button onClick={() => { URL.revokeObjectURL(pendingAttachment.url); setPendingAttachment(null); }} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded">
+          <button onClick={() => { URL.revokeObjectURL(pendingAttachment.url); setPendingAttachment(null); }} className="p-1 hover:bg-muted-foreground/20 rounded-none">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -1290,14 +1291,14 @@ const FloatingChat: React.FC = () => {
 
       {/* Recording indicator */}
       {isRecording && (
-        <div className="flex items-center gap-2 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs text-red-600 dark:text-red-400 font-medium">Recording {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
+        <div className="flex items-center gap-2 mb-2 p-2 bg-destructive/10 border border-destructive/40 rounded-none">
+          <span className="w-2 h-2 rounded-none bg-destructive animate-pulse" />
+          <span className="text-xs text-destructive font-bold">Recording {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
           <div className="ml-auto flex gap-1">
-            <button onClick={cancelRecording} className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-md transition-colors" title="Cancel">
-              <X className="h-4 w-4 text-red-500" />
+            <button onClick={cancelRecording} className="p-1.5 hover:bg-destructive/20 rounded-none transition-colors" title="Cancel">
+              <X className="h-4 w-4 text-destructive" />
             </button>
-            <button onClick={stopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors" title="Stop & Send">
+            <button onClick={stopRecording} className="p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-none transition-colors" title="Stop & Send">
               <Square className="h-3 w-3" />
             </button>
           </div>
@@ -1308,7 +1309,7 @@ const FloatingChat: React.FC = () => {
         {/* Emoji picker */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors shrink-0" title="Emoji">
+            <button className="p-2 hover:bg-muted rounded-none transition-colors shrink-0" title="Emoji">
               <Smile className="h-5 w-5 text-slate-500" />
             </button>
           </PopoverTrigger>
@@ -1329,15 +1330,15 @@ const FloatingChat: React.FC = () => {
         </Popover>
 
         {/* Attachment button */}
-        <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors shrink-0" title="Attach file">
-          <Paperclip className="h-5 w-5 text-slate-500" />
+        <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-muted rounded-none transition-colors shrink-0" title="Attach file">
+          <Paperclip className="h-5 w-5 text-muted-foreground" />
         </button>
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" />
 
         {/* Voice note button */}
         {!isRecording && (
-          <button onClick={startRecording} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors shrink-0" title="Voice note">
-            <Mic className="h-5 w-5 text-slate-500" />
+          <button onClick={startRecording} className="p-2 hover:bg-muted rounded-none transition-colors shrink-0" title="Voice note">
+            <Mic className="h-5 w-5 text-muted-foreground" />
           </button>
         )}
 
@@ -1347,11 +1348,11 @@ const FloatingChat: React.FC = () => {
             value={input}
             onChange={(e) => { setInput(e.target.value); handleTyping(); }}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-            className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500"
+            className="bg-background border-foreground/20 focus:ring-primary rounded-none"
             disabled={isRecording}
           />
         </div>
-        <Button size="icon" onClick={handleSendMessage} className="bg-blue-600 hover:bg-blue-700 shrink-0" disabled={!input.trim() && !pendingAttachment}>
+        <Button size="icon" onClick={handleSendMessage} className="rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.7)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] shrink-0" disabled={!input.trim() && !pendingAttachment}>
           <Send className="h-4 w-4" />
         </Button>
       </div>
@@ -1366,7 +1367,7 @@ const FloatingChat: React.FC = () => {
         "absolute top-0 left-0 right-0 z-20 flex justify-center py-2 transition-all duration-200",
         showStickyDate && stickyDate ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
       )}>
-        <span className="text-xs text-slate-600 dark:text-slate-300 font-medium px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-200 dark:border-slate-700">{stickyDate}</span>
+        <span className="text-xs text-muted-foreground font-black px-3 py-1 bg-background/90 backdrop-blur-sm rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] border border-foreground/30 uppercase tracking-widest">{stickyDate}</span>
       </div>
       
       <ScrollArea className="flex-1 px-3 py-2 overflow-hidden [&>div[style]]:!overflow-x-hidden" viewportRef={scrollViewportRef} onScrollChange={handleScroll}>
@@ -1384,9 +1385,9 @@ const FloatingChat: React.FC = () => {
               messages.map((group) => (
                 <div key={group.date}>
                   <div className="flex items-center gap-2 my-3" data-date-separator={group.date}>
-                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
-                    <span className="text-xs text-slate-500 font-medium px-2">{group.date}</span>
-                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                    <div className="flex-1 h-px bg-foreground/20" />
+                    <span className="text-xs text-muted-foreground font-black px-2 uppercase tracking-widest">{group.date}</span>
+                    <div className="flex-1 h-px bg-foreground/20" />
                   </div>
                   <div className="space-y-2 min-w-0 overflow-hidden">
                     {group.messages.map((msg) => renderMessageBubble(msg, isChannel))}
@@ -1405,8 +1406,9 @@ const FloatingChat: React.FC = () => {
         showScrollButton ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
       )}>
         <button onClick={() => scrollToBottom()} className={cn(
-          "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-lg border border-slate-200 dark:border-slate-700",
-          "p-2.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-110 active:scale-95 transition-all duration-150 flex items-center justify-center"
+          "bg-background text-foreground",
+          "border-2 border-foreground/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]",
+          "p-2.5 rounded-none hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:-translate-y-px active:shadow-none active:translate-y-0 transition-all duration-150 flex items-center justify-center"
         )} aria-label="Scroll to bottom">
           <ArrowDown className="h-4 w-4" />
         </button>
@@ -1426,20 +1428,20 @@ const FloatingChat: React.FC = () => {
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-900">
-          <div className="w-1 h-8 bg-blue-500 rounded-full" />
-          <Reply className="h-4 w-4 text-blue-500 shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-t-2 border-primary/40">
+          <div className="w-1 h-8 bg-primary" />
+          <Reply className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+            <p className="text-xs font-black text-primary">
               Replying to {isChannel 
                 ? profiles[(replyTo as ChannelMessage).user_id]?.full_name || (replyTo as ChannelMessage).user_name
                 : getDisplayName((replyTo as DirectMessage).sender_id)
               }
             </p>
-            <p className="text-xs text-slate-500 truncate">{replyTo.content}</p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
           </div>
-          <button onClick={() => setReplyTo(null)} className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-colors">
-            <X className="h-3.5 w-3.5 text-blue-500" />
+          <button onClick={() => setReplyTo(null)} className="p-1.5 hover:bg-primary/20 rounded-none transition-colors">
+            <X className="h-3.5 w-3.5 text-primary" />
           </button>
         </div>
       )}
@@ -1456,15 +1458,15 @@ const FloatingChat: React.FC = () => {
           <button
             onClick={() => setIsOpen(true)}
             className={cn(
-              "fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-              "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
-              "hover:scale-105 transition-all duration-200 ease-out",
-              "border border-slate-600"
+              "fixed bottom-20 right-4 z-50 w-14 h-14 rounded-none flex items-center justify-center",
+              "bg-zinc-900 dark:bg-zinc-800 text-white",
+              "border-2 border-foreground/70 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+              "hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-px transition-all duration-150"
             )}
           >
             <MessageCircle className="h-6 w-6" />
             {totalUnreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-black min-w-[20px] h-5 px-1 rounded-none flex items-center justify-center border border-white/40">
                 {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
               </span>
             )}
@@ -1473,16 +1475,17 @@ const FloatingChat: React.FC = () => {
           <button
             onClick={() => setIsOpen(true)}
             className={cn(
-              "fixed bottom-0 right-6 z-50 w-[328px] h-12 rounded-t-xl flex items-center gap-3 px-4",
-              "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
-              "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
-              "border border-b-0 border-slate-600"
+              "fixed bottom-0 right-6 z-50 w-[328px] h-12 rounded-none flex items-center gap-3 px-4",
+              "bg-zinc-900 dark:bg-zinc-950",
+              "text-white",
+              "border-2 border-b-0 border-foreground/60 shadow-[4px_0px_0px_0px_rgba(0,0,0,0.9)]",
+              "hover:shadow-[5px_0px_0px_0px_rgba(0,0,0,1)] transition-all duration-150"
             )}
           >
             <MessageCircle className="h-5 w-5 shrink-0" />
-            <span className="font-semibold text-sm">Messaging</span>
+            <span className="font-black text-sm uppercase tracking-widest">Messaging</span>
             {totalUnreadCount > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+              <span className="ml-auto bg-primary text-white text-xs font-black min-w-[20px] h-5 px-1.5 rounded-none flex items-center justify-center border border-white/30">
                 {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
               </span>
             )}
@@ -1495,19 +1498,19 @@ const FloatingChat: React.FC = () => {
         <div
           className={cn(
             "fixed z-50 flex flex-col overflow-hidden",
-            "shadow-2xl border border-slate-200 dark:border-slate-700",
-            "bg-white dark:bg-slate-900 transition-all duration-300 ease-out",
+            "shadow-[6px_6px_0px_0px_rgba(0,0,0,0.85)] border-2 border-foreground/70",
+            "bg-background transition-all duration-200 ease-out",
             "animate-in slide-in-from-bottom-4 fade-in-0",
             isMobile
-              ? "bottom-16 right-2 left-2 top-16 rounded-xl"
-              : "bottom-0 right-6 w-[328px] h-[480px] rounded-t-xl border-b-0"
+              ? "bottom-16 right-2 left-2 top-16 rounded-none"
+              : "bottom-0 right-6 w-[328px] h-[480px] rounded-none border-b-0"
           )}
         >
           {/* Header */}
           <div className={cn(
             "flex items-center justify-between px-4 py-3",
-            "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
-            "text-white border-b border-slate-600"
+            "bg-zinc-900 dark:bg-zinc-950",
+            "text-white border-b-2 border-foreground/50"
           )}>
             <div className="flex items-center gap-2">
               {(view === "chat" || view === "dm") && (
@@ -1591,29 +1594,29 @@ const FloatingChat: React.FC = () => {
 
           {/* Search Bar */}
           {showSearch && (view === "chat" || view === "dm") && (
-            <div className="p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <div className="p-2 border-b-2 border-foreground/20 bg-background">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Search messages..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-9 pl-9 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" autoFocus />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search messages..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-9 pl-9 text-sm bg-muted border-foreground/20 rounded-none" autoFocus />
               </div>
             </div>
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900 relative">
+          <div className="flex-1 overflow-hidden flex flex-col bg-background relative">
             {/* Unified Contacts/Channels View */}
             {view === "contacts" && (
               <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                <div className="p-3 border-b-2 border-foreground/20 bg-background">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input placeholder="Search..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} className="h-9 pl-9 text-sm bg-muted border-foreground/20 rounded-none" />
                   </div>
                 </div>
                 <ScrollArea className="flex-1 min-h-0">
                   <div className="p-2">
                     {/* Channels section */}
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5">Channels</p>
+                    <p className="text-[10px] font-black text-foreground/50 uppercase tracking-widest px-3 py-1.5 border-b border-foreground/15 mb-1">Channels</p>
                     {channels
                       .filter(ch => !ch.name.toLowerCase().startsWith('dm-'))
                       .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()))
@@ -1622,54 +1625,54 @@ const FloatingChat: React.FC = () => {
                         key={ch.id}
                         onClick={() => handleSelectChannel(ch.id)}
                         className={cn(
-                          "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                          "hover:bg-white dark:hover:bg-slate-800 group",
-                          "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                          "w-full flex items-center gap-3 p-3 rounded-none transition-all",
+                          "hover:bg-muted group",
+                          "border border-transparent hover:border-foreground/20 border-l-4 border-l-transparent hover:border-l-primary"
                         )}
                       >
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                          <Hash className="h-5 w-5 text-slate-500" />
+                        <div className="w-10 h-10 rounded-none bg-muted border border-foreground/20 flex items-center justify-center shrink-0">
+                          <Hash className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1 text-left min-w-0">
-                          <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{ch.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Channel</p>
+                          <p className="font-bold text-sm text-foreground truncate">{ch.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">Channel</p>
                         </div>
                         {(channelUnreadCounts[ch.id] || 0) > 0 && (
-                          <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{channelUnreadCounts[ch.id]}</Badge>
+                          <Badge className="bg-primary hover:bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-none font-black">{channelUnreadCounts[ch.id]}</Badge>
                         )}
                       </button>
                     ))}
 
                     {/* Team Members section */}
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5 mt-2">Team Members</p>
+                    <p className="text-[10px] font-black text-foreground/50 uppercase tracking-widest px-3 py-1.5 mt-2 border-b border-foreground/15 mb-1">Team Members</p>
                     {filteredContacts.length === 0 ? (
-                      <p className="text-center text-slate-500 text-sm py-4">No contacts found</p>
+                      <p className="text-center text-muted-foreground text-sm py-4">No contacts found</p>
                     ) : (
                       filteredContacts.map((u) => (
                         <button
                           key={u.id}
                           onClick={() => handleSelectContact(u.id)}
                           className={cn(
-                            "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                            "hover:bg-white dark:hover:bg-slate-800 group",
-                            "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                            "w-full flex items-center gap-3 p-3 rounded-none transition-all",
+                            "hover:bg-muted group",
+                            "border border-transparent hover:border-foreground/20 border-l-4 border-l-transparent hover:border-l-primary"
                           )}
                         >
                           <div className="relative">
-                            <Avatar className="h-10 w-10 border-2 border-slate-200 dark:border-slate-700">
+                            <Avatar className="h-10 w-10 border-2 border-foreground/25 rounded-none">
                               <AvatarImage src={u.avatarUrl || undefined} />
-                              <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>{getInitials(u.name, u.email)}</AvatarFallback>
+                              <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-black rounded-none")}>{getInitials(u.name, u.email)}</AvatarFallback>
                             </Avatar>
-                            <span className={cn("absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-50 dark:border-slate-900", u.isOnline ? "bg-emerald-500" : "bg-slate-400")} />
+                            <span className={cn("absolute bottom-0 right-0 w-3 h-3 rounded-none border-2 border-background", u.isOnline ? "bg-emerald-500" : "bg-muted-foreground/50")} />
                           </div>
                           <div className="flex-1 text-left min-w-0">
-                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            <p className="font-bold text-sm text-foreground truncate">{u.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
                               {u.isOnline ? "Online" : u.lastSeen ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}` : "Offline"}
                             </p>
                           </div>
                           {(u.unreadCount || 0) > 0 && (
-                            <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{u.unreadCount}</Badge>
+                            <Badge className="bg-primary hover:bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-none font-black">{u.unreadCount}</Badge>
                           )}
                         </button>
                       ))
