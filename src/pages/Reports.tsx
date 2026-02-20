@@ -8,8 +8,6 @@ import { Task } from "@/types/task";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import ReportDetailModal from "@/components/ReportDetailModal";
 import { DateRange } from "react-day-picker";
-import { useAuth } from "@/contexts/AuthContext";
-import { BroadcastAckPanel } from "@/components/BroadcastAckPanel";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   BarChart,
@@ -85,8 +83,6 @@ const CHART_COLORS = [
 ];
 
 const Reports = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
   const { tasks } = useTasks();
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
@@ -307,9 +303,6 @@ const Reports = () => {
       }
     >
       <div className="p-4 md:p-6 space-y-6">
-            {/* Admin Broadcast Acknowledgment Panel */}
-            {isAdmin && <BroadcastAckPanel />}
-
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>

@@ -101,6 +101,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (event === 'PASSWORD_RECOVERY') {
             setMustChangePassword(true);
           }
+
+          // Track login sessions
+          if (event === 'SIGNED_IN' && session?.user) {
+            supabase.from('user_sessions').insert({
+              user_id: session.user.id,
+              user_email: session.user.email || '',
+            }).then(() => {
+              // Store session id for logout tracking
+              supabase.from('user_sessions')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .is('logged_out_at', null)
+                .order('logged_in_at', { ascending: false })
+                .limit(1)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    localStorage.setItem('current_session_id', data.id);
+                  }
+                });
+            });
+          }
+
+          if (event === 'SIGNED_OUT') {
+            const sessionId = localStorage.getItem('current_session_id');
+            if (sessionId) {
+              supabase.from('user_sessions')
+                .update({ logged_out_at: new Date().toISOString() })
+                .eq('id', sessionId)
+                .then(() => {
+                  localStorage.removeItem('current_session_id');
+                });
+            }
+          }
           
           setLoading(false);
         }

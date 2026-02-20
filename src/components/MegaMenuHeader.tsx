@@ -101,6 +101,7 @@ const navMain: NavGroup[] = [
     icon: BarChart3,
     items: [
       { title: "Reports", url: "/reports", icon: BarChart3, description: "Performance & analytics" },
+      { title: "Analytics", url: "/admin/analytics", icon: Activity, description: "Login tracking & broadcasts" },
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
     ],
   },

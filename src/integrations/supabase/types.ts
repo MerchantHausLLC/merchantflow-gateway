@@ -1346,6 +1346,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          duration_minutes: number | null
+          id: string
+          logged_in_at: string
+          logged_out_at: string | null
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          duration_minutes?: number | null
+          id?: string
+          logged_in_at?: string
+          logged_out_at?: string | null
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          duration_minutes?: number | null
+          id?: string
+          logged_in_at?: string
+          logged_out_at?: string | null
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
