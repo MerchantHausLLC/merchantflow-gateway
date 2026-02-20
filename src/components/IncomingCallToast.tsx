@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Phone } from "lucide-react";
+import { playNotificationSound } from "@/hooks/useNotificationSound";
 
 /**
  * Listens to realtime call_logs inserts for ringing incoming calls
@@ -28,18 +29,29 @@ export const IncomingCallToast = () => {
 
           const caller = call.phone_number || 'Unknown number';
 
+          // Play urgent ringtone
+          const ringtone = playNotificationSound('call') as { stop: () => void } | undefined;
+
           toast(`📞 Incoming call from ${caller}`, {
             description: 'Click to view contact',
             duration: 10000,
+            onDismiss: () => ringtone?.stop(),
+            onAutoClose: () => ringtone?.stop(),
             action: call.opportunity_id
               ? {
                   label: 'View',
-                  onClick: () => navigate(`/opportunities/${call.opportunity_id}`),
+                  onClick: () => {
+                    ringtone?.stop();
+                    navigate(`/opportunities/${call.opportunity_id}`);
+                  },
                 }
               : call.contact_id
               ? {
                   label: 'View',
-                  onClick: () => navigate('/contacts'),
+                  onClick: () => {
+                    ringtone?.stop();
+                    navigate('/contacts');
+                  },
                 }
               : undefined,
           });
