@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
@@ -49,59 +48,68 @@ const ForgotPassword = () => {
   if (isEmailSent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
+        <div className="w-full max-w-md space-y-8">
+          <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-green-500/20 border-[3px] border-green-500 rounded-2xl flex items-center justify-center neo-shadow-sm">
+                <CheckCircle2 className="h-10 w-10 text-green-500" />
+              </div>
             </div>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription className="text-base">
-              We've sent a password reset link to <strong>{email}</strong>.
+            <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">Check Your Email</h1>
+            <p className="text-muted-foreground font-medium mb-6">
+              We've sent a password reset link to <strong className="text-foreground">{email}</strong>.
               Click the link in the email to reset your password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+            </p>
+            <p className="text-sm text-muted-foreground font-medium mb-6 bg-background border-[2px] border-foreground/20 rounded-xl p-3">
               Didn't receive the email? Check your spam folder or try again.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => setIsEmailSent(false)}
-              className="w-full"
-            >
-              Try Again
-            </Button>
-            <Link to="/login">
-              <Button variant="ghost" className="w-full">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsEmailSent(false)}
+                className="w-full h-12 border-[2.5px] border-foreground/60 rounded-xl font-bold neo-shadow-sm neo-interactive"
+              >
+                Try Again
               </Button>
-            </Link>
-          </CardContent>
-        </Card>
+              <Link to="/login">
+                <Button
+                  variant="ghost"
+                  className="w-full h-12 rounded-xl font-bold"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex items-center justify-center">
+          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+        </div>
+
+        <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-primary/20 border-[3px] border-primary rounded-2xl flex items-center justify-center">
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
           </div>
-          <div className="flex justify-center mb-2">
-            <Mail className="h-10 w-10 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Forgot Password?</CardTitle>
-          <CardDescription>
+          <h1 className="text-3xl font-black text-center mb-2 tracking-tight text-foreground">
+            Forgot Password?
+          </h1>
+          <p className="text-center text-muted-foreground mb-8 font-medium">
             Enter your email address and we'll send you a link to reset your password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email" className="font-bold text-xs uppercase tracking-wider">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -110,23 +118,28 @@ const ForgotPassword = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
               />
             </div>
-            <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+              disabled={isLoading}
+            >
               {isLoading ? 'Sending...' : 'Send Reset Link'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <Link to="/login">
-              <Button variant="ghost" className="text-muted-foreground">
+              <Button variant="ghost" className="text-muted-foreground font-bold rounded-xl">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login
               </Button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
