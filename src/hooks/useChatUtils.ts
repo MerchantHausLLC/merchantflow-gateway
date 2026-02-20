@@ -1,6 +1,11 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type ChatMessageInsert = Database['public']['Tables']['chat_messages']['Insert'];
+type DirectMessageInsert = Database['public']['Tables']['direct_messages']['Insert'];
+type MessageInsertData = ChatMessageInsert | DirectMessageInsert;
 
 interface SendMessageOptions {
   table: 'chat_messages' | 'direct_messages';
@@ -145,10 +150,9 @@ export function useMessageSender() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase
         .from(message.options.table)
-        .insert(message.options.data as any);
+        .insert(message.options.data as MessageInsertData);
 
       if (error) throw error;
 
@@ -196,10 +200,9 @@ export function useMessageSender() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabase
         .from(options.table)
-        .insert(options.data as any)
+        .insert(options.data as MessageInsertData)
         .select()
         .single();
 
@@ -256,6 +259,20 @@ export function useTypingIndicator(
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
+  const stopTyping = useCallback(() => {
+    if (!channelRef.current) return;
+
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      channelRef.current.track({ typing: false, name: userName });
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [channelRef, userName]);
+
   const startTyping = useCallback(() => {
     if (!channelRef.current) return;
 
@@ -274,21 +291,7 @@ export function useTypingIndicator(
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping();
     }, debounceMs);
-  }, [channelRef, userName, debounceMs]);
-
-  const stopTyping = useCallback(() => {
-    if (!channelRef.current) return;
-
-    if (isTypingRef.current) {
-      isTypingRef.current = false;
-      channelRef.current.track({ typing: false, name: userName });
-    }
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = null;
-    }
-  }, [channelRef, userName]);
+  }, [channelRef, userName, debounceMs, stopTyping]);
 
   // Cleanup on unmount
   useEffect(() => {

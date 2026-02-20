@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { getServiceType, STAGE_CONFIG, migrateStage } from "@/types/opportunity";
+import { getServiceType, STAGE_CONFIG, migrateStage, Account, Contact, Opportunity } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -46,7 +46,7 @@ const TEAM_EMAIL_MAP: Record<string, string> = {
   'Sales': 'sales@merchanthaus.io',
 };
 
-const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
+const InfoRow = ({ icon: Icon, label, value, href }: { icon: React.ComponentType<{ className?: string }>; label: string; value?: string | null; href?: string }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 py-2">
@@ -102,11 +102,11 @@ const LiveAccountDetail = () => {
 
   // Use first opportunity for shared account/contact data
   const primaryOpp = opportunities?.[0];
-  const account = primaryOpp?.account as any;
-  const contact = primaryOpp?.contact as any;
+  const account = primaryOpp?.account as Account | undefined;
+  const contact = primaryOpp?.contact as Contact | undefined;
 
   const pipelines = opportunities
-    ? [...new Set(opportunities.map((o) => getServiceType(o as any)))]
+    ? [...new Set(opportunities.map((o) => getServiceType(o as Opportunity)))]
     : [];
 
   // Fetch documents for ALL opportunities of this account
@@ -378,7 +378,7 @@ const LiveAccountDetail = () => {
 
             {/* Opportunities (show each one) */}
             {opportunities?.map((opp) => {
-              const svcType = getServiceType(opp as any);
+              const svcType = getServiceType(opp as Opportunity);
               return (
                 <Card key={opp.id}>
                   <CardHeader className="pb-3">
