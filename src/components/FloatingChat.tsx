@@ -621,7 +621,7 @@ const FloatingChat: React.FC = () => {
       supabase.removeChannel(dmReceivedChannel); 
       supabase.removeChannel(dmSentChannel); 
     };
-  }, [user, playMessageSound]);
+  }, [user, playMessageSound, fetchUnreadCounts]);
 
   // Reactions subscription
   useEffect(() => {
@@ -1091,8 +1091,6 @@ const FloatingChat: React.FC = () => {
   const groupedChannelMessages = useMemo(() => groupMessagesByDate(filteredChannelMessages), [filteredChannelMessages, groupMessagesByDate]);
   const groupedDirectMessages = useMemo(() => groupMessagesByDate(filteredDirectMessages), [filteredDirectMessages, groupMessagesByDate]);
 
-  if (!user) return null;
-
   // Swipe-to-reply handler for touch devices
   const swipeRef = useRef<{ startX: number; startY: number; msgId: string; swiping: boolean } | null>(null);
 
@@ -1135,6 +1133,8 @@ const FloatingChat: React.FC = () => {
 
     swipeRef.current = null;
   }, []);
+
+  if (!user) return null;
 
   // Render a message bubble (shared between channel and DM views)
   const renderMessageBubble = (msg: ChannelMessage | DirectMessage, isChannel: boolean) => {
