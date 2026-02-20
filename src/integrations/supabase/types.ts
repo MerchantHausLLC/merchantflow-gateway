@@ -350,6 +350,30 @@ export type Database = {
           },
         ]
       }
+      broadcast_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          broadcast_key: string
+          id: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          broadcast_key: string
+          id?: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          broadcast_key?: string
+          id?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       call_logs: {
         Row: {
           account_id: string | null
