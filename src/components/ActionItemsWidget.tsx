@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ClipboardCheck, X, Plus, Trash2, ChevronDown, GripVertical } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ interface Profile {
 
 export function ActionItemsWidget() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [items, setItems] = useState<ActionItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -153,26 +155,41 @@ export function ActionItemsWidget() {
 
   return (
     <>
-      {/* Floating draggable icon */}
-      <div
-        className="fixed z-[60] select-none touch-none"
-        style={{ left: iconPos.x, top: iconPos.y }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-      >
-        <div className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg transition-colors",
-          "bg-haus-charcoal text-white hover:bg-foreground"
-        )}>
+      {/* Floating icon – fixed on mobile (above Quo dialler), draggable on desktop */}
+      {isMobile ? (
+        <button
+          onClick={() => setIsOpen((o) => !o)}
+          className="fixed bottom-[8.5rem] left-4 z-50 w-14 h-14 rounded-full flex items-center justify-center bg-haus-charcoal text-white hover:bg-foreground shadow-lg transition-colors"
+          aria-label="Toggle notice board"
+        >
           <ClipboardCheck className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
               {unreadCount}
             </span>
           )}
+        </button>
+      ) : (
+        <div
+          className="fixed z-[60] select-none touch-none"
+          style={{ left: iconPos.x, top: iconPos.y }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        >
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg transition-colors",
+            "bg-haus-charcoal text-white hover:bg-foreground"
+          )}>
+            <ClipboardCheck className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Panel */}
       <AnimatePresence>
@@ -183,7 +200,12 @@ export function ActionItemsWidget() {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2 }}
             className="fixed z-[61] bg-card border border-border shadow-2xl flex flex-col"
-            style={{
+            style={isMobile ? {
+              width: "calc(100vw - 32px)",
+              maxHeight: "min(520px, calc(100vh - 200px))",
+              left: 16,
+              bottom: "10rem",
+            } : {
               width: "min(380px, calc(100vw - 32px))",
               maxHeight: "min(520px, calc(100vh - 100px))",
               left: Math.min(iconPos.x, window.innerWidth - 400),
