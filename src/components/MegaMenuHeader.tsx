@@ -25,6 +25,8 @@ import {
   ChevronDown,
   Globe,
   BadgeDollarSign,
+  Maximize,
+  Minimize,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -128,6 +130,13 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -312,6 +321,27 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           </DropdownMenu>
 
           <NotificationBell />
+
+          {/* Fullscreen toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  } else {
+                    document.documentElement.requestFullscreen();
+                  }
+                }}
+                className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+              >
+                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</TooltipContent>
+          </Tooltip>
 
           {/* Theme toggle */}
           <Button
