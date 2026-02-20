@@ -1200,6 +1200,22 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /** Sync document list into the wizard's form_state so ApplicationProgress stays accurate */
+  const syncDocsToWizard = async (docs: Document[]) => {
+    const docRefs = docs.map((d) => ({ id: d.id, file_name: d.file_name, document_type: (d as any).document_type ?? 'Unassigned' }));
+    const { data: ws } = await supabase
+      .from('onboarding_wizard_states')
+      .select('id, form_state')
+      .eq('opportunity_id', opportunityId)
+      .maybeSingle();
+    if (!ws) return;
+    const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
+    await supabase
+      .from('onboarding_wizard_states')
+      .update({ form_state: { ...currentForm, documents: docRefs }, updated_at: new Date().toISOString() } as never)
+      .eq('id', ws.id);
+  };
+
   useEffect(() => {
     fetchDocuments();
   }, [opportunityId]);
@@ -1261,7 +1277,16 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     }
 
     toast.success('Documents uploaded');
-    fetchDocuments();
+    // Re-fetch and sync with wizard
+    const { data: updatedDocs } = await supabase
+      .from('documents')
+      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
+      .eq('opportunity_id', opportunityId)
+      .order('created_at', { ascending: false });
+    if (updatedDocs) {
+      setDocuments(updatedDocs);
+      syncDocsToWizard(updatedDocs);
+    }
     setIsUploading(false);
     setPendingFiles([]);
   };
@@ -1305,7 +1330,17 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
 
     if (!dbError) {
       toast.success('Document deleted');
-      fetchDocuments();
+      const { data: updatedDocs } = await supabase
+        .from('documents')
+        .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
+        .eq('opportunity_id', opportunityId)
+        .order('created_at', { ascending: false });
+      if (updatedDocs) {
+        setDocuments(updatedDocs);
+        syncDocsToWizard(updatedDocs);
+      } else {
+        fetchDocuments();
+      }
     }
   };
 
