@@ -741,6 +741,40 @@ All colors MUST be HSL.
     box-shadow: 0 0 20px hsl(348 83% 47% / 0.3), 0 0 40px hsl(348 83% 60% / 0.2);
   }
 
+  /* Neobrutalism design system */
+  .neo-shadow {
+    box-shadow: 6px 6px 0px 0px hsl(var(--primary));
+  }
+
+  .neo-shadow-sm {
+    box-shadow: 4px 4px 0px 0px hsl(var(--primary));
+  }
+
+  .neo-shadow-xs {
+    box-shadow: 3px 3px 0px 0px hsl(var(--primary) / 0.5);
+  }
+
+  .neo-interactive {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .neo-interactive:hover:not(:disabled) {
+    box-shadow: 3px 3px 0px 0px hsl(var(--primary));
+    transform: translate(3px, 3px);
+  }
+
+  .neo-interactive:active:not(:disabled) {
+    box-shadow: 0px 0px 0px 0px hsl(var(--primary));
+    transform: translate(6px, 6px);
+  }
+
+  .neo-input:focus-visible {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 2px 2px 0px 0px hsl(var(--primary)) !important;
+    outline: none !important;
+    --tw-ring-shadow: none !important;
+  }
+
   /* Hide scrollbar while maintaining scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;  /* IE and Edge */

@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -76,18 +75,22 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
-          </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to access your dashboard</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex items-center justify-center">
+          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+        </div>
+
+        <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
+          <h1 className="text-3xl font-black text-center mb-1 tracking-tight text-foreground">
+            Welcome Back
+          </h1>
+          <p className="text-center text-muted-foreground mb-8 font-medium">
+            Sign in to access your dashboard
+          </p>
+
           <Button
             variant="outline"
-            className="w-full mb-6"
+            className="w-full mb-6 border-[2.5px] border-foreground/60 rounded-xl h-12 font-bold neo-shadow-sm neo-interactive"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
@@ -114,16 +117,18 @@ const Login = () => {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+              <div className="w-full border-t-[2.5px] border-dashed border-foreground/20" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+            <div className="relative flex justify-center">
+              <span className="bg-card px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                or
+              </span>
             </div>
           </div>
 
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
+          <form onSubmit={handleEmailSignIn} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -132,14 +137,15 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="font-bold text-xs uppercase tracking-wider">Password</Label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm font-bold text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -152,28 +158,34 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
               />
             </div>
-            <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+              disabled={isLoading}
+            >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/auth" className="text-primary hover:underline">
-              Sign up
-            </Link>
+          <div className="mt-8 pt-6 border-t-[2.5px] border-dashed border-foreground/20 text-center space-y-2">
+            <p className="text-sm text-muted-foreground font-medium">
+              Don't have an account?{' '}
+              <Link to="/auth" className="text-primary font-bold hover:underline">
+                Sign up
+              </Link>
+            </p>
+            <p className="text-sm text-muted-foreground font-medium">
+              Want to apply for services?{' '}
+              <Link to="/apply" className="text-primary font-bold hover:underline">
+                Apply here
+              </Link>
+            </p>
           </div>
-
-          <div className="mt-2 text-center text-sm text-muted-foreground">
-            Want to apply for services?{' '}
-            <Link to="/apply" className="text-primary hover:underline">
-              Apply here
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

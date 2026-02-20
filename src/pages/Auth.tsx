@@ -5,7 +5,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -169,18 +168,19 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            {/* Logo switches based on theme - dark mode uses white text logo, light mode uses dark text logo */}
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
-          </div>
-          <CardDescription>Sign in to access your pipeline</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex items-center justify-center">
+          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+        </div>
+
+        <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
+          <p className="text-center text-muted-foreground mb-8 font-medium">
+            Sign in to access your pipeline
+          </p>
+
           <Button
             variant="outline"
-            className="w-full mb-6"
+            className="w-full mb-6 border-[2.5px] border-foreground/60 rounded-xl h-12 font-bold neo-shadow-sm neo-interactive"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
@@ -207,22 +207,34 @@ const Auth = () => {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+              <div className="w-full border-t-[2.5px] border-dashed border-foreground/20" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+            <div className="relative flex justify-center">
+              <span className="bg-card px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                or
+              </span>
             </div>
           </div>
 
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-14 border-[2.5px] border-foreground/60 rounded-xl p-1.5 bg-background">
+              <TabsTrigger
+                value="signin"
+                className="rounded-lg font-black text-sm uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger
+                value="signup"
+                className="rounded-lg font-black text-sm uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                Sign Up
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="signin">
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <form onSubmit={handleEmailSignIn} className="space-y-5 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -230,23 +242,25 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password" className="font-bold text-xs uppercase tracking-wider">Password</Label>
                   <Input
                     id="signin-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
                   />
                   <div className="flex justify-end">
                     <Button
                       type="button"
                       variant="link"
-                      className="px-0 text-sm"
+                      className="px-0 text-sm font-bold text-primary"
                       onClick={handlePasswordReset}
                       disabled={isResetting || isLoading}
                     >
@@ -254,15 +268,19 @@ const Auth = () => {
                     </Button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+                  disabled={isLoading}
+                >
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
-              <form onSubmit={handleEmailSignUp} className="space-y-4">
+              <form onSubmit={handleEmailSignUp} className="space-y-5 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -270,27 +288,33 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="font-bold text-xs uppercase tracking-wider">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
                   />
                 </div>
-                <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+                  disabled={isLoading}
+                >
                   {isLoading ? 'Creating account...' : 'Create Account'}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

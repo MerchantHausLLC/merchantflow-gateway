@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -67,22 +66,25 @@ const UpdatePassword = () => {
   if (isSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
+        <div className="w-full max-w-md">
+          <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-green-500/20 border-[3px] border-green-500 rounded-2xl flex items-center justify-center neo-shadow-sm">
+                <CheckCircle2 className="h-10 w-10 text-green-500" />
+              </div>
             </div>
-            <CardTitle className="text-2xl">Password Updated!</CardTitle>
-            <CardDescription className="text-base">
+            <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">Password Updated!</h1>
+            <p className="text-muted-foreground font-medium mb-8">
               Your password has been successfully updated. You can now sign in with your new password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/login')} className="w-full gradient-primary">
+            </p>
+            <Button
+              onClick={() => navigate('/login')}
+              className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+            >
               Continue to Login
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -91,30 +93,35 @@ const UpdatePassword = () => {
   if (isValidSession === false) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <AlertTriangle className="h-16 w-16 text-yellow-500" />
+        <div className="w-full max-w-md">
+          <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-yellow-500/20 border-[3px] border-yellow-500 rounded-2xl flex items-center justify-center neo-shadow-sm">
+                <AlertTriangle className="h-10 w-10 text-yellow-500" />
+              </div>
             </div>
-            <CardTitle className="text-2xl">Invalid or Expired Link</CardTitle>
-            <CardDescription className="text-base">
+            <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">Invalid or Expired Link</h1>
+            <p className="text-muted-foreground font-medium mb-8">
               This password reset link is invalid or has expired. Please request a new password reset link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Link to="/forgot-password">
-              <Button className="w-full gradient-primary">
-                Request New Reset Link
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="ghost" className="w-full">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+            </p>
+            <div className="space-y-3">
+              <Link to="/forgot-password">
+                <Button className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive">
+                  Request New Reset Link
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button
+                  variant="ghost"
+                  className="w-full h-12 rounded-xl font-bold"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -130,36 +137,40 @@ const UpdatePassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex items-center justify-center">
+          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+        </div>
+
+        <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-primary/20 border-[3px] border-primary rounded-2xl flex items-center justify-center">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
           </div>
-          <div className="flex justify-center mb-2">
-            <Lock className="h-10 w-10 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Set New Password</CardTitle>
-          <CardDescription>
+          <h1 className="text-3xl font-black text-center mb-2 tracking-tight text-foreground">
+            Set New Password
+          </h1>
+          <p className="text-center text-muted-foreground mb-8 font-medium">
             Please enter your new password below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             {user?.email && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={user.email}
                   disabled
-                  className="bg-muted"
+                  className="border-[2.5px] border-foreground/20 rounded-xl h-12 bg-muted font-medium"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword" className="font-bold text-xs uppercase tracking-wider">New Password</Label>
               <div className="relative">
                 <Input
                   id="newPassword"
@@ -170,22 +181,23 @@ const UpdatePassword = () => {
                   required
                   minLength={8}
                   disabled={isLoading}
+                  className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-medium">
                 Password must be at least 8 characters
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="font-bold text-xs uppercase tracking-wider">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type={showPassword ? 'text' : 'password'}
@@ -195,24 +207,29 @@ const UpdatePassword = () => {
                 required
                 minLength={8}
                 disabled={isLoading}
+                className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
               />
             </div>
 
-            <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
+              disabled={isLoading}
+            >
               {isLoading ? 'Updating...' : 'Update Password'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <Link to="/login">
-              <Button variant="ghost" className="text-muted-foreground">
+              <Button variant="ghost" className="text-muted-foreground font-bold rounded-xl">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login
               </Button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
