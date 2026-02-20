@@ -1,37 +1,48 @@
 
 
-# Gold Ribbon Badge for Live Account Modals
+# Add Notification Sound to All Real-Time Notifications
+
+## Overview
+Currently, notification sounds only play inside the **FloatingChat** component (for chat messages). The **NotificationBell**, **IncomingCallToast**, and **IncomingMessageToast** components all receive real-time events but play no audio. This plan adds a unified notification sound system across all real-time notification types.
 
 ## What Changes
 
-When an opportunity is in the "Live" stage (`live_activated`), the detail modal will get a visual upgrade:
+### 1. Create a shared `useNotificationSound` hook
+A lightweight, reusable hook (or utility function) that plays a short audio ping using the Web Audio API. This consolidates the duplicate sound logic currently in `useChatSounds.ts` and `useChatNotifications.ts` into one place. It will respect the user's existing `chatSoundEnabled` localStorage preference.
 
-1. **Gold ribbon badge image** -- The uploaded ribbon/rosette image will be added to the project and displayed prominently on live account modals, positioned next to the business name in the header area.
+Three distinct tones will be available:
+- **message** -- existing chat ping (800-1000 Hz sweep)
+- **notification** -- slightly different tone for bell/task/stage notifications (600 Hz)
+- **call** -- urgent ringtone pattern (two-note repeated beep for incoming calls)
 
-2. **Stage Progress hidden for live accounts** -- Since live accounts don't need the stage progress tracker, that section will be removed when the opportunity is at `live_activated` stage. The ribbon badge will visually replace that space, draped over/across where the stage progress would normally sit.
+### 2. NotificationBell -- play sound on new notification
+In `src/components/NotificationBell.tsx`, when the realtime subscription fires an `INSERT` event for a new notification, play the **notification** sound. Only play if the popover is closed (user isn't already looking at notifications).
 
-3. **Placement** -- The ribbon will sit adjacent to the business name (right side of the title area), slightly overlapping or positioned where the Stage Progress section would be, creating a premium "certified live" visual.
+### 3. IncomingCallToast -- play ringtone sound
+In `src/components/IncomingCallToast.tsx`, when a ringing incoming call is detected, play the **call** sound (a more urgent, repeating tone) that stops after 10 seconds or when the toast is dismissed.
 
----
+### 4. IncomingMessageToast -- play message sound
+In `src/components/IncomingMessageToast.tsx`, when a new chat or DM toast is shown, play the **message** sound. This covers users who don't have the FloatingChat open.
+
+### 5. Deduplicate with FloatingChat
+Add a guard so that if the FloatingChat already played a sound for a given message (user is viewing that conversation), the `IncomingMessageToast` skips its sound to avoid double-pinging. This will use a simple `Set` of recently-played message IDs shared via a custom event or ref.
 
 ## Technical Details
 
-### File: Asset Copy
-- Copy `user-uploads://hyper_realistic_badge_crm_optimized_1.webp` to `src/assets/live-badge.webp`
+### New file: `src/hooks/useNotificationSound.ts`
+- Exports `playNotificationSound(type: 'message' | 'notification' | 'call')`
+- Uses Web Audio API oscillator (no external audio files needed)
+- Checks `localStorage.getItem('chatSoundEnabled') !== 'false'` before playing
+- For `call` type, returns a `stop()` function to cancel the repeating tone
 
-### File: `src/components/OpportunityDetailModal.tsx`
+### Modified files
+| File | Change |
+|------|--------|
+| `src/hooks/useNotificationSound.ts` | New shared sound utility |
+| `src/components/NotificationBell.tsx` | Import hook, play on INSERT event |
+| `src/components/IncomingCallToast.tsx` | Play call ringtone on ringing status |
+| `src/components/IncomingMessageToast.tsx` | Play message sound on new toast |
 
-**Header changes (around line 604-627):**
-- Import the badge image: `import liveBadge from "@/assets/live-badge.webp"`
-- Detect if live: `const isLiveAccount = opportunity.stage === 'live_activated'`
-- Add the ribbon image next to the business name when live, sized ~48-56px tall, with a subtle drop shadow and slight rotation for a natural drape effect
-
-**Stage Progress section (around lines 850-857):**
-- Conditionally hide `StatusBlockerPanel` and `StagePath` when `isLiveAccount` is true
-- In their place, show a centered gold-themed banner area with the ribbon badge image larger (~80px) and a "Live Account" label beneath it
-- Apply a subtle gold gradient background to this replacement section for the premium feel
-
-**Header styling for live accounts:**
-- The existing `Building2` icon container gets a gold treatment when live (gold background instead of primary)
-- The existing "Live" badge styling is preserved alongside the ribbon
+### No database changes required
+All notification infrastructure (realtime subscriptions, notifications table) already exists.
 
