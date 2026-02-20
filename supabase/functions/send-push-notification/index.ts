@@ -147,12 +147,14 @@ serve(async (req: Request) => {
       );
     }
     
+    // Use absolute URLs for icons - critical for Windows & Android
+    const appUrl = Deno.env.get('APP_URL') || 'https://ops-terminal.lovable.app';
     const payload = JSON.stringify({
       title,
       body,
-      data: { ...data, url },
-      icon: '/favicon.png',
-      badge: '/favicon.png',
+      data: { ...data, url: url || '/' },
+      icon: `${appUrl}/favicon.png`,
+      badge: `${appUrl}/favicon.png`,
     });
     
     let successCount = 0;

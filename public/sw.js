@@ -23,11 +23,17 @@ self.addEventListener('push', (event) => {
     }
   }
   
+  // Use absolute URL for icons - required for Windows & Android notifications
+  const baseUrl = self.location.origin;
+  const iconUrl = data.icon ? (data.icon.startsWith('http') ? data.icon : `${baseUrl}${data.icon}`) : `${baseUrl}/favicon.png`;
+  const badgeUrl = data.badge ? (data.badge.startsWith('http') ? data.badge : `${baseUrl}${data.badge}`) : `${baseUrl}/favicon.png`;
+
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.png',
-    badge: data.badge || '/favicon.png',
-    vibrate: [100, 50, 100],
+    icon: iconUrl,
+    badge: badgeUrl,
+    image: data.image || undefined,
+    vibrate: [200, 100, 200, 100, 200],
     data: data.data || {},
     actions: [
       { action: 'open', title: 'Open' },
@@ -35,6 +41,8 @@ self.addEventListener('push', (event) => {
     ],
     requireInteraction: true,
     tag: data.data?.messageId || 'chat-notification',
+    renotify: true,
+    silent: false,
   };
 
   event.waitUntil(
