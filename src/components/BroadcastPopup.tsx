@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BROADCAST_KEY = "eob-update-2026-02-20";
+const BROADCAST_CREATED = new Date("2026-02-20T00:00:00Z");
+const BROADCAST_EXPIRY_DAYS = 7;
 
 const BROADCAST_MESSAGE = `Please update all current accounts accordingly before the end of business today.
 
@@ -22,6 +24,12 @@ export function BroadcastPopup() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Check if broadcast has expired (older than 7 days)
+    const now = new Date();
+    const expiryDate = new Date(BROADCAST_CREATED);
+    expiryDate.setDate(expiryDate.getDate() + BROADCAST_EXPIRY_DAYS);
+    if (now > expiryDate) return;
 
     // Check if user already acknowledged
     supabase
@@ -47,6 +55,9 @@ export function BroadcastPopup() {
     setAcknowledging(false);
   };
 
+  // Dismiss without acknowledging — will reappear on next session
+  const handleDismiss = () => setVisible(false);
+
   return (
     <AnimatePresence>
       {visible && (
@@ -63,10 +74,17 @@ export function BroadcastPopup() {
             className="bg-card border border-border rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gold/10 border-b border-gold/20 px-6 py-4">
+            <div className="bg-gold/10 border-b border-gold/20 px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 📢 Team Notice
               </h2>
+              <button
+                onClick={handleDismiss}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Dismiss for now"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             {/* Body */}
@@ -86,6 +104,9 @@ export function BroadcastPopup() {
                 <CheckCircle2 className="h-4 w-4" />
                 {acknowledging ? "Confirming…" : "I've read this — Confirm"}
               </Button>
+              <p className="text-[10px] text-muted-foreground text-center mt-2">
+                This notice will appear until confirmed or for 7 days
+              </p>
             </div>
           </motion.div>
         </motion.div>
