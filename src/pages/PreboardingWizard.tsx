@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,9 +11,35 @@ import {
   FileText,
   ShieldCheck,
   Upload,
-  Users
+  Users,
+  Trash2,
+  Download,
+  Loader2
 } from "lucide-react";
 import { OnboardingWizardState } from "@/types/opportunity";
+import { toast as sonnerToast } from "sonner";
+
+interface UploadedDocument {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  content_type: string | null;
+  document_type: string | null;
+  created_at: string;
+}
+
+const DOCUMENT_TYPES = [
+  "Passport/Drivers License",
+  "Bank Statement",
+  "Transaction History",
+  "Articles of Organisation",
+  "Voided Check / Bank Confirmation Letter",
+  "EIN",
+  "SSN",
+  "VAR Sheet",
+  "Unassigned",
+] as const;
 
 const PROCESSING_STEPS = [
   "Business Profile",
@@ -239,6 +265,7 @@ export default function PreboardingWizard() {
   const [isGatewayOnly, setIsGatewayOnly] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(false);
+  const [uploadedDocCount, setUploadedDocCount] = useState(0);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -355,7 +382,7 @@ export default function PreboardingWizard() {
   const getMissingFieldsForSection = (sectionKey: string) => {
     const required = REQUIRED_FIELDS[sectionKey] ?? [];
     if (sectionKey === "documents") {
-      return form.documents.length > 0 ? [] : ["At least one supporting document"];
+      return (form.documents.length > 0 || uploadedDocCount > 0) ? [] : ["At least one supporting document"];
     }
     return required.filter(field => !String(form[field as keyof PreboardingForm] ?? "").trim());
   };
@@ -372,7 +399,7 @@ export default function PreboardingWizard() {
       processing: getMissingFieldsForSection("processing"),
       documents: getMissingFieldsForSection("documents"),
     };
-  }, [form, isGatewayOnly]);
+  }, [form, isGatewayOnly, uploadedDocCount]);
 
   const totalRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
@@ -527,7 +554,7 @@ export default function PreboardingWizard() {
                     <ProcessingStep form={form} onChange={handleChange} />
                   )}
                   {(currentStep === "Documents" || currentStep === "Documents & Submit") && (
-                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} />
+                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} />
                   )}
                   {currentStep === "Review" && (
                     <ReviewStep form={form} missingBySection={missingBySection as any} />
@@ -930,7 +957,100 @@ function ProcessingStep({ form, onChange }: { form: PreboardingForm; onChange: <
   );
 }
 
-function DocumentsStep({ form, onChange, onDocsChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; }) {
+function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCountChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; opportunityId: string | null; onDocCountChange: (count: number) => void; }) {
+  const [existingDocs, setExistingDocs] = useState<UploadedDocument[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState<string>("Unassigned");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchDocs = useCallback(async () => {
+    if (!opportunityId) return;
+    setIsLoading(true);
+    const { data } = await supabase
+      .from('documents')
+      .select('id, file_name, file_path, file_size, content_type, document_type, created_at')
+      .eq('opportunity_id', opportunityId)
+      .order('created_at', { ascending: false });
+    const docs = data ?? [];
+    setExistingDocs(docs);
+    onDocCountChange(docs.length);
+    setIsLoading(false);
+  }, [opportunityId, onDocCountChange]);
+
+  useEffect(() => { fetchDocs(); }, [fetchDocs]);
+
+  const syncDocsToWizard = async (docs: UploadedDocument[]) => {
+    if (!opportunityId) return;
+    const docRefs = docs.map((d) => ({ id: d.id, file_name: d.file_name, document_type: d.document_type ?? 'Unassigned' }));
+    const { data: ws } = await supabase
+      .from('onboarding_wizard_states')
+      .select('id, form_state')
+      .eq('opportunity_id', opportunityId)
+      .maybeSingle();
+    if (!ws) return;
+    const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
+    await supabase
+      .from('onboarding_wizard_states')
+      .update({ form_state: { ...currentForm, documents: docRefs }, updated_at: new Date().toISOString() } as never)
+      .eq('id', ws.id);
+  };
+
+  const handleUpload = async () => {
+    if (!opportunityId || form.documents.length === 0) return;
+    setIsUploading(true);
+
+    for (const file of form.documents) {
+      const filePath = `${opportunityId}/${Date.now()}_${file.name}`;
+      const { error: storageError } = await supabase.storage
+        .from('opportunity-documents')
+        .upload(filePath, file);
+
+      if (storageError) {
+        sonnerToast.error(`Failed to upload ${file.name}: ${storageError.message}`);
+        continue;
+      }
+
+      await supabase.from('documents').insert({
+        opportunity_id: opportunityId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        content_type: file.type,
+        document_type: selectedDocType,
+      } as never);
+    }
+
+    onChange("documents", []);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    const { data: updatedDocs } = await supabase
+      .from('documents')
+      .select('id, file_name, file_path, file_size, content_type, document_type, created_at')
+      .eq('opportunity_id', opportunityId)
+      .order('created_at', { ascending: false });
+    const docs = updatedDocs ?? [];
+    setExistingDocs(docs);
+    onDocCountChange(docs.length);
+    syncDocsToWizard(docs);
+    sonnerToast.success('Documents uploaded');
+    setIsUploading(false);
+  };
+
+  const handleDelete = async (doc: UploadedDocument) => {
+    await supabase.storage.from('opportunity-documents').remove([doc.file_path]);
+    await supabase.from('documents').delete().eq('id', doc.id);
+    const updated = existingDocs.filter(d => d.id !== doc.id);
+    setExistingDocs(updated);
+    onDocCountChange(updated.length);
+    syncDocsToWizard(updated);
+    sonnerToast.success('Document deleted');
+  };
+
+  const handleDownload = async (doc: UploadedDocument) => {
+    const { data } = await supabase.storage.from('opportunity-documents').createSignedUrl(doc.file_path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -941,25 +1061,87 @@ function DocumentsStep({ form, onChange, onDocsChange }: { form: PreboardingForm
         Upload anything underwriting is likely to ask for: recent bank or processing statements, voided check / bank letter, government ID, etc.
       </p>
 
-      <Field label="Upload documents" required>
-        <input
-          type="file"
-          multiple
-          onChange={onDocsChange}
-          className="w-full cursor-pointer rounded-lg border border-dashed border-merchant-gray bg-merchant-black px-3 py-8 text-center text-xs text-gray-400"
-        />
-      </Field>
-
-      {form.documents.length > 0 && (
-        <div className="rounded-xl border border-merchant-gray bg-merchant-black p-3 text-xs">
-          <div className="mb-1 font-medium text-white">Files selected</div>
-          <ul className="list-disc space-y-1 pl-4 text-gray-300">
-            {form.documents.map((f, idx) => (
-              <li key={`${f.name}-${idx}`} className="truncate">
-                {f.name} ({Math.round(f.size / 1024)} KB)
+      {/* Existing uploaded documents */}
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-xs text-gray-400 py-4">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading documents…
+        </div>
+      ) : existingDocs.length > 0 ? (
+        <div className="rounded-xl border border-merchant-gray bg-merchant-black p-3 text-xs space-y-2">
+          <div className="font-medium text-white flex items-center gap-2">
+            <FileText className="w-3.5 h-3.5 text-merchant-redLight" />
+            Uploaded documents ({existingDocs.length})
+          </div>
+          <ul className="divide-y divide-merchant-gray/40">
+            {existingDocs.map((doc) => (
+              <li key={doc.id} className="flex items-center justify-between py-2 gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-gray-200 truncate">{doc.file_name}</p>
+                  <p className="text-[10px] text-gray-500">
+                    {doc.document_type || 'Unassigned'} • {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : '—'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" onClick={() => handleDownload(doc)} className="rounded p-1 hover:bg-merchant-gray/40 text-gray-400 hover:text-white" title="Download">
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                  <button type="button" onClick={() => handleDelete(doc)} className="rounded p-1 hover:bg-destructive/20 text-gray-400 hover:text-destructive" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-merchant-gray bg-merchant-black/50 p-4 text-center text-xs text-gray-500">
+          No documents uploaded yet
+        </div>
+      )}
+
+      {/* Upload new documents */}
+      {opportunityId ? (
+        <div className="space-y-3 rounded-xl border border-merchant-gray bg-merchant-black/50 p-4">
+          <div className="font-medium text-white text-xs">Upload new documents</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Document type">
+              <select
+                value={selectedDocType}
+                onChange={e => setSelectedDocType(e.target.value)}
+                className="w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40"
+              >
+                {DOCUMENT_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
+              </select>
+            </Field>
+            <Field label="Select files" required>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={onDocsChange}
+                className="w-full cursor-pointer rounded-lg border border-dashed border-merchant-gray bg-merchant-black px-3 py-2 text-xs text-gray-400"
+              />
+            </Field>
+          </div>
+
+          {form.documents.length > 0 && (
+            <div className="text-xs text-gray-300">
+              {form.documents.length} file(s) selected • {form.documents.map(f => f.name).join(', ')}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={form.documents.length === 0 || isUploading}
+            className="rounded-xl bg-merchant-red px-4 py-2 text-xs font-semibold text-white shadow hover:bg-merchant-redLight disabled:opacity-50"
+          >
+            {isUploading ? 'Uploading…' : `Upload ${form.documents.length} file(s)`}
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          Select an account above to enable document uploads.
         </div>
       )}
 
