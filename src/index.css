@@ -602,6 +602,128 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 50%;
   }
 
+  /* Dark Neobrutal - Bold, high-contrast with hard shadows and rounded corners */
+  .dark-neobrutal.dark {
+    --background: 250 25% 6%;
+    --foreground: 48 50% 95%;
+
+    --card: 250 25% 12%;
+    --card-foreground: 48 50% 95%;
+    --card-glass: 250 25% 12% / 0.92;
+
+    --popover: 250 25% 12%;
+    --popover-foreground: 48 50% 95%;
+
+    --primary: 348 83% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 250 25% 18%;
+    --secondary-foreground: 48 50% 95%;
+
+    --teal: 174 72% 50%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 250 25% 15%;
+    --muted-foreground: 250 15% 60%;
+
+    --accent: 348 83% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 250 30% 30%;
+    --input: 250 30% 30%;
+    --ring: 348 83% 55%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 250 25% 12% / 0.92;
+    --sidebar-foreground: 48 50% 95%;
+    --sidebar-primary: 348 83% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 250 25% 18%;
+    --sidebar-accent-foreground: 348 83% 65%;
+    --sidebar-border: 250 30% 28%;
+    --sidebar-ring: 348 83% 55%;
+
+    --shadow-sm: 2px 2px 0px 0px hsl(348 83% 55% / 0.45);
+    --shadow: 3px 3px 0px 0px hsl(348 83% 55% / 0.4);
+    --shadow-md: 5px 5px 0px 0px hsl(348 83% 55% / 0.35);
+    --shadow-lg: 8px 8px 0px 0px hsl(348 83% 55% / 0.3);
+  }
+
+  /* Light Neobrutal - Cream background, bold dark borders, hard shadows */
+  .light-neobrutal.light {
+    --background: 48 100% 97%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --card-glass: 0 0% 100% / 0.96;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    --primary: 348 83% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 48 50% 92%;
+    --secondary-foreground: 220 20% 10%;
+
+    --teal: 174 72% 40%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 48 30% 94%;
+    --muted-foreground: 220 10% 40%;
+
+    --accent: 348 83% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 20% 10%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 348 83% 47%;
+
+    --radius: 0.75rem;
+
+    /* Team member colors - same as default for consistency */
+    --team-wesley: 0 84% 60%;
+    --team-jamie: 48 96% 53%;
+    --team-darryn: 142 71% 45%;
+    --team-taryn: 199 89% 48%;
+    --team-yaseen: 262 83% 58%;
+    --team-sales: 25 95% 53%;
+
+    --sidebar-background: 0 0% 100% / 0.96;
+    --sidebar-foreground: 220 20% 10%;
+    --sidebar-primary: 348 83% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 48 50% 92%;
+    --sidebar-accent-foreground: 348 83% 47%;
+    --sidebar-border: 220 20% 20%;
+    --sidebar-ring: 348 83% 47%;
+
+    --shadow-sm: 2px 2px 0px 0px hsl(220 20% 10%);
+    --shadow: 3px 3px 0px 0px hsl(220 20% 10%);
+    --shadow-md: 5px 5px 0px 0px hsl(220 20% 10%);
+    --shadow-lg: 8px 8px 0px 0px hsl(220 20% 10%);
+  }
+
   /* Merchant Application Form - Light emerald-branded theme (MerchantHaus) */
   .merchant-form {
     --background: 220 14% 96%;
@@ -721,6 +843,18 @@ All colors MUST be HSL.
   /* Light Mono: pure white background */
   .light-mono.light body {
     background-color: hsl(0 0% 100%);
+    background-image: none;
+  }
+
+  /* Dark Neobrutal: solid deep purple-black, no background image */
+  .dark-neobrutal.dark body {
+    background-color: hsl(250 25% 6%);
+    background-image: none;
+  }
+
+  /* Light Neobrutal: warm cream background */
+  .light-neobrutal.light body {
+    background-color: hsl(48 100% 97%);
     background-image: none;
   }
 }
