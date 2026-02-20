@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, Delete, X, Clock, User, PhoneIncoming, PhoneOutgoing, Loader2, Wifi } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -50,6 +51,7 @@ const DIAL_KEYS = [
 
 export const Dialler = () => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
@@ -207,6 +209,8 @@ export const Dialler = () => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, handleKeyPress, handleBackspace, handleCall, number]);
+
+  if (!user) return null;
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "0s";
