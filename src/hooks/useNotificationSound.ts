@@ -24,24 +24,22 @@ function isSoundEnabled(): boolean {
   return localStorage.getItem('chatSoundEnabled') !== 'false';
 }
 
-/** Play a short frequency sweep (chat message ping) */
+/** Play an audio file from the public/sounds directory */
+function playAudioFile(path: string): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const audio = new Audio(path);
+      audio.volume = 0.5;
+      audio.play().then(resolve).catch(() => resolve());
+    } catch {
+      resolve();
+    }
+  });
+}
+
+/** Play incoming message sound */
 function playMessageTone() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(800, ctx.currentTime);
-  osc.frequency.linearRampToValueAtTime(1000, ctx.currentTime + 0.1);
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.3);
+  playAudioFile('/sounds/incoming-message.wav');
 }
 
 /** Play a single 600 Hz bell-like tone (general notification) */
@@ -130,6 +128,18 @@ export function wasMessageSoundPlayed(messageId: string): boolean {
 /**
  * Play a notification sound. Returns a stop handle for the 'call' type.
  */
+/** Play outgoing message sound */
+export function playOutgoingMessageSound() {
+  if (!isSoundEnabled()) return;
+  playAudioFile('/sounds/outgoing-message.wav');
+}
+
+/** Play notice board add/complete sound */
+export function playNoticeBoardSound() {
+  if (!isSoundEnabled()) return;
+  playAudioFile('/sounds/notice-board-add.wav');
+}
+
 export function playNotificationSound(
   type: 'message' | 'notification' | 'call'
 ): { stop: () => void } | void {
