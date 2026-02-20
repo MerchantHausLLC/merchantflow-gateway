@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ClipboardCheck, X, Plus, Trash2, ChevronDown, GripVertical } from "lucide-react";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -40,16 +40,7 @@ export function ActionItemsWidget() {
   const [showUserPicker, setShowUserPicker] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
-  // Draggable icon position
-  const [iconPos, setIconPos] = useState(() => {
-    const saved = localStorage.getItem("action-items-pos");
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return { x: 20, y: window.innerHeight - 100 };
-  });
-  const dragging = useRef(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
+  // Fixed icon position (no longer draggable)
 
   // Fetch items
   const fetchItems = useCallback(async () => {
@@ -82,27 +73,6 @@ export function ActionItemsWidget() {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchItems]);
 
-  // Drag handlers
-  const onPointerDown = (e: React.PointerEvent) => {
-    dragging.current = true;
-    dragOffset.current = { x: e.clientX - iconPos.x, y: e.clientY - iconPos.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    e.preventDefault();
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
-    const newX = Math.max(0, Math.min(window.innerWidth - 56, e.clientX - dragOffset.current.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 56, e.clientY - dragOffset.current.y));
-    setIconPos({ x: newX, y: newY });
-  };
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
-    const moved = Math.abs(e.clientX - (iconPos.x + dragOffset.current.x)) > 5 ||
-                  Math.abs(e.clientY - (iconPos.y + dragOffset.current.y)) > 5;
-    dragging.current = false;
-    localStorage.setItem("action-items-pos", JSON.stringify(iconPos));
-    if (!moved) setIsOpen((o) => !o);
-  };
 
   // Add item
   const addItem = async () => {
@@ -170,25 +140,18 @@ export function ActionItemsWidget() {
           )}
         </button>
       ) : (
-        <div
-          className="fixed z-[60] select-none touch-none"
-          style={{ left: iconPos.x, top: iconPos.y }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
+        <button
+          onClick={() => setIsOpen((o) => !o)}
+          className="fixed z-[60] left-4 bottom-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors bg-haus-charcoal text-white hover:bg-foreground"
+          aria-label="Toggle notice board"
         >
-          <div className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg transition-colors",
-            "bg-haus-charcoal text-white hover:bg-foreground"
-          )}>
-            <ClipboardCheck className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-        </div>
+          <ClipboardCheck className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </button>
       )}
 
       {/* Panel */}
@@ -208,15 +171,15 @@ export function ActionItemsWidget() {
             } : {
               width: "min(380px, calc(100vw - 32px))",
               maxHeight: "min(520px, calc(100vh - 100px))",
-              left: Math.min(iconPos.x, window.innerWidth - 400),
-              bottom: Math.max(20, window.innerHeight - iconPos.y + 16),
+              left: 16,
+              bottom: 72,
             }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
               <div className="flex items-center gap-2">
                 <ClipboardCheck className="h-4 w-4 text-gold" />
-                <span className="label-caps text-foreground">Action Items</span>
+                <span className="label-caps text-foreground">Notice Board</span>
               </div>
               <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="h-4 w-4" />
