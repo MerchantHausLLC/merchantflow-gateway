@@ -131,20 +131,22 @@ const PipelineSection = ({
   const getOpportunitiesByStage = (stage: OpportunityStage) => {
     return opportunities.filter(o => o.stage === stage).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   };
-  return <div className={cn("flex flex-1 min-h-0 min-w-0 border-2 border-foreground/30 rounded-none overflow-hidden bg-card/50 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]", "mobile-landscape:rounded-none mobile-landscape:min-h-[120px]")}>
+  return <div className={cn("flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg overflow-hidden bg-card/50 shadow-sm", "mobile-landscape:rounded-md mobile-landscape:min-h-[120px]")}>
       {/* Vertical Title Sidebar */}
       <div className={cn("flex flex-col items-center justify-center flex-shrink-0",
-    "bg-zinc-800 border-r-2 border-foreground/30", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
+    // Dark grey background with white border for mono theme support
+    "bg-zinc-800 border-r border-white/20", isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14", "mobile-landscape:w-6", colorAccent)}>
         <div className={cn("flex flex-col items-center py-2 sm:py-4 mobile-landscape:py-1", isCompact ? "gap-1" : "gap-1.5", "mobile-landscape:gap-0.5")}>
           <span className="hidden sm:block mobile-landscape:hidden text-white">{icon}</span>
-          <span className={cn("font-black whitespace-nowrap tracking-wide mobile-landscape:text-[10px] text-card",
+          <span className={cn("font-bold whitespace-nowrap tracking-wide mobile-landscape:text-[10px] text-card",
+        // Increased font sizes for better mobile readability
         isCompact ? "text-[11px] sm:text-[13px]" : "text-[13px] sm:text-base")} style={{
           writingMode: 'vertical-rl',
           transform: 'rotate(180deg)'
         }}>
             {title}
           </span>
-          <span className={cn("text-white font-bold bg-primary border border-white/30 rounded-none", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
+          <span className={cn("text-black font-semibold bg-white/20 border border-white/40 rounded-full", isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5", "mobile-landscape:text-[9px] mobile-landscape:px-1")}>
             {totalCount}
           </span>
         </div>
@@ -161,16 +163,16 @@ const PipelineSection = ({
             {stages.map(stage => {
             const config = STAGE_CONFIG[stage];
             const count = getOpportunitiesByStage(stage).length;
-            return <div key={stage} className={cn("flex-shrink-0 pb-1", isCompact ? "w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" : "w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]")} style={{
-              borderBottom: `3px solid ${config.color || 'hsl(var(--primary))'}`,
+            return <div key={stage} className={cn("flex-shrink-0 pb-1 border-b-2", isCompact ? "w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" : "w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]")} style={{
+              borderColor: config.color || 'hsl(var(--primary))'
             }}>
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1">
-                      <span className={cn("font-black text-foreground uppercase tracking-tight truncate", isCompact ? "text-[9px] max-w-[55px] md:text-[11px] md:max-w-[90px] mobile-landscape:text-[10px] mobile-landscape:max-w-[100px]" : "text-[10px] max-w-[60px] md:text-xs md:max-w-[120px] lg:text-sm lg:max-w-[160px] mobile-landscape:text-[10px] mobile-landscape:max-w-[120px]")}>
+                      <span className={cn("font-semibold text-foreground truncate", isCompact ? "text-[9px] max-w-[55px] md:text-[11px] md:max-w-[90px] mobile-landscape:text-[10px] mobile-landscape:max-w-[100px]" : "text-[10px] max-w-[60px] md:text-xs md:max-w-[120px] lg:text-sm lg:max-w-[160px] mobile-landscape:text-[10px] mobile-landscape:max-w-[120px]")}>
                         {config.label}
                       </span>
                     </div>
-                    <span className={cn("text-muted-foreground bg-muted border border-foreground/20 px-1 py-0 rounded-none font-bold", isCompact ? "text-[8px]" : "text-[9px]", "mobile-landscape:text-[9px]")}>
+                    <span className={cn("text-muted-foreground bg-muted px-1 py-0 rounded-full", isCompact ? "text-[8px]" : "text-[9px]", "mobile-landscape:text-[9px]")}>
                       {count}
                     </span>
                   </div>
@@ -325,7 +327,7 @@ const DualPipelineBoard = ({
         {/* Refresh Button */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isRefreshing} className="h-7 px-2 gap-1 text-xs rounded-none border border-foreground/30 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] font-bold hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] transition-all">
+            <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isRefreshing} className="h-7 px-2 gap-1 text-xs">
               <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
               <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
             </Button>
@@ -336,7 +338,7 @@ const DualPipelineBoard = ({
         {/* Compact Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setIsCompact(!isCompact)} className="h-7 px-2 gap-1 text-xs rounded-none border-2 border-foreground/40 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] font-bold hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] transition-all">
+            <Button variant="outline" size="sm" onClick={() => setIsCompact(!isCompact)} className="h-7 px-2 gap-1 text-xs">
               {isCompact ? <>
                   <Maximize2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Regular</span>

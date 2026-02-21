@@ -178,8 +178,8 @@ const PipelineColumn = ({
       >
         {opportunities.length === 0 ? (
           <div className={cn(
-            "flex items-center justify-center text-foreground/40 border-2 border-dashed border-foreground/25 rounded-none font-bold uppercase tracking-widest",
-            isCompact ? "h-8 text-[7px]" : "h-12 text-[8px]"
+            "flex items-center justify-center text-muted-foreground/60 border border-dashed border-border/30 rounded",
+            isCompact ? "h-8 text-[8px]" : "h-12 text-[10px]"
           )}>
             Drop here
           </div>

@@ -1,109 +1,48 @@
 
-# Neo-Brutalism: Chat & Pipeline
 
-## What is Neo-Brutalism (in this context)?
+# Add Notification Sound to All Real-Time Notifications
 
-Neo-brutalism applied to a dark, professional CRM means:
-- **Raw, hard edges** — no rounded corners, flat geometry
-- **Heavy black offset box-shadows** — the hallmark "lifted block" effect
-- **Bold, visible borders** — 2px solid borders instead of subtle outlines
-- **Flat, high-contrast backgrounds** — no gradients or translucency in key structural elements
-- **Stark typographic weight** — bold labels, no softening
-- **Functional austerity** — minimal decoration but maximum visual impact
+## Overview
+Currently, notification sounds only play inside the **FloatingChat** component (for chat messages). The **NotificationBell**, **IncomingCallToast**, and **IncomingMessageToast** components all receive real-time events but play no audio. This plan adds a unified notification sound system across all real-time notification types.
 
-This will be applied while staying within the existing dark colour palette (haus-charcoal, primary red, teal, gold) so it remains coherent with the Merchant Haus Architectural Manifesto.
+## What Changes
 
----
+### 1. Create a shared `useNotificationSound` hook
+A lightweight, reusable hook (or utility function) that plays a short audio ping using the Web Audio API. This consolidates the duplicate sound logic currently in `useChatSounds.ts` and `useChatNotifications.ts` into one place. It will respect the user's existing `chatSoundEnabled` localStorage preference.
 
-## Scope
+Three distinct tones will be available:
+- **message** -- existing chat ping (800-1000 Hz sweep)
+- **notification** -- slightly different tone for bell/task/stage notifications (600 Hz)
+- **call** -- urgent ringtone pattern (two-note repeated beep for incoming calls)
 
-### 1. FloatingChat (`src/components/FloatingChat.tsx`)
+### 2. NotificationBell -- play sound on new notification
+In `src/components/NotificationBell.tsx`, when the realtime subscription fires an `INSERT` event for a new notification, play the **notification** sound. Only play if the popover is closed (user isn't already looking at notifications).
 
-#### Launcher Button (closed state)
-- Remove gradient and rounded-full (desktop bar)
-- Apply hard rectangular shape with 2px border and 4px black offset shadow
-- Bold uppercase "MESSAGING" label
+### 3. IncomingCallToast -- play ringtone sound
+In `src/components/IncomingCallToast.tsx`, when a ringing incoming call is detected, play the **call** sound (a more urgent, repeating tone) that stops after 10 seconds or when the toast is dismissed.
 
-#### Chat Panel Container
-- Replace `rounded-t-xl` with `rounded-none`
-- Remove backdrop/glass effects, use solid `bg-background`
-- Replace `border-slate-200` with `border-2 border-foreground/80`
-- Add `shadow-[4px_0px_0px_0px_rgba(0,0,0,1)]` brutalist lift effect
+### 4. IncomingMessageToast -- play message sound
+In `src/components/IncomingMessageToast.tsx`, when a new chat or DM toast is shown, play the **message** sound. This covers users who don't have the FloatingChat open.
 
-#### Header
-- Remove gradient — use solid `bg-zinc-900` (haus-charcoal)
-- Apply `border-b-2 border-foreground/60`
-- Bold uppercase title
+### 5. Deduplicate with FloatingChat
+Add a guard so that if the FloatingChat already played a sound for a given message (user is viewing that conversation), the `IncomingMessageToast` skips its sound to avoid double-pinging. This will use a simple `Set` of recently-played message IDs shared via a custom event or ref.
 
-#### Message Bubbles (own messages)
-- Replace `rounded-2xl rounded-br-md` with `rounded-none`
-- Keep `bg-primary` (red) for own bubbles but add `border-2 border-primary shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)]`
-- Replace `rounded-bl-md` with `rounded-none` for incoming, swap `bg-white/bg-slate-800` for `bg-secondary`, apply bold left border accent `border-l-4 border-teal`
+## Technical Details
 
-#### Reply Preview
-- Replace blue soft background with `border-l-4 border-primary bg-muted/40`
-- Remove rounded corners
+### New file: `src/hooks/useNotificationSound.ts`
+- Exports `playNotificationSound(type: 'message' | 'notification' | 'call')`
+- Uses Web Audio API oscillator (no external audio files needed)
+- Checks `localStorage.getItem('chatSoundEnabled') !== 'false'` before playing
+- For `call` type, returns a `stop()` function to cancel the repeating tone
 
-#### Input Area
-- Replace `bg-white dark:bg-slate-800` with solid `bg-background`
-- Swap `border-t border-slate-200` with `border-t-2 border-foreground/30`
-- Input field: lean on existing underline style (already matches brutalism)
-- Send button: square shape, `shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`
+### Modified files
+| File | Change |
+|------|--------|
+| `src/hooks/useNotificationSound.ts` | New shared sound utility |
+| `src/components/NotificationBell.tsx` | Import hook, play on INSERT event |
+| `src/components/IncomingCallToast.tsx` | Play call ringtone on ringing status |
+| `src/components/IncomingMessageToast.tsx` | Play message sound on new toast |
 
-#### Contacts/Channels List
-- Channel and contact rows: replace rounded hover with square hover, add `border-l-4 border-transparent hover:border-primary` left rail
-- Section headers: already uppercase — increase weight + add `border-b border-foreground/20`
+### No database changes required
+All notification infrastructure (realtime subscriptions, notifications table) already exists.
 
-#### Date separators
-- Replace `bg-slate-200` horizontal rules with solid single-pixel foreground lines
-- Date label: bold, no pill shape — raw square badge
-
----
-
-### 2. Pipeline (`src/components/PipelineColumn.tsx`, `src/components/OpportunityCard.tsx`, `src/components/DualPipelineBoard.tsx`)
-
-#### PipelineSection Container (`DualPipelineBoard`)
-- Replace `rounded-lg` with `rounded-none`
-- Increase border from `border-border/40` to `border-2 border-foreground/40`
-- Add `shadow-[4px_4px_0px_0px_rgba(0,0,0,0.6)]` offset shadow for lifted-block effect
-
-#### Vertical Title Sidebar
-- Already dark `bg-zinc-800` — add `border-r-2 border-foreground/40` and bump font to `font-black`
-- Count badge: change from subtle `bg-white/20` to solid `bg-primary text-white border border-white/40` square pill
-
-#### Stage Column Headers (`DualPipelineBoard` header row)
-- Replace `border-b-2` with inline `borderBottom: '3px solid'`
-- Stage label: add `font-black` uppercase
-- Count: square badge with `border border-foreground/30`
-
-#### PipelineColumn drop zone
-- Empty state "Drop here": `border-2 border-dashed border-foreground/30` with `text-foreground/40 font-bold uppercase text-[8px] tracking-widest`
-
-#### OpportunityCard
-- Remove `rounded-none hover:shadow-md` (already no radius) — replace with static `shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]`
-- Active/hover state: `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:-translate-y-px`  for a "press-lift" feel
-- Increase left border from `border-l-[3px]` to `border-l-[4px]` with stronger colour
-- Account name: `font-black` instead of `font-semibold`
-- Live card: keep gold treatment but add `shadow-[3px_3px_0px_0px_rgba(180,140,0,0.5)]`
-- SLA badge: square `rounded-none` instead of `rounded`
-- Add `border-b-2 border-foreground/10` to the card footer divider instead of `border-border/30`
-
-#### Compact Toggle & Refresh bar
-- Replace `variant="outline"` button with `border-2 border-foreground/60 rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)] font-bold` 
-
----
-
-## Technical Approach
-
-- **No new dependencies** — all changes are Tailwind class edits and inline style tweaks
-- **Dark-mode coherent** — existing CSS variables are used throughout, no hardcoded colours
-- **No layout changes** — sizes, widths, column counts remain identical
-- **Preserves compliance** — no colour meaning changes (SLA red/amber/green, team colours remain)
-- **Mobile-safe** — all responsive classes preserved, brutalism shadow reduced on mobile-landscape
-
-## Files to Edit
-
-1. `src/components/FloatingChat.tsx` — chat panel, launcher, bubbles, input area, contacts list
-2. `src/components/OpportunityCard.tsx` — card shadow, borders, typography weight
-3. `src/components/PipelineColumn.tsx` — drop zone, column wrapper
-4. `src/components/DualPipelineBoard.tsx` — section container, sidebar, header row, toolbar buttons

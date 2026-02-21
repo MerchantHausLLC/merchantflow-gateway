@@ -220,7 +220,7 @@ const Accounts = () => {
 
   // Filter and sort accounts based on search query and sort settings
   const filteredAccounts = useMemo(() => {
-    const result = accounts.filter((account) => {
+    let result = accounts.filter((account) => {
       const query = searchQuery.toLowerCase();
       return (
         account.name.toLowerCase().includes(query) ||

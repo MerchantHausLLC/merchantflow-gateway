@@ -2,19 +2,17 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 // Theme variants - base mode + style variant
 export type ThemeMode = 'dark' | 'light';
-export type ThemeVariant =
-  | 'dark-default'
-  | 'dark-midnight'
+export type ThemeVariant = 
+  | 'dark-default' 
+  | 'dark-midnight' 
   | 'dark-forest'
   | 'dark-charcoal'
   | 'dark-mono'
-  | 'dark-neobrutal'
-  | 'light-default'
-  | 'light-ocean'
+  | 'light-default' 
+  | 'light-ocean' 
   | 'light-warm'
   | 'light-silver'
-  | 'light-mono'
-  | 'light-neobrutal';
+  | 'light-mono';
 
 export interface ThemeOption {
   id: ThemeVariant;
@@ -29,13 +27,11 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'dark-forest', name: 'Forest', mode: 'dark', description: 'Dark green accents' },
   { id: 'dark-charcoal', name: 'Charcoal', mode: 'dark', description: 'Warm grey tones' },
   { id: 'dark-mono', name: 'Mono', mode: 'dark', description: 'Minimalist black & white' },
-  { id: 'dark-neobrutal', name: 'Neobrutal', mode: 'dark', description: 'Bold shadows & rounded corners' },
   { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
   { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
   { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
   { id: 'light-silver', name: 'Silver', mode: 'light', description: 'Cool silver tones' },
   { id: 'light-mono', name: 'Mono', mode: 'light', description: 'Minimalist black & white' },
-  { id: 'light-neobrutal', name: 'Neobrutal', mode: 'light', description: 'Bold shadows & rounded corners' },
 ];
 
 interface ThemeContextType {
@@ -158,7 +154,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-neobrutal', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-neobrutal');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono');
     
     // Add base mode and variant
     root.classList.add(theme);
