@@ -169,11 +169,10 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="flex items-center justify-center">
-          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
-        </div>
-
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
+          <div className="flex items-center justify-center mb-6">
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+          </div>
           <p className="text-center text-muted-foreground mb-8 font-medium">
             Sign in to access your pipeline
           </p>
