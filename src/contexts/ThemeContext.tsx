@@ -46,10 +46,21 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const defaultThemeContext: ThemeContextType = {
+  theme: 'dark',
+  variant: 'dark-default',
+  defaultDarkVariant: 'dark-default',
+  defaultLightVariant: 'light-default',
+  toggleTheme: () => {},
+  setTheme: () => {},
+  setVariant: () => {},
+};
+
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    console.warn('useTheme called outside ThemeProvider, using defaults');
+    return defaultThemeContext;
   }
   return context;
 };
