@@ -230,7 +230,7 @@ const Auth = () => {
                 Sign Up
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="signin">
+            <TabsContent value="signin" className="min-h-[280px]">
               <form onSubmit={handleEmailSignIn} className="space-y-5 mt-6">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
@@ -276,7 +276,7 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-            <TabsContent value="signup">
+            <TabsContent value="signup" className="min-h-[280px]">
               <form onSubmit={handleEmailSignUp} className="space-y-5 mt-6">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
