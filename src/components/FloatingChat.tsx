@@ -1091,7 +1091,85 @@ const FloatingChat: React.FC = () => {
   const groupedChannelMessages = useMemo(() => groupMessagesByDate(filteredChannelMessages), [filteredChannelMessages, groupMessagesByDate]);
   const groupedDirectMessages = useMemo(() => groupMessagesByDate(filteredDirectMessages), [filteredDirectMessages, groupMessagesByDate]);
 
-  if (!user) return null;
+  // Render contacts/channels sidebar (shared between mobile stacked view and desktop side-by-side)
+  const renderContactsSidebar = () => (
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input placeholder="Search..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
+        </div>
+      </div>
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-2">
+          {/* Channels section */}
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5">Channels</p>
+          {channels
+            .filter(ch => !ch.name.toLowerCase().startsWith('dm-'))
+            .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()))
+            .map((ch) => (
+            <button
+              key={ch.id}
+              onClick={() => handleSelectChannel(ch.id)}
+              className={cn(
+                "w-full flex items-center gap-3 p-2.5 rounded-lg transition-all",
+                "hover:bg-white dark:hover:bg-slate-800 group",
+                "border border-transparent hover:border-slate-200 dark:hover:border-slate-700",
+                currentChannelId === ch.id && view === "chat" && "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+              )}
+            >
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <Hash className="h-4 w-4 text-slate-500" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{ch.name}</p>
+              </div>
+              {(channelUnreadCounts[ch.id] || 0) > 0 && (
+                <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{channelUnreadCounts[ch.id]}</Badge>
+              )}
+            </button>
+          ))}
+
+          {/* Team Members section */}
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5 mt-2">Team Members</p>
+          {filteredContacts.length === 0 ? (
+            <p className="text-center text-slate-500 text-sm py-4">No contacts found</p>
+          ) : (
+            filteredContacts.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => handleSelectContact(u.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 p-2.5 rounded-lg transition-all",
+                  "hover:bg-white dark:hover:bg-slate-800 group",
+                  "border border-transparent hover:border-slate-200 dark:hover:border-slate-700",
+                  currentDMUserId === u.id && view === "dm" && "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                )}
+              >
+                <div className="relative">
+                  <Avatar className="h-8 w-8 border-2 border-slate-200 dark:border-slate-700">
+                    <AvatarImage src={u.avatarUrl || undefined} />
+                    <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-xs font-medium")}>{getInitials(u.name, u.email)}</AvatarFallback>
+                  </Avatar>
+                  <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-50 dark:border-slate-900", u.isOnline ? "bg-emerald-500" : "bg-slate-400")} />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {u.isOnline ? "Online" : u.lastSeen ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}` : "Offline"}
+                  </p>
+                </div>
+                {(u.unreadCount || 0) > 0 && (
+                  <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{u.unreadCount}</Badge>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+
 
   // Swipe-to-reply handler for touch devices
   const swipeRef = useRef<{ startX: number; startY: number; msgId: string; swiping: boolean } | null>(null);
@@ -1500,7 +1578,7 @@ const FloatingChat: React.FC = () => {
             "animate-in slide-in-from-bottom-4 fade-in-0",
             isMobile
               ? "bottom-16 right-2 left-2 top-16 rounded-xl"
-              : "bottom-0 right-6 w-[328px] h-[480px] rounded-t-xl border-b-0"
+              : "bottom-0 right-6 w-[700px] h-[520px] rounded-t-xl border-b-0"
           )}
         >
           {/* Header */}
@@ -1510,18 +1588,25 @@ const FloatingChat: React.FC = () => {
             "text-white border-b border-slate-600"
           )}>
             <div className="flex items-center gap-2">
-              {(view === "chat" || view === "dm") && (
+              {/* Mobile: back button when in chat */}
+              {isMobile && (view === "chat" || view === "dm") && (
                 <button onClick={() => setView("contacts")} className="hover:bg-white/10 p-1.5 rounded-lg transition-colors">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
               <div>
                 <h3 className="font-semibold text-sm">
-                  {view === "contacts" && "Messages"}
-                  {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
-                  {view === "dm" && (currentDMUser?.name || "Direct Message")}
+                  {isMobile ? (
+                    <>
+                      {view === "contacts" && "Messages"}
+                      {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
+                      {view === "dm" && (currentDMUser?.name || "Direct Message")}
+                    </>
+                  ) : (
+                    "Messages"
+                  )}
                 </h3>
-                {view === "dm" && currentDMUser && (
+                {isMobile && view === "dm" && currentDMUser && (
                   <span className="text-xs text-slate-300 flex items-center gap-1">
                     <span className={cn("w-1.5 h-1.5 rounded-full", currentDMUser.isOnline ? "bg-emerald-400" : "bg-slate-500")} />
                     {currentDMUser.isOnline 
@@ -1599,97 +1684,79 @@ const FloatingChat: React.FC = () => {
             </div>
           )}
 
-          {/* Content */}
+          {/* Content - Slack-style on desktop, stacked on mobile */}
           <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-900 relative">
-            {/* Unified Contacts/Channels View */}
-            {view === "contacts" && (
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input placeholder="Search..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} className="h-9 pl-9 text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
+            {isMobile ? (
+              <>
+                {/* Mobile: stacked views as before */}
+                {view === "contacts" && renderContactsSidebar()}
+                {view === "chat" && (
+                  <div className="flex-1 flex flex-col overflow-hidden relative">
+                    {renderMessagesList(groupedChannelMessages, true)}
                   </div>
+                )}
+                {view === "dm" && (
+                  <div className="flex-1 flex flex-col overflow-hidden relative">
+                    {renderMessagesList(groupedDirectMessages, false)}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Desktop: Slack-style side-by-side layout */
+              <div className="flex flex-1 overflow-hidden">
+                {/* Left sidebar - contacts/channels */}
+                <div className="w-[240px] border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden shrink-0">
+                  {renderContactsSidebar()}
                 </div>
-                <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-2">
-                    {/* Channels section */}
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5">Channels</p>
-                    {channels
-                      .filter(ch => !ch.name.toLowerCase().startsWith('dm-'))
-                      .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()))
-                      .map((ch) => (
-                      <button
-                        key={ch.id}
-                        onClick={() => handleSelectChannel(ch.id)}
-                        className={cn(
-                          "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                          "hover:bg-white dark:hover:bg-slate-800 group",
-                          "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                {/* Right pane - active chat */}
+                <div className="flex-1 flex flex-col overflow-hidden relative">
+                  {(view === "chat" || view === "dm") ? (
+                    <>
+                      {/* Chat header bar */}
+                      <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 flex items-center gap-2 shrink-0">
+                        {view === "chat" && (
+                          <>
+                            <Hash className="h-4 w-4 text-slate-500" />
+                            <span className="font-semibold text-sm text-foreground">{currentChannel?.name || "Chat"}</span>
+                          </>
                         )}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                          <Hash className="h-5 w-5 text-slate-500" />
-                        </div>
-                        <div className="flex-1 text-left min-w-0">
-                          <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{ch.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Channel</p>
-                        </div>
-                        {(channelUnreadCounts[ch.id] || 0) > 0 && (
-                          <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{channelUnreadCounts[ch.id]}</Badge>
+                        {view === "dm" && currentDMUser && (
+                          <>
+                            <div className="relative">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={currentDMUser.avatarUrl || undefined} />
+                                <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-white text-[10px]")}>{getInitials(currentDMUser.name, currentDMUser.email)}</AvatarFallback>
+                              </Avatar>
+                              <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800", currentDMUser.isOnline ? "bg-emerald-500" : "bg-slate-400")} />
+                            </div>
+                            <div>
+                              <span className="font-semibold text-sm text-foreground">{currentDMUser.name}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {currentDMUser.isOnline 
+                                  ? "Online" 
+                                  : currentDMUser.lastSeen 
+                                    ? `Active ${formatDistanceToNow(new Date(currentDMUser.lastSeen), { addSuffix: true })}`
+                                    : "Offline"
+                                }
+                              </span>
+                            </div>
+                          </>
                         )}
-                      </button>
-                    ))}
-
-                    {/* Team Members section */}
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 py-1.5 mt-2">Team Members</p>
-                    {filteredContacts.length === 0 ? (
-                      <p className="text-center text-slate-500 text-sm py-4">No contacts found</p>
-                    ) : (
-                      filteredContacts.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => handleSelectContact(u.id)}
-                          className={cn(
-                            "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                            "hover:bg-white dark:hover:bg-slate-800 group",
-                            "border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-                          )}
-                        >
-                          <div className="relative">
-                            <Avatar className="h-10 w-10 border-2 border-slate-200 dark:border-slate-700">
-                              <AvatarImage src={u.avatarUrl || undefined} />
-                              <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>{getInitials(u.name, u.email)}</AvatarFallback>
-                            </Avatar>
-                            <span className={cn("absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-50 dark:border-slate-900", u.isOnline ? "bg-emerald-500" : "bg-slate-400")} />
-                          </div>
-                          <div className="flex-1 text-left min-w-0">
-                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {u.isOnline ? "Online" : u.lastSeen ? `Active ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}` : "Offline"}
-                            </p>
-                          </div>
-                          {(u.unreadCount || 0) > 0 && (
-                            <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs px-2 py-0.5">{u.unreadCount}</Badge>
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-
-            {/* Channel Chat View */}
-            {view === "chat" && (
-              <div className="flex-1 flex flex-col overflow-hidden relative">
-                {renderMessagesList(groupedChannelMessages, true)}
-              </div>
-            )}
-
-            {/* Direct Message View */}
-            {view === "dm" && (
-              <div className="flex-1 flex flex-col overflow-hidden relative">
-                {renderMessagesList(groupedDirectMessages, false)}
+                      </div>
+                      {view === "chat" 
+                        ? renderMessagesList(groupedChannelMessages, true)
+                        : renderMessagesList(groupedDirectMessages, false)
+                      }
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                      <div className="text-center space-y-2">
+                        <MessageCircle className="h-10 w-10 mx-auto opacity-30" />
+                        <p>Select a conversation</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
