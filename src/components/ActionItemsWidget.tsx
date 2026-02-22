@@ -128,7 +128,7 @@ export function ActionItemsWidget() {
 
   return (
     <>
-      {/* Floating icon – fixed on mobile (above Quo dialler), draggable on desktop */}
+      {/* Mobile: floating circle icon / Desktop: tab bar like Dialler & Messenger */}
       {isMobile ? (
         <button
           onClick={() => setIsOpen((o) => !o)}
@@ -142,20 +142,26 @@ export function ActionItemsWidget() {
             </span>
           )}
         </button>
-      ) : (
+      ) : !isOpen ? (
         <button
-          onClick={() => setIsOpen((o) => !o)}
-          className="fixed z-[60] left-4 bottom-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors bg-haus-charcoal text-white hover:bg-foreground"
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "fixed bottom-0 right-[618px] z-50 w-[220px] h-12 rounded-t-xl flex items-center gap-3 px-4",
+            "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
+            "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
+            "border border-b-0 border-slate-600"
+          )}
           aria-label="Toggle notice board"
         >
-          <ClipboardCheck className="h-5 w-5" />
+          <ClipboardCheck className="h-5 w-5 shrink-0" />
+          <span className="font-semibold text-sm">Notice Board</span>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="ml-auto bg-gold text-haus-charcoal text-xs font-bold min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
               {unreadCount}
             </span>
           )}
         </button>
-      )}
+      ) : null}
 
       {/* Panel */}
       <AnimatePresence>
@@ -165,17 +171,20 @@ export function ActionItemsWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed z-[61] bg-card border border-border shadow-2xl flex flex-col"
+            className={cn(
+              "fixed z-[61] bg-card border border-border shadow-2xl flex flex-col",
+              !isMobile && "rounded-t-xl border-b-0"
+            )}
             style={isMobile ? {
               width: "calc(100vw - 32px)",
               maxHeight: "min(520px, calc(100vh - 200px))",
               left: 16,
               bottom: "10rem",
             } : {
-              width: "min(380px, calc(100vw - 32px))",
+              width: 380,
               maxHeight: "min(520px, calc(100vh - 100px))",
-              left: 16,
-              bottom: 72,
+              right: 618,
+              bottom: 0,
             }}
           >
             {/* Header */}
